@@ -54,7 +54,7 @@ The system embeds a static reference table for each supported country. Each coun
 | Quality | Description |
 |---|---|
 | `average` _(default)_ | Typical market rates — represents what most borrowers obtain |
-| `best` | Best competitive rates — represents the lowest rates available from top-tier lenders or brokers |
+| `best` | Lowest competitive rates — represents the lowest rates available to well-qualified borrowers from top-tier lenders or brokers; always ≤ `average` |
 
 Profile quality only affects **market-driven fields** (`annual_interest_rate`, `insurance_rate`). Regulatory fields (purchase taxes, minimum down payment, maximum debt ratio, maximum duration) are identical across both qualities and cannot be set to "best" since they are fixed by law or banking regulation.
 
@@ -279,18 +279,32 @@ The user may update any field of any country profile during the interactive loop
 
 **Mode B — Online fetch**
 
-The system can retrieve current market rates from an online source on demand, without the user having to enter values manually.
+The system can retrieve the current average market interest rate from a public central bank API on demand, without the user having to enter values manually.
 
 1. User selects "Update a country profile field" → "Fetch from online".
 2. System asks: which country?
-3. System asks: which quality to fetch? (`average`, `best`, or `both`)
-4. System contacts the configured online data source and retrieves the latest market-driven rates (`annual_rate`, `insurance_rate`) for the selected country and quality.
-5. System displays the fetched values alongside the current session values and asks for confirmation before applying.
-6. On confirmation, values are applied exactly as in manual entry (step 6 above).
-7. On rejection, no change is made and the prompt is re-shown.
-8. If the online fetch fails (network error, source unavailable, data not found), the system displays a clear error and offers to fall back to manual entry.
+3. System contacts the configured data source (see "Data sources" below) and retrieves the latest `annual_rate` for the `average` quality of the selected country.
+4. **Auto-apply rule**:
+   - If the user has **not** manually overridden `annual_rate` for that country/quality in the current session → the fetched value is applied immediately without prompting.
+   - If the user **has** manually overridden `annual_rate` → the system shows the fetched value alongside the current override and asks for confirmation before replacing it.
+5. If the online fetch fails (network error, source unavailable, data not found), the system displays a clear error message and offers to fall back to manual entry.
 
-> **Note**: Online fetch only retrieves market-driven fields (`annual_rate`, `insurance_rate`). Regulatory fields are not fetched — they must be updated manually.
+> **Scope constraints**:
+> - Only `annual_rate` (`average` quality) can be fetched. Central banks publish population-average new-business rates; best/competitive rates are broker-specific and have no public API.
+> - `insurance_rate` has no public data source and must be updated manually.
+> - Regulatory fields are not fetched — they must be updated manually.
+
+---
+
+**Data sources by country:**
+
+| Country | Code | Source | Series / endpoint |
+|---|---|---|---|
+| Eurozone (BE, FR, DE, ES, IT, PT) | — | ECB Data Portal API | `GET https://data.ecb.europa.eu/api/v1/data/MIR/M.{CC}.B.A2C.F.R.A.2250.EUR.N?lastNObservations=1&format=jsondata` — no authentication required |
+| United Kingdom | `GB` | Bank of England Statistics API | Effective mortgage rate series (exact key TBD at implementation) |
+| United States | `US` | FRED API (Federal Reserve Bank of St. Louis) | Series `MORTGAGE30US` (30-year fixed, weekly) — free API key required |
+
+The ECB series key `MIR.M.{CC}.B.A2C.F.R.A.2250.EUR.N` encodes: monthly frequency · country code · new business · housing loans (A2C) · annualised agreed rate · households · EUR. Data is published on the 23rd working day after each reference month.
 
 ---
 
@@ -298,15 +312,15 @@ The system can retrieve current market rates from an online source on demand, wi
 
 | Field | Quality-sensitive | Manual | Online fetch | Validation |
 |---|---|---|---|---|
-| `annual_rate` | Yes (`average` / `best`) | Yes | Yes | > 0 |
-| `insurance_rate` | Yes (`average` / `best`) | Yes | Yes | >= 0 |
+| `annual_rate` | Yes (`average` / `best`) | Yes | `average` only | > 0 |
+| `insurance_rate` | Yes (`average` / `best`) | Yes | No | >= 0 |
 | `purchase_tax_rate` | No (shared) | Yes | No | >= 0 |
 | `taxes_financeable` | No (shared) | Yes | No | `true` or `false` |
 | `min_down_payment_ratio` | No (shared) | Yes | No | 0%–100% |
 | `max_debt_ratio` | No (shared) | Yes | No | > 0 |
 | `max_loan_duration_months` | No (shared) | Yes | No | 12–600 |
 
-> **Invariant**: `best` rates must always be ≤ the corresponding `average` rates. The system rejects any update (manual or fetched) that would violate this and displays an explicit error.
+> **Invariant**: `best` rates must always be ≤ the corresponding `average` rates. The system rejects any manual update that would violate this and displays an explicit error.
 
 ### 5.5 State Management
 
@@ -432,6 +446,6 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 | 6 | How should country profile values be updated over time (static file, admin endpoint, periodic release)? | @alahaouas | **Closed** — static file, updated manually |
 | 7 | Should the system warn when user-supplied rates differ significantly from the country profile defaults? | @alahaouas | **Closed** — no warnings |
 | 8 | Should sub-national variations be supported (e.g. Belgian region tax rates, US state closing costs, German Grunderwerbsteuer by Bundesland)? | @alahaouas | **Closed** — not needed, national level only |
-| 9 | What online data source(s) should be used for the online profile fetch? (central bank APIs, financial data aggregators, specific websites) | @alahaouas | Open |
-| 10 | Should fetched rates require explicit user confirmation before being applied, or be applied automatically? | @alahaouas | Open |
-| 11 | Should the online fetch target `average` rates, `best` rates, or both — and how does the source distinguish between them? | @alahaouas | Open |
+| 9 | What online data source(s) should be used for the online profile fetch? (central bank APIs, financial data aggregators, specific websites) | @alahaouas | **Closed** — ECB Data Portal API for Eurozone; Bank of England for GB; FRED for US (see §5.4 data source table) |
+| 10 | Should fetched rates require explicit user confirmation before being applied, or be applied automatically? | @alahaouas | **Closed** — auto-apply unless the user has already manually overridden the rate in the current session, in which case confirm before replacing |
+| 11 | Should the online fetch target `average` rates, `best` rates, or both — and how does the source distinguish between them? | @alahaouas | **Closed** — `average` only; central banks publish population-average new-business rates; best/competitive rates are not available from any public API and must be set manually |
