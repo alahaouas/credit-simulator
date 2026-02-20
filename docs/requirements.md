@@ -235,7 +235,7 @@ All other parameters are optional at startup and resolved automatically (see sec
    - Update one or more simulation parameters
    - Change the optimization preference
    - Reset a parameter to its country-profile default
-   - Update a country profile field (see §5.5)
+   - Update a country profile field — manually or via online fetch (see §5.4)
    - Exit the session
 
 2. The user selects a parameter by name, enters the new value, and the system validates it immediately using the same rules as the initial input (§2).
@@ -260,33 +260,53 @@ All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except d
 
 ### 5.4 Country Profile Updates
 
-The user may update any field of any country profile during the interactive loop. This allows correcting reference values to reflect current market conditions without restarting the session.
+The user may update any field of any country profile during the interactive loop. Two update modes are available: **manual entry** and **online fetch**.
 
-**Scope**: profile updates are session-scoped only — they are not persisted to disk. The static embedded profiles are restored at the next session start.
+**Scope**: all profile updates are session-scoped — they are not persisted to disk. The static embedded profiles are restored at the next session start.
 
-**Prompt flow:**
+---
 
-1. User selects "Update a country profile field".
+**Mode A — Manual entry**
+
+1. User selects "Update a country profile field" → "Enter manually".
 2. System asks: which country? (must be a supported code)
-3. System asks: which quality to update? (`average` or `best`)
-4. System asks: which field? (any field from the profile field table in §2.4)
-5. System asks: new value? (validated against the same constraints as the field)
-6. On valid input, the updated profile is stored in session state. Any simulation parameter currently auto-resolved from that country/quality pair is immediately re-resolved using the new value, unless the user has explicitly overridden it.
-7. The system re-runs the simulation with the updated profile and displays the new result.
+3. System asks: which quality to update? (`average` or `best`) — only for quality-sensitive fields
+4. System asks: which field?
+5. System asks: new value? (validated immediately)
+6. On valid input, the updated value is stored in session state and the simulation re-runs.
+
+---
+
+**Mode B — Online fetch**
+
+The system can retrieve current market rates from an online source on demand, without the user having to enter values manually.
+
+1. User selects "Update a country profile field" → "Fetch from online".
+2. System asks: which country?
+3. System asks: which quality to fetch? (`average`, `best`, or `both`)
+4. System contacts the configured online data source and retrieves the latest market-driven rates (`annual_rate`, `insurance_rate`) for the selected country and quality.
+5. System displays the fetched values alongside the current session values and asks for confirmation before applying.
+6. On confirmation, values are applied exactly as in manual entry (step 6 above).
+7. On rejection, no change is made and the prompt is re-shown.
+8. If the online fetch fails (network error, source unavailable, data not found), the system displays a clear error and offers to fall back to manual entry.
+
+> **Note**: Online fetch only retrieves market-driven fields (`annual_rate`, `insurance_rate`). Regulatory fields are not fetched — they must be updated manually.
+
+---
 
 **Updatable profile fields:**
 
-| Field | Quality-sensitive | Validation |
-|---|---|---|
-| `annual_rate` | Yes (`average` / `best`) | > 0 |
-| `insurance_rate` | Yes (`average` / `best`) | >= 0 |
-| `purchase_tax_rate` | No (shared) | >= 0 |
-| `taxes_financeable` | No (shared) | `true` or `false` |
-| `min_down_payment_ratio` | No (shared) | 0%–100% |
-| `max_debt_ratio` | No (shared) | > 0 |
-| `max_loan_duration_months` | No (shared) | 12–600 |
+| Field | Quality-sensitive | Manual | Online fetch | Validation |
+|---|---|---|---|---|
+| `annual_rate` | Yes (`average` / `best`) | Yes | Yes | > 0 |
+| `insurance_rate` | Yes (`average` / `best`) | Yes | Yes | >= 0 |
+| `purchase_tax_rate` | No (shared) | Yes | No | >= 0 |
+| `taxes_financeable` | No (shared) | Yes | No | `true` or `false` |
+| `min_down_payment_ratio` | No (shared) | Yes | No | 0%–100% |
+| `max_debt_ratio` | No (shared) | Yes | No | > 0 |
+| `max_loan_duration_months` | No (shared) | Yes | No | 12–600 |
 
-> **Constraint**: `best` rates must always be lower than or equal to the corresponding `average` rates. The system rejects an update that would violate this invariant and displays an explicit error.
+> **Invariant**: `best` rates must always be ≤ the corresponding `average` rates. The system rejects any update (manual or fetched) that would violate this and displays an explicit error.
 
 ### 5.5 State Management
 
@@ -390,7 +410,7 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 ## 8. Out of Scope (v1)
 
 - Variable / adjustable interest rates
-- Real-time bank rate feeds
+- Automatic background polling of rates (online fetch is user-triggered only)
 - Multi-borrower (co-borrower) scenarios
 - User authentication and accounts
 - Persistent storage / database
@@ -412,3 +432,6 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 | 6 | How should country profile values be updated over time (static file, admin endpoint, periodic release)? | @alahaouas | **Closed** — static file, updated manually |
 | 7 | Should the system warn when user-supplied rates differ significantly from the country profile defaults? | @alahaouas | **Closed** — no warnings |
 | 8 | Should sub-national variations be supported (e.g. Belgian region tax rates, US state closing costs, German Grunderwerbsteuer by Bundesland)? | @alahaouas | **Closed** — not needed, national level only |
+| 9 | What online data source(s) should be used for the online profile fetch? (central bank APIs, financial data aggregators, specific websites) | @alahaouas | Open |
+| 10 | Should fetched rates require explicit user confirmation before being applied, or be applied automatically? | @alahaouas | Open |
+| 11 | Should the online fetch target `average` rates, `best` rates, or both — and how does the source distinguish between them? | @alahaouas | Open |
