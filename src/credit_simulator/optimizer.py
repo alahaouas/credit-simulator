@@ -35,7 +35,6 @@ class OptimizedResult:
     loan_principal: Decimal
     loan_duration_months: int
     plan: LoanPlan
-    debt_ratio: Decimal
     ltv_ratio: Decimal
     # Echoed metadata
     country: str
@@ -85,10 +84,7 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
             f"Valid values: {', '.join(sorted(VALID_PREFERENCES))}"
         )
 
-    income_cap = (params.monthly_net_income * params.max_debt_ratio).quantize(
-        Decimal("0.01"), rounding="ROUND_HALF_UP"
-    )
-    effective_cap = min(income_cap, params.max_monthly_payment)
+    effective_cap = params.max_monthly_payment
 
     best_plan: Optional[LoanPlan] = None
     best_down_payment = ZERO
@@ -130,11 +126,6 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
             # Constraint checks
             if plan.monthly_installment > effective_cap:
                 continue
-            debt_ratio = (plan.monthly_installment / params.monthly_net_income).quantize(
-                Decimal("0.0001"), rounding="ROUND_HALF_UP"
-            )
-            if debt_ratio > params.max_debt_ratio:
-                continue
 
             score = _score(preference, plan, down_payment, duration)
             if best_score is None or score < best_score:
@@ -150,9 +141,6 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         )
 
     principal = params.total_acquisition_cost - best_down_payment
-    debt_ratio = (best_plan.monthly_installment / params.monthly_net_income).quantize(
-        Decimal("0.0001"), rounding="ROUND_HALF_UP"
-    )
     ltv_ratio = (principal / params.property_price).quantize(
         Decimal("0.0001"), rounding="ROUND_HALF_UP"
     )
@@ -162,7 +150,6 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         loan_principal=principal,
         loan_duration_months=best_duration,
         plan=best_plan,
-        debt_ratio=debt_ratio,
         ltv_ratio=ltv_ratio,
         country=params.country,
         profile_quality=params.profile_quality,
