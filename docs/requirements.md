@@ -298,6 +298,6 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 | 3 | What is the target language/runtime? | @alahaouas | Open |
 | 4 | Should bank arrangement fees (frais de dossier) be factored into the APR calculation? | @alahaouas | Open |
 | 5 | Should the optimization step for down payment be configurable, or fixed at 1,000 in the local currency? | @alahaouas | Open |
-| 6 | How should country profile values be updated over time (static file, admin endpoint, periodic release)? | @alahaouas | Open |
-| 7 | Should the system warn when user-supplied rates differ significantly from the country profile defaults? | @alahaouas | Open |
-| 8 | Should sub-national variations be supported (e.g. Belgian region tax rates, US state closing costs, German Grunderwerbsteuer by Bundesland)? | @alahaouas | Open |
+| 6 | How should country profile values be updated over time (static file, admin endpoint, periodic release)? | @alahaouas | **Closed** — static file, updated manually |
+| 7 | Should the system warn when user-supplied rates differ significantly from the country profile defaults? | @alahaouas | **Closed** — no warnings |
+| 8 | Should sub-national variations be supported (e.g. Belgian region tax rates, US state closing costs, German Grunderwerbsteuer by Bundesland)? | @alahaouas | **Closed** — not needed, national level only |
