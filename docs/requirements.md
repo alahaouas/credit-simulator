@@ -21,6 +21,7 @@ The simulator must determine the **optimal combination** of:
 |---|---|---|---|
 | `property_price` | Market price of the property | Yes | > 0 |
 | `country` | ISO 3166-1 alpha-2 code of the country where the property is located | No | e.g. `"FR"`, `"ES"`, `"DE"`; defaults to `"BE"` |
+| `profile_quality` | Which rate variant of the country profile to use | No | `average` (default) or `best` |
 | `purchase_taxes` | Total purchase taxes and fees (notary, registration, agency) | No | >= 0; auto-estimated from country profile if omitted |
 | `total_acquisition_cost` | Derived: `property_price + purchase_taxes` | — | Computed, never entered directly |
 
@@ -48,35 +49,57 @@ All fields in this section are **optional**. When a field is not provided, the s
 
 ### 2.4 Country Profiles
 
-The system embeds a static reference table mapping each supported country code to its typical loan market parameters. These values are used as defaults when the corresponding input fields are omitted.
+The system embeds a static reference table for each supported country. Each country has two **profile qualities**:
+
+| Quality | Description |
+|---|---|
+| `average` _(default)_ | Typical market rates — represents what most borrowers obtain |
+| `best` | Best competitive rates — represents the lowest rates available from top-tier lenders or brokers |
+
+Profile quality only affects **market-driven fields** (`annual_interest_rate`, `insurance_rate`). Regulatory fields (purchase taxes, minimum down payment, maximum debt ratio, maximum duration) are identical across both qualities and cannot be set to "best" since they are fixed by law or banking regulation.
 
 **Default country**: `BE` (Belgium) — used when `country` is not provided.
 
-| Country | Code | Currency | Typical Interest Rate | Insurance Rate | Purchase Tax Rate | Min Down Payment | Max Debt Ratio | Max Duration |
-|---|---|---|---|---|---|---|---|---|
-| France | `FR` | EUR | 3.50% | 0.30% | 7.5% of price (old) / 2.5% (new) | covers taxes (not financeable) | 35% | 25 years |
-| Spain | `ES` | EUR | 3.50% | 0.20% | 8.0% of price (ITP resale) | 20% of price | 35% | 30 years |
-| Germany | `DE` | EUR | 3.80% | 0.15% | 5.0% of price (avg Grunderwerbsteuer + notary) | 20% of price | 35% | 30 years |
-| Portugal | `PT` | EUR | 4.00% | 0.25% | 7.0% of price (IMT + stamp + notary) | 10% of price (residents) | 35% | 30 years |
-| Belgium _(default)_ | `BE` | EUR | 3.20% | 0.25% | 12.5% of price (registration, Wallonia/Brussels) | 20% of price | 35% | 25 years |
-| Italy | `IT` | EUR | 4.00% | 0.20% | 4.0% of price (avg cadastral + notary) | 20% of price | 35% | 30 years |
-| United Kingdom | `GB` | GBP | 5.00% | 0.25% | 3.0% of price (avg SDLT) | 10% of price | 35% | 35 years |
-| United States | `US` | USD | 7.00% | 0.80% | 2.5% of price (avg closing costs) | 20% of price (conventional) | 43% | 30 years |
+**Market-driven rates (vary by profile quality):**
+
+| Country | Code | Currency | Avg Interest Rate | Best Interest Rate | Avg Insurance Rate | Best Insurance Rate |
+|---|---|---|---|---|---|---|
+| France | `FR` | EUR | 3.50% | 2.90% | 0.30% | 0.10% |
+| Spain | `ES` | EUR | 3.50% | 2.80% | 0.20% | 0.09% |
+| Germany | `DE` | EUR | 3.80% | 3.10% | 0.15% | 0.08% |
+| Portugal | `PT` | EUR | 4.00% | 3.20% | 0.25% | 0.10% |
+| Belgium _(default)_ | `BE` | EUR | 3.20% | 2.70% | 0.25% | 0.10% |
+| Italy | `IT` | EUR | 4.00% | 3.20% | 0.20% | 0.08% |
+| United Kingdom | `GB` | GBP | 5.00% | 4.20% | 0.25% | 0.12% |
+| United States | `US` | USD | 7.00% | 6.20% | 0.80% | 0.40% |
+
+**Regulatory parameters (same for both profile qualities):**
+
+| Country | Code | Purchase Tax Rate | Min Down Payment | Max Debt Ratio | Max Duration |
+|---|---|---|---|---|---|
+| France | `FR` | 7.5% of price (old) / 2.5% (new) | covers taxes (not financeable) | 35% | 25 years |
+| Spain | `ES` | 8.0% of price (ITP resale) | 20% of price | 35% | 30 years |
+| Germany | `DE` | 5.0% of price (avg Grunderwerbsteuer + notary) | 20% of price | 35% | 30 years |
+| Portugal | `PT` | 7.0% of price (IMT + stamp + notary) | 10% of price (residents) | 35% | 30 years |
+| Belgium _(default)_ | `BE` | 12.5% of price (registration, Wallonia/Brussels) | 20% of price | 35% | 25 years |
+| Italy | `IT` | 4.0% of price (avg cadastral + notary) | 20% of price | 35% | 30 years |
+| United Kingdom | `GB` | 3.0% of price (avg SDLT) | 10% of price | 35% | 35 years |
+| United States | `US` | 2.5% of price (avg closing costs) | 20% of price (conventional) | 43% | 30 years |
 
 > **Disclaimer**: These are reference values representing typical market conditions. They are not real-time rates and do not constitute financial advice. Users are encouraged to provide actual bank-quoted rates for precise results.
 
 **Profile fields per country:**
 
-| Field | Description |
-|---|---|
-| `currency` | ISO 4217 currency code for monetary outputs |
-| `typical_annual_rate` | Default `annual_interest_rate` when not provided |
-| `typical_insurance_rate` | Default `insurance_rate` when not provided |
-| `purchase_tax_rate` | Used to estimate `purchase_taxes` when not provided: `property_price × rate` |
-| `taxes_financeable` | Boolean — whether purchase taxes can be included in the loan principal |
-| `min_down_payment_ratio` | Default minimum down payment ratio when not provided |
-| `max_debt_ratio` | Default maximum debt-to-income ratio when not provided |
-| `max_loan_duration_months` | Default maximum loan duration when not provided |
+| Field | Quality-sensitive | Description |
+|---|---|---|
+| `currency` | No | ISO 4217 currency code for monetary outputs |
+| `annual_rate` | **Yes** | Default `annual_interest_rate`; varies between `average` and `best` |
+| `insurance_rate` | **Yes** | Default `insurance_rate`; varies between `average` and `best` |
+| `purchase_tax_rate` | No | Used to estimate `purchase_taxes`: `property_price × rate` |
+| `taxes_financeable` | No | Boolean — whether purchase taxes can be included in the loan principal |
+| `min_down_payment_ratio` | No | Default minimum down payment ratio |
+| `max_debt_ratio` | No | Default maximum debt-to-income ratio |
+| `max_loan_duration_months` | No | Default maximum loan duration |
 
 ### 2.5 Optimization Preferences
 
@@ -99,6 +122,7 @@ The buyer may optionally specify which objective to prioritize. Defaults to `bal
 | Field | Description |
 |---|---|
 | `country` | Country code used |
+| `profile_quality` | Profile quality used (`average` or `best`) |
 | `currency` | Currency of all monetary outputs (from country profile) |
 | `parameters_source` | For each loan parameter: `"user"` if explicitly provided, `"country_profile"` if auto-resolved |
 | `down_payment` | Recommended initial amount paid by the buyer |
@@ -141,8 +165,8 @@ When multiple optimization preferences are evaluated, the system shall return on
 
 Before any computation, the system resolves all loan parameters in this order:
 
-1. If `country` is not provided, default it to `BE`. Load the country profile for the resolved code. If the code is not supported, return an explicit error.
-2. For each optional loan parameter (`annual_interest_rate`, `insurance_rate`, `min_down_payment_ratio`, `max_loan_duration_months`, `max_debt_ratio`): use the user-supplied value if provided, otherwise use the country profile default.
+1. If `country` is not provided, default it to `BE`. If `profile_quality` is not provided, default it to `average`. Load the country profile for the resolved code and quality. If the country code is not supported, return an explicit error.
+2. For each optional loan parameter (`annual_interest_rate`, `insurance_rate`, `min_down_payment_ratio`, `max_loan_duration_months`, `max_debt_ratio`): use the user-supplied value if provided, otherwise use the value from the selected profile variant (`average` or `best`).
 3. If `purchase_taxes` is not provided, estimate it as `property_price × country_profile.purchase_tax_rate`.
 4. Compute `total_acquisition_cost = property_price + purchase_taxes`.
 5. Determine the effective minimum down payment:
@@ -208,9 +232,10 @@ All other parameters are optional at startup and resolved automatically (see sec
 ### 5.2 Behaviour
 
 1. After each result is shown, the system prints the **current parameter values** (including which were user-set vs. auto-resolved from the country profile) and prompts the user to choose an action:
-   - Update one or more parameters
+   - Update one or more simulation parameters
    - Change the optimization preference
    - Reset a parameter to its country-profile default
+   - Update a country profile field (see §5.5)
    - Exit the session
 
 2. The user selects a parameter by name, enters the new value, and the system validates it immediately using the same rules as the initial input (§2).
@@ -227,17 +252,49 @@ All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except d
 
 | Category | Updatable fields |
 |---|---|
-| Property | `property_price`, `country`, `purchase_taxes` |
+| Property | `property_price`, `country`, `profile_quality`, `purchase_taxes` |
 | Loan parameters | `annual_interest_rate`, `insurance_rate`, `min_down_payment_ratio`, `max_loan_duration_months` |
 | Buyer constraints | `monthly_net_income`, `available_savings`, `max_debt_ratio`, `max_monthly_payment` |
 | Preference | `optimization_preference` |
+| Country profile | Any market-driven or regulatory field for any supported country (see §5.5) |
 
-### 5.4 State Management
+### 5.4 Country Profile Updates
 
-- The system maintains a **mutable parameter state** for the duration of the session.
+The user may update any field of any country profile during the interactive loop. This allows correcting reference values to reflect current market conditions without restarting the session.
+
+**Scope**: profile updates are session-scoped only — they are not persisted to disk. The static embedded profiles are restored at the next session start.
+
+**Prompt flow:**
+
+1. User selects "Update a country profile field".
+2. System asks: which country? (must be a supported code)
+3. System asks: which quality to update? (`average` or `best`)
+4. System asks: which field? (any field from the profile field table in §2.4)
+5. System asks: new value? (validated against the same constraints as the field)
+6. On valid input, the updated profile is stored in session state. Any simulation parameter currently auto-resolved from that country/quality pair is immediately re-resolved using the new value, unless the user has explicitly overridden it.
+7. The system re-runs the simulation with the updated profile and displays the new result.
+
+**Updatable profile fields:**
+
+| Field | Quality-sensitive | Validation |
+|---|---|---|
+| `annual_rate` | Yes (`average` / `best`) | > 0 |
+| `insurance_rate` | Yes (`average` / `best`) | >= 0 |
+| `purchase_tax_rate` | No (shared) | >= 0 |
+| `taxes_financeable` | No (shared) | `true` or `false` |
+| `min_down_payment_ratio` | No (shared) | 0%–100% |
+| `max_debt_ratio` | No (shared) | > 0 |
+| `max_loan_duration_months` | No (shared) | 12–600 |
+
+> **Constraint**: `best` rates must always be lower than or equal to the corresponding `average` rates. The system rejects an update that would violate this invariant and displays an explicit error.
+
+### 5.5 State Management
+
+- The system maintains a **mutable parameter state** and a **mutable profile store** for the duration of the session.
 - Each update is applied on top of the current state (not from scratch): unchanged parameters keep their previous values.
 - Resetting a parameter removes the user-supplied override and restores the country-profile default.
-- If `country` is changed, all parameters previously auto-resolved from the old profile are re-resolved from the new profile, except those explicitly set by the user.
+- If `country` or `profile_quality` is changed, all parameters previously auto-resolved from the old profile are re-resolved from the new profile/quality, except those explicitly set by the user.
+- If a country profile field is updated (§5.4), all parameters currently resolved from that country/quality pair are immediately re-resolved, except those explicitly set by the user.
 
 ---
 
@@ -284,9 +341,10 @@ All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except d
 | Parameter | Source | Value |
 |---|---|---|
 | Country | system default | `BE` |
+| Profile quality | system default | `average` |
 | Purchase taxes | estimated (12.5% of price) | ~43,750 EUR |
-| Annual interest rate | BE profile | 3.20% |
-| Insurance rate | BE profile | 0.25% /year |
+| Annual interest rate | BE average profile | 3.20% |
+| Insurance rate | BE average profile | 0.25% /year |
 | Max debt ratio | BE profile | 35% |
 | Max loan duration | BE profile | 300 months (25 years) |
 | Max monthly payment | system default | 2,200 EUR |
@@ -314,8 +372,9 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 
 | Parameter | Source | Value |
 |---|---|---|
-| Annual interest rate | FR profile | 3.50% |
-| Insurance rate | FR profile | 0.30% /year |
+| Profile quality | system default | `average` |
+| Annual interest rate | FR average profile | 3.50% |
+| Insurance rate | FR average profile | 0.30% /year |
 | Max debt ratio | FR profile | 35% |
 | Max loan duration | FR profile | 300 months (25 years) |
 | Taxes financeable | FR profile | No |
