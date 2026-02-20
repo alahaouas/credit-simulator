@@ -189,34 +189,74 @@ Where:
 
 ---
 
-## 5. Non-Functional Requirements
+## 5. Interactive Parameter Update Loop
 
-### 5.1 Precision
+After displaying simulation results, the system shall enter an interactive prompt that lets the user modify any input parameter and re-run the simulation without restarting the session.
+
+### 5.1 Behaviour
+
+1. After each result is shown, the system prints the **current parameter values** (including which were user-set vs. auto-resolved from the country profile) and prompts the user to choose an action:
+   - Update one or more parameters
+   - Change the optimization preference
+   - Reset a parameter to its country-profile default
+   - Exit the session
+
+2. The user selects a parameter by name, enters the new value, and the system validates it immediately using the same rules as the initial input (see section 2).
+
+3. On valid input, the system re-runs the full parameter resolution (section 4.1), feasibility check (section 4.2), and optimization (section 4.3), then displays the new result.
+
+4. On invalid input, the system displays an inline error and re-shows the prompt — no full restart required.
+
+5. The loop repeats until the user explicitly exits.
+
+### 5.2 Updatable Parameters
+
+All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except derived fields (`total_acquisition_cost`). The optimization preference (section 2.5) is also updatable.
+
+| Category | Updatable fields |
+|---|---|
+| Property | `property_price`, `country`, `purchase_taxes` |
+| Loan parameters | `annual_interest_rate`, `insurance_rate`, `min_down_payment_ratio`, `max_loan_duration_months` |
+| Buyer constraints | `monthly_net_income`, `available_savings`, `max_debt_ratio`, `max_monthly_payment` |
+| Preference | `optimization_preference` |
+
+### 5.3 State Management
+
+- The system maintains a **mutable parameter state** for the duration of the session.
+- Each update is applied on top of the current state (not from scratch): unchanged parameters keep their previous values.
+- Resetting a parameter removes the user-supplied override and restores the country-profile default.
+- If `country` is changed, all parameters previously auto-resolved from the old profile are re-resolved from the new profile, except those explicitly set by the user.
+
+---
+
+## 6. Non-Functional Requirements
+
+### 6.1 Precision
 - All monetary values use fixed-point / decimal arithmetic.
 - Rounding: half-up, to 2 decimal places for display, full precision for intermediate steps.
 
-### 5.2 Validation
+### 6.2 Validation
 - All inputs validated at the system boundary with explicit, descriptive error messages.
 - Rejected values: non-positive prices, negative rates, durations outside 1–30 years, savings below taxes amount.
 
-### 5.3 Performance
+### 6.3 Performance
 - Full optimization search over all `(down_payment, duration)` pairs must complete in under 1 second for a standard 30-year / 1,000 EUR step search space.
 - Amortization schedule generation for a 30-year loan must complete in under 200 ms.
 
-### 5.4 Testability
+### 6.4 Testability
 - Every calculation function (EMI, APR, amortization row, debt ratio) must have unit tests with known expected values.
 - Optimizer must have integration tests covering each preference mode.
 - Edge cases: zero insurance, minimum duration (12 months), buyer savings exactly equal to taxes, max debt ratio exactly met.
 
-### 5.5 Security
+### 6.5 Security
 - No external inputs used in shell or database operations without sanitization.
 - No secrets or credentials committed to the repository.
 
 ---
 
-## 6. Concrete Examples
+## 7. Concrete Examples
 
-### 6.1 Belgium (default) — minimal input, all parameters auto-resolved
+### 7.1 Belgium (default) — minimal input, all parameters auto-resolved
 
 **User provides only:**
 
@@ -247,7 +287,7 @@ Where:
 
 The simulator returns the `(down_payment, duration)` pair that minimizes total interest + insurance cost while respecting all constraints.
 
-### 6.2 France — purchase taxes provided explicitly (e.g. notary quote known)
+### 7.2 France — purchase taxes provided explicitly (e.g. notary quote known)
 
 | Parameter | Value |
 |---|---|
@@ -276,7 +316,7 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 
 ---
 
-## 7. Out of Scope (v1)
+## 8. Out of Scope (v1)
 
 - Variable / adjustable interest rates
 - Real-time bank rate feeds
@@ -289,7 +329,7 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 
 ---
 
-## 8. Open Questions
+## 9. Open Questions
 
 | # | Question | Owner | Status |
 |---|---|---|---|
