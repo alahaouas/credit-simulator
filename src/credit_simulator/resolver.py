@@ -13,10 +13,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional
 
-from .profiles import DEFAULT_COUNTRY, DEFAULT_QUALITY, ProfileQuality, SessionProfileStore, get_profile
-
-ZERO = Decimal("0")
-DEFAULT_MAX_MONTHLY_PAYMENT = Decimal("2200")
+from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_MAX_MONTHLY_PAYMENT, ProfileQuality, ZERO
+from .profiles import SessionProfileStore, get_profile
 
 
 @dataclass

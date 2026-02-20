@@ -9,9 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Literal
 
-ProfileQuality = Literal["average", "best"]
+from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, ProfileQuality
 
 
 @dataclass(frozen=True)
@@ -136,8 +135,6 @@ _PROFILES: dict[str, CountryProfile] = {
     ),
 }
 
-DEFAULT_COUNTRY = "BE"
-DEFAULT_QUALITY: ProfileQuality = "average"
 SUPPORTED_COUNTRIES = frozenset(_PROFILES.keys())
 
 

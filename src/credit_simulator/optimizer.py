@@ -14,19 +14,8 @@ from decimal import Decimal
 from typing import Optional
 
 from .calculator import LoanPlan, compute_loan_plan
+from .config import STEP_DOWN_PAYMENT, STEP_DURATION, VALID_PREFERENCES, ZERO
 from .resolver import ResolvedParams
-
-ZERO = Decimal("0")
-STEP_DOWN_PAYMENT = Decimal("1000")
-STEP_DURATION = 12
-
-VALID_PREFERENCES = frozenset({
-    "minimize_total_cost",
-    "minimize_monthly_payment",
-    "minimize_duration",
-    "minimize_down_payment",
-    "balanced",
-})
 
 
 @dataclass(frozen=True)
