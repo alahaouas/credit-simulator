@@ -80,7 +80,7 @@ The system embeds a static reference table mapping each supported country code t
 
 ### 2.5 Optimization Preferences
 
-The buyer must express which objective to prioritize:
+The buyer may optionally specify which objective to prioritize. Defaults to `balanced` if not provided.
 
 | Preference | Description |
 |---|---|
@@ -141,7 +141,7 @@ When multiple optimization preferences are evaluated, the system shall return on
 
 Before any computation, the system resolves all loan parameters in this order:
 
-1. Load the country profile for the given `country` code. If the country is not supported, return an explicit error.
+1. If `country` is not provided, default it to `BE`. Load the country profile for the resolved code. If the code is not supported, return an explicit error.
 2. For each optional loan parameter (`annual_interest_rate`, `insurance_rate`, `min_down_payment_ratio`, `max_loan_duration_months`, `max_debt_ratio`): use the user-supplied value if provided, otherwise use the country profile default.
 3. If `purchase_taxes` is not provided, estimate it as `property_price × country_profile.purchase_tax_rate`.
 4. Compute `total_acquisition_cost = property_price + purchase_taxes`.
@@ -193,7 +193,19 @@ Where:
 
 After displaying simulation results, the system shall enter an interactive prompt that lets the user modify any input parameter and re-run the simulation without restarting the session.
 
-### 5.1 Behaviour
+### 5.1 Session Startup
+
+At the start of a session, the system prompts for the three mandatory parameters that have no default:
+
+| Parameter | Prompt |
+|---|---|
+| `property_price` | "Property price?" |
+| `monthly_net_income` | "Monthly net income?" |
+| `available_savings` | "Available savings?" |
+
+All other parameters are optional at startup and resolved automatically (see section 2). Once the three mandatory values are collected, the system runs an initial simulation and displays the result before entering the update loop.
+
+### 5.2 Behaviour
 
 1. After each result is shown, the system prints the **current parameter values** (including which were user-set vs. auto-resolved from the country profile) and prompts the user to choose an action:
    - Update one or more parameters
@@ -201,15 +213,15 @@ After displaying simulation results, the system shall enter an interactive promp
    - Reset a parameter to its country-profile default
    - Exit the session
 
-2. The user selects a parameter by name, enters the new value, and the system validates it immediately using the same rules as the initial input (see section 2).
+2. The user selects a parameter by name, enters the new value, and the system validates it immediately using the same rules as the initial input (§2).
 
-3. On valid input, the system re-runs the full parameter resolution (section 4.1), feasibility check (section 4.2), and optimization (section 4.3), then displays the new result.
+3. On valid input, the system re-runs full parameter resolution (§4.1), feasibility check (§4.2), and optimization (§4.3), then displays the new result.
 
 4. On invalid input, the system displays an inline error and re-shows the prompt — no full restart required.
 
 5. The loop repeats until the user explicitly exits.
 
-### 5.2 Updatable Parameters
+### 5.3 Updatable Parameters
 
 All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except derived fields (`total_acquisition_cost`). The optimization preference (section 2.5) is also updatable.
 
@@ -220,7 +232,7 @@ All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except d
 | Buyer constraints | `monthly_net_income`, `available_savings`, `max_debt_ratio`, `max_monthly_payment` |
 | Preference | `optimization_preference` |
 
-### 5.3 State Management
+### 5.4 State Management
 
 - The system maintains a **mutable parameter state** for the duration of the session.
 - Each update is applied on top of the current state (not from scratch): unchanged parameters keep their previous values.
@@ -237,11 +249,11 @@ All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except d
 
 ### 6.2 Validation
 - All inputs validated at the system boundary with explicit, descriptive error messages.
-- Rejected values: non-positive prices, negative rates, durations outside 1–30 years, savings below taxes amount.
+- Rejected values: non-positive prices, negative rates, durations below 12 months or above the country profile maximum, savings below the minimum required down payment.
 
 ### 6.3 Performance
-- Full optimization search over all `(down_payment, duration)` pairs must complete in under 1 second for a standard 30-year / 1,000 EUR step search space.
-- Amortization schedule generation for a 30-year loan must complete in under 200 ms.
+- Full optimization search over all `(down_payment, duration)` pairs must complete in under 1 second for a standard 300-month / 1,000 EUR step search space.
+- Amortization schedule generation for a 300-month loan must complete in under 200 ms.
 
 ### 6.4 Testability
 - Every calculation function (EMI, APR, amortization row, debt ratio) must have unit tests with known expected values.
@@ -283,7 +295,7 @@ All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except d
 - Total acquisition cost = 350,000 + 43,750 = 393,750 EUR
 - Minimum down payment = 393,750 × 20% = 78,750 EUR
 - Binding monthly cap = min(6,000 × 35%, 2,200) = min(2,100, 2,200) = 2,100 EUR
-- Loan range: 313,750 EUR (min) to 306,250 EUR (max if all savings used)
+- Loan range: 313,750 EUR (min, if all savings used as down payment) to 315,000 EUR (max, at minimum down payment)
 
 The simulator returns the `(down_payment, duration)` pair that minimizes total interest + insurance cost while respecting all constraints.
 
@@ -296,7 +308,6 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 | Purchase taxes | 68,000 EUR _(user-supplied, overrides estimate)_ |
 | Available savings | 100,000 EUR |
 | Monthly net income | 5,500 EUR |
-| Max monthly payment | 2,200 EUR _(user-supplied)_ |
 | Optimization preference | `minimize_total_cost` |
 
 **Auto-resolved from France profile:**
@@ -308,6 +319,7 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 | Max debt ratio | FR profile | 35% |
 | Max loan duration | FR profile | 300 months (25 years) |
 | Taxes financeable | FR profile | No |
+| Max monthly payment | system default | 2,200 EUR |
 
 - Total acquisition cost = 567,000 EUR
 - Minimum down payment = 68,000 EUR (taxes not financeable)
