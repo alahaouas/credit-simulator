@@ -17,11 +17,11 @@ This document should be updated as the project evolves.
 | Item | Status |
 |---|---|
 | Source code | Not yet created |
-| Framework / language | Not yet chosen |
+| Framework / language | **Python 3.11+** (chosen) |
 | Build system | Not yet configured |
 | Tests | Not yet written |
 | CI/CD | Not yet configured |
-| Documentation | Minimal (README only) |
+| Documentation | Requirements doc complete (`docs/requirements.md`) |
 
 ---
 
@@ -62,46 +62,52 @@ Never commit:
 
 ---
 
-## Development Setup (To Be Established)
+## Development Setup
 
-When the technology stack is chosen, document here:
-
-- **Language**: _TBD_
-- **Runtime version**: _TBD_
-- **Package manager**: _TBD_
-- **Install dependencies**: _TBD_
-- **Run locally**: _TBD_
-- **Run tests**: _TBD_
-- **Build for production**: _TBD_
+- **Language**: Python 3.11+
+- **Package manager**: `pip` with `pyproject.toml` (PEP 517/518)
+- **Key dependencies**:
+  - `click` — CLI framework
+  - `rich` — terminal formatting and tables
+  - *(no ORM or DB — no persistent storage in v1)*
+- **Install dependencies**: `pip install -e ".[dev]"`
+- **Run locally**: `python -m credit_simulator` (or `credit-simulator` once installed)
+- **Run tests**: `pytest`
+- **Arithmetic**: Python built-in `decimal.Decimal` — **never `float` for monetary values**
 
 ### Environment Variables
 
-Create a `.env` file based on `.env.example` (to be added). Never commit `.env`.
+No `.env` required for v1. The FRED API key (needed for US rate fetch) will be read from the environment variable `FRED_API_KEY` when that feature is implemented. Never commit API keys.
 
 ---
 
 ## Project Structure (Planned)
 
-Once development begins, the repository should follow this layout:
-
 ```
 credit-simulator/
-├── CLAUDE.md           # This file
-├── README.md           # Human-facing project overview
-├── .env.example        # Template for environment variables
-├── .gitignore          # Files to exclude from version control
-├── src/                # Application source code
-│   ├── core/           # Domain logic (credit models, calculations)
-│   ├── api/            # HTTP API layer (if applicable)
-│   └── utils/          # Shared utilities
-├── tests/              # Automated tests
-│   ├── unit/
-│   └── integration/
-├── docs/               # Extended documentation
-└── scripts/            # Developer tooling scripts
+├── CLAUDE.md                   # This file
+├── README.md                   # Human-facing project overview
+├── pyproject.toml              # Package metadata and dependencies
+├── .gitignore
+├── docs/
+│   └── requirements.md         # Full product specification
+├── src/
+│   └── credit_simulator/
+│       ├── __main__.py         # Entry point: `python -m credit_simulator`
+│       ├── cli.py              # click CLI definition and interactive loop
+│       ├── profiles.py         # Static country profiles data
+│       ├── resolver.py         # Parameter resolution (§4.1)
+│       ├── calculator.py       # EMI, amortization, APR (§4.4)
+│       ├── optimizer.py        # Grid-search optimizer (§4.3)
+│       └── fetcher.py          # Online rate fetch — ECB / BoE / FRED (§5.4)
+└── tests/
+    ├── unit/
+    │   ├── test_calculator.py
+    │   ├── test_optimizer.py
+    │   └── test_resolver.py
+    └── integration/
+        └── test_cli.py
 ```
-
-Adjust this structure to match the chosen framework's conventions.
 
 ---
 
@@ -122,16 +128,15 @@ When implementing features, be aware of these credit-domain terms:
 
 ---
 
-## Coding Conventions (To Be Finalized)
-
-Until a specific stack is chosen, follow these general principles:
+## Coding Conventions
 
 - **Clarity over cleverness**: Financial logic must be easy to audit.
-- **Precision**: Use decimal/arbitrary-precision arithmetic for monetary values — never floating point for currency.
-- **Immutability**: Prefer immutable data structures for financial records.
-- **Validation at boundaries**: Validate all inputs at the edges of the system (API handlers, CLI entry points).
-- **No silent failures**: Errors in financial calculations must be explicit and logged.
+- **Precision**: Use `decimal.Decimal` for all monetary values and rates — `float` is forbidden for monetary computations.
+- **Immutability**: Use `dataclasses(frozen=True)` or `NamedTuple` for financial records.
+- **Validation at boundaries**: Validate all inputs in `cli.py` before passing to core logic.
+- **No silent failures**: Raise explicit exceptions for invalid financial states; surface them as readable CLI errors via `rich`.
 - **Tests are mandatory**: Every calculation function must have unit tests with known expected values.
+- **Insurance**: Applied as a fixed monthly amount = `original_principal × annual_insurance_rate / 12` — does not decrease with the outstanding balance.
 
 ---
 
