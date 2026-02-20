@@ -33,6 +33,7 @@ class UserInputs:
     insurance_rate: Optional[Decimal] = None
     min_down_payment_ratio: Optional[Decimal] = None
     max_loan_duration_months: Optional[int] = None
+    fixed_loan_duration_months: Optional[int] = None  # pin optimizer to exactly this duration
     # Optional buyer constraints
     max_monthly_payment: Optional[Decimal] = None
     # Optimization preference
@@ -56,6 +57,7 @@ class ResolvedParams:
     insurance_rate: Decimal
     min_down_payment_ratio: Decimal
     max_loan_duration_months: int
+    fixed_loan_duration_months: Optional[int]  # None means free grid search
     # Buyer constraints (resolved)
     monthly_net_income: Decimal
     available_savings: Decimal
@@ -153,6 +155,7 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         insurance_rate=insurance_rate,
         min_down_payment_ratio=min_down_payment_ratio,
         max_loan_duration_months=max_loan_duration_months,
+        fixed_loan_duration_months=inputs.fixed_loan_duration_months,
         monthly_net_income=inputs.monthly_net_income,
         available_savings=inputs.available_savings,
         max_monthly_payment=max_monthly_payment,

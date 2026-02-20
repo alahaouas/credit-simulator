@@ -104,7 +104,12 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
             # Buyer pays cash — trivially feasible but unusual; skip (loan = 0)
             continue
 
-        for duration in range(STEP_DURATION, params.max_loan_duration_months + 1, STEP_DURATION):
+        duration_candidates = (
+            [params.fixed_loan_duration_months]
+            if params.fixed_loan_duration_months is not None
+            else range(STEP_DURATION, params.max_loan_duration_months + 1, STEP_DURATION)
+        )
+        for duration in duration_candidates:
             plan = compute_loan_plan(
                 principal,
                 params.annual_interest_rate,
