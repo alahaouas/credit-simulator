@@ -24,7 +24,7 @@ from rich import box
 
 from .calculator import build_amortization_schedule
 from .fetcher import FetchError, fetch_rate
-from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, VALID_PREFERENCES
+from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_LOAN_DURATION_MONTHS, VALID_PREFERENCES
 from .optimizer import OptimizedResult, optimize
 from .profiles import (
     SUPPORTED_COUNTRIES,
@@ -487,7 +487,7 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
 @click.option("--country", type=str, default=None, help=f"Country code (default: {DEFAULT_COUNTRY})")
 @click.option("--quality", type=click.Choice(["average", "best"]), default=None, help="Profile quality")
 @click.option("--preference", type=click.Choice(list(VALID_PREFERENCES)), default="balanced", show_default=True)
-@click.option("--duration", type=str, default=None, help="Fixed loan duration: months (e.g. 240) or years (e.g. 20y)")
+@click.option("--duration", type=str, default=str(DEFAULT_LOAN_DURATION_MONTHS), show_default=True, help="Fixed loan duration: months (e.g. 240) or years (e.g. 20y)")
 def main(
     property_price: Optional[str],
     income: Optional[str],

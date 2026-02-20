@@ -22,6 +22,8 @@ DEFAULT_MAX_MONTHLY_PAYMENT = Decimal("2200")
 
 # ── Optimizer search parameters ───────────────────────────────────────────────
 
+DEFAULT_LOAN_DURATION_MONTHS: int = 240  # 20 years
+
 STEP_DOWN_PAYMENT = Decimal("1000")
 STEP_DURATION: int = 12
 VALID_PREFERENCES: frozenset[str] = frozenset({
