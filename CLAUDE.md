@@ -16,10 +16,10 @@ This document should be updated as the project evolves.
 
 | Item | Status |
 |---|---|
-| Source code | Not yet created |
+| Source code | **In progress** — initial implementation on `claude/explain-codebase-mlvdnzl75enhzw3c-v8Qnv` |
 | Framework / language | **Python 3.11+** (chosen) |
-| Build system | Not yet configured |
-| Tests | Not yet written |
+| Build system | `pyproject.toml` (PEP 517/518, `hatchling`) |
+| Tests | Unit + integration tests under `tests/` |
 | CI/CD | Not yet configured |
 | Documentation | Requirements doc complete (`docs/requirements.md`) |
 
@@ -81,7 +81,7 @@ No `.env` required for v1. The FRED API key (needed for US rate fetch) will be r
 
 ---
 
-## Project Structure (Planned)
+## Project Structure
 
 ```
 credit-simulator/

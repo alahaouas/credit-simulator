@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "credit-simulator"
+version = "0.1.0"
+description = "Interactive credit / mortgage loan simulator"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[project.scripts]
+credit-simulator = "credit_simulator.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/credit_simulator"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

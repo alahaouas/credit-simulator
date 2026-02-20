@@ -1,0 +1,219 @@
+"""Parameter resolution (§4.1) and feasibility checking (§4.2).
+
+Resolution order:
+1. country defaults to BE, profile_quality defaults to 'average'.
+2. Each optional loan parameter falls back to the country profile if not user-supplied.
+3. purchase_taxes estimated from profile if not provided.
+4. total_acquisition_cost = property_price + purchase_taxes.
+5. min_down_payment computed per taxes_financeable rule.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from decimal import Decimal
+from typing import Optional
+
+from .profiles import DEFAULT_COUNTRY, DEFAULT_QUALITY, ProfileQuality, SessionProfileStore, get_profile
+
+ZERO = Decimal("0")
+DEFAULT_MAX_MONTHLY_PAYMENT = Decimal("2200")
+
+
+@dataclass
+class UserInputs:
+    """Raw user-supplied values.  None means 'not provided — use profile default'."""
+    # Mandatory
+    property_price: Decimal
+    monthly_net_income: Decimal
+    available_savings: Decimal
+    # Optional property
+    country: Optional[str] = None
+    profile_quality: Optional[ProfileQuality] = None
+    purchase_taxes: Optional[Decimal] = None
+    # Optional loan parameters
+    annual_interest_rate: Optional[Decimal] = None
+    insurance_rate: Optional[Decimal] = None
+    min_down_payment_ratio: Optional[Decimal] = None
+    max_loan_duration_months: Optional[int] = None
+    # Optional buyer constraints
+    max_debt_ratio: Optional[Decimal] = None
+    max_monthly_payment: Optional[Decimal] = None
+    # Optimization preference
+    optimization_preference: str = "balanced"
+
+
+@dataclass(frozen=True)
+class ResolvedParams:
+    """Fully resolved simulation parameters, ready for optimization."""
+    # Country / quality
+    country: str
+    profile_quality: ProfileQuality
+    currency: str
+    # Property
+    property_price: Decimal
+    purchase_taxes: Decimal
+    total_acquisition_cost: Decimal
+    taxes_financeable: bool
+    # Loan parameters (resolved)
+    annual_interest_rate: Decimal
+    insurance_rate: Decimal
+    min_down_payment_ratio: Decimal
+    max_loan_duration_months: int
+    # Buyer constraints (resolved)
+    monthly_net_income: Decimal
+    available_savings: Decimal
+    max_debt_ratio: Decimal
+    max_monthly_payment: Decimal
+    min_down_payment: Decimal
+    # Preference
+    optimization_preference: str
+    # Provenance — 'user' or 'profile' for each optional param
+    sources: dict[str, str] = field(default_factory=dict)
+
+
+class InfeasibleError(Exception):
+    """Raised when the buyer cannot afford any loan under the given constraints."""
+
+
+def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
+    """Resolve all parameters and return a fully-specified ResolvedParams."""
+    sources: dict[str, str] = {}
+
+    # --- Step 1: country & quality ---
+    country = (inputs.country or DEFAULT_COUNTRY).upper()
+    quality: ProfileQuality = inputs.profile_quality or DEFAULT_QUALITY
+    # Validate country code (will raise ValueError if unknown)
+    get_profile(country)
+
+    currency = str(store.get_field(country, "currency"))
+
+    # --- Step 2: optional loan parameters ---
+    def _resolve(user_val, profile_val, name: str):
+        if user_val is not None:
+            sources[name] = "user"
+            return user_val
+        sources[name] = "profile"
+        return profile_val
+
+    annual_interest_rate = _resolve(
+        inputs.annual_interest_rate,
+        store.get_annual_rate(country, quality),
+        "annual_interest_rate",
+    )
+    insurance_rate = _resolve(
+        inputs.insurance_rate,
+        store.get_insurance_rate(country, quality),
+        "insurance_rate",
+    )
+    min_down_payment_ratio = _resolve(
+        inputs.min_down_payment_ratio,
+        Decimal(str(store.get_field(country, "min_down_payment_ratio"))),
+        "min_down_payment_ratio",
+    )
+    max_loan_duration_months = _resolve(
+        inputs.max_loan_duration_months,
+        int(store.get_field(country, "max_loan_duration_months")),
+        "max_loan_duration_months",
+    )
+    max_debt_ratio = _resolve(
+        inputs.max_debt_ratio,
+        Decimal(str(store.get_field(country, "max_debt_ratio"))),
+        "max_debt_ratio",
+    )
+    max_monthly_payment = _resolve(
+        inputs.max_monthly_payment,
+        DEFAULT_MAX_MONTHLY_PAYMENT,
+        "max_monthly_payment",
+    )
+
+    # --- Step 3: purchase_taxes ---
+    taxes_financeable = bool(store.get_field(country, "taxes_financeable"))
+    if inputs.purchase_taxes is not None:
+        purchase_taxes = inputs.purchase_taxes
+        sources["purchase_taxes"] = "user"
+    else:
+        tax_rate = Decimal(str(store.get_field(country, "purchase_tax_rate")))
+        purchase_taxes = (inputs.property_price * tax_rate).quantize(
+            Decimal("0.01"), rounding="ROUND_HALF_UP"
+        )
+        sources["purchase_taxes"] = "profile"
+
+    # --- Step 4: total acquisition cost ---
+    total_acquisition_cost = inputs.property_price + purchase_taxes
+
+    # --- Step 5: effective minimum down payment ---
+    if not taxes_financeable:
+        min_down_payment = max(
+            purchase_taxes,
+            total_acquisition_cost * min_down_payment_ratio,
+        )
+    else:
+        min_down_payment = total_acquisition_cost * min_down_payment_ratio
+
+    return ResolvedParams(
+        country=country,
+        profile_quality=quality,
+        currency=currency,
+        property_price=inputs.property_price,
+        purchase_taxes=purchase_taxes,
+        total_acquisition_cost=total_acquisition_cost,
+        taxes_financeable=taxes_financeable,
+        annual_interest_rate=annual_interest_rate,
+        insurance_rate=insurance_rate,
+        min_down_payment_ratio=min_down_payment_ratio,
+        max_loan_duration_months=max_loan_duration_months,
+        monthly_net_income=inputs.monthly_net_income,
+        available_savings=inputs.available_savings,
+        max_debt_ratio=max_debt_ratio,
+        max_monthly_payment=max_monthly_payment,
+        min_down_payment=min_down_payment,
+        optimization_preference=inputs.optimization_preference,
+        sources=sources,
+    )
+
+
+def check_feasibility(params: ResolvedParams) -> None:
+    """Raise InfeasibleError if the buyer cannot get any loan at all.
+
+    Checks (per §4.2):
+    1. available_savings >= min_down_payment
+    2. income headroom is enough for at least the minimum possible payment
+    3. required loan principal > 0
+    """
+    if params.available_savings < params.min_down_payment:
+        raise InfeasibleError(
+            f"Insufficient savings: you need at least "
+            f"{params.min_down_payment:,.2f} {params.currency} as a down payment "
+            f"(you have {params.available_savings:,.2f} {params.currency})."
+        )
+
+    # Maximum affordable monthly payment
+    income_cap = (params.monthly_net_income * params.max_debt_ratio).quantize(
+        Decimal("0.01"), rounding="ROUND_HALF_UP"
+    )
+    effective_cap = min(income_cap, params.max_monthly_payment)
+
+    # Minimum possible monthly payment = smallest principal at longest duration.
+    # Smallest principal = total_acquisition_cost - all available savings.
+    min_principal = params.total_acquisition_cost - params.available_savings
+    if min_principal <= ZERO:
+        # Buyer can pay cash — loan is trivially feasible (loan = 0)
+        return
+
+    from .calculator import compute_emi, compute_monthly_insurance
+
+    best_emi = compute_emi(
+        min_principal, params.annual_interest_rate, params.max_loan_duration_months
+    )
+    min_insurance = compute_monthly_insurance(min_principal, params.insurance_rate)
+    min_payment = best_emi + min_insurance
+
+    if min_payment > effective_cap:
+        raise InfeasibleError(
+            f"Monthly payment for the minimum loan "
+            f"({min_principal:,.2f} {params.currency} over {params.max_loan_duration_months} months) "
+            f"would be {min_payment:,.2f} {params.currency}, "
+            f"exceeding your maximum affordable payment of "
+            f"{effective_cap:,.2f} {params.currency} "
+            f"(income cap {income_cap:,.2f}, hard cap {params.max_monthly_payment:,.2f})."
+        )
