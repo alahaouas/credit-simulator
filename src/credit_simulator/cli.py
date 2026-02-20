@@ -136,6 +136,8 @@ def display_params(inputs: UserInputs, params: ResolvedParams) -> None:
     row("insurance_rate", _fmt_pct(params.insurance_rate), params.sources.get("insurance_rate", ""))
     row("min_down_payment_ratio", _fmt_pct(params.min_down_payment_ratio), params.sources.get("min_down_payment_ratio", ""))
     row("max_loan_duration_months", str(params.max_loan_duration_months), params.sources.get("max_loan_duration_months", ""))
+    if params.fixed_loan_duration_months is not None:
+        row("fixed_loan_duration_months", _fmt_months(params.fixed_loan_duration_months), "user")
     row("monthly_net_income", _fmt_money(params.monthly_net_income, cur))
     row("available_savings", _fmt_money(params.available_savings, cur))
     row("max_monthly_payment", _fmt_money(params.max_monthly_payment, cur), params.sources.get("max_monthly_payment", ""))
@@ -334,7 +336,8 @@ def _update_profile_online(store: SessionProfileStore, inputs: UserInputs) -> No
 _UPDATABLE_FIELDS = {
     "property_price", "country", "profile_quality", "purchase_taxes",
     "annual_interest_rate", "insurance_rate", "min_down_payment_ratio",
-    "max_loan_duration_months", "monthly_net_income", "available_savings",
+    "max_loan_duration_months", "fixed_loan_duration_months",
+    "monthly_net_income", "available_savings",
     "max_monthly_payment", "optimization_preference",
 }
 
@@ -433,6 +436,8 @@ def _apply_update(field: str, inputs: UserInputs, store: SessionProfileStore) ->
             )
         elif field == "max_loan_duration_months":
             inputs.max_loan_duration_months = _prompt_int("New max loan duration (months):", min_val=12)
+        elif field == "fixed_loan_duration_months":
+            inputs.fixed_loan_duration_months = _prompt_int("Fixed loan duration (months, e.g. 240 for 20y):", min_val=12)
         elif field == "monthly_net_income":
             inputs.monthly_net_income = _prompt_decimal("New monthly net income:", positive=True)
         elif field == "available_savings":
@@ -460,6 +465,8 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
         inputs.min_down_payment_ratio = None
     elif field == "max_loan_duration_months":
         inputs.max_loan_duration_months = None
+    elif field == "fixed_loan_duration_months":
+        inputs.fixed_loan_duration_months = None
     elif field == "max_monthly_payment":
         inputs.max_monthly_payment = None
     elif field == "optimization_preference":
@@ -480,6 +487,7 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
 @click.option("--country", type=str, default=None, help=f"Country code (default: {DEFAULT_COUNTRY})")
 @click.option("--quality", type=click.Choice(["average", "best"]), default=None, help="Profile quality")
 @click.option("--preference", type=click.Choice(list(VALID_PREFERENCES)), default="balanced", show_default=True)
+@click.option("--duration", type=str, default=None, help="Fixed loan duration: months (e.g. 240) or years (e.g. 20y)")
 def main(
     property_price: Optional[str],
     income: Optional[str],
@@ -488,6 +496,7 @@ def main(
     country: Optional[str],
     quality: Optional[str],
     preference: str,
+    duration: Optional[str],
 ) -> None:
     """Interactive credit / mortgage loan simulator."""
     console.print(Panel("[bold blue]Credit Simulator[/bold blue]", expand=False))
@@ -527,6 +536,21 @@ def main(
             except InvalidOperation:
                 err_console.print(f"  Invalid number: '{raw_pt}'. Will estimate from profile.")
 
+    fixed_duration: Optional[int] = None
+    if duration is not None:
+        raw_dur = duration.strip().lower()
+        try:
+            if raw_dur.endswith("y"):
+                fixed_duration = int(raw_dur[:-1]) * 12
+            else:
+                fixed_duration = int(raw_dur)
+        except ValueError:
+            err_console.print(f"Invalid --duration value '{duration}'. Use months (e.g. 240) or years (e.g. 20y).")
+            sys.exit(1)
+        if fixed_duration < 12:
+            err_console.print("--duration must be at least 12 months.")
+            sys.exit(1)
+
     inputs = UserInputs(
         property_price=pp,
         monthly_net_income=inc,
@@ -535,6 +559,7 @@ def main(
         country=country,
         profile_quality=quality,  # type: ignore[arg-type]
         optimization_preference=preference,
+        fixed_loan_duration_months=fixed_duration,
     )
 
     try:
