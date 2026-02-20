@@ -20,7 +20,7 @@ The simulator must determine the **optimal combination** of:
 | Field | Description | Required | Constraints |
 |---|---|---|---|
 | `property_price` | Market price of the property | Yes | > 0 |
-| `country` | ISO 3166-1 alpha-2 code of the country where the property is located | Yes | e.g. `"FR"`, `"ES"`, `"DE"` |
+| `country` | ISO 3166-1 alpha-2 code of the country where the property is located | No | e.g. `"FR"`, `"ES"`, `"DE"`; defaults to `"BE"` |
 | `purchase_taxes` | Total purchase taxes and fees (notary, registration, agency) | No | >= 0; auto-estimated from country profile if omitted |
 | `total_acquisition_cost` | Derived: `property_price + purchase_taxes` | — | Computed, never entered directly |
 
@@ -44,11 +44,13 @@ All fields in this section are **optional**. When a field is not provided, the s
 | `monthly_net_income` | Buyer's total monthly net income | Yes | > 0 |
 | `available_savings` | Total savings available for down payment | Yes | >= 0 |
 | `max_debt_ratio` | Maximum debt-to-income ratio | No | > 0; defaults to country profile value |
-| `max_monthly_payment` | Optional hard cap on monthly installment | No | > 0 if provided |
+| `max_monthly_payment` | Hard cap on monthly installment | No | > 0; defaults to 2,200 EUR (or equivalent in country currency) |
 
 ### 2.4 Country Profiles
 
 The system embeds a static reference table mapping each supported country code to its typical loan market parameters. These values are used as defaults when the corresponding input fields are omitted.
+
+**Default country**: `BE` (Belgium) — used when `country` is not provided.
 
 | Country | Code | Currency | Typical Interest Rate | Insurance Rate | Purchase Tax Rate | Min Down Payment | Max Debt Ratio | Max Duration |
 |---|---|---|---|---|---|---|---|---|
@@ -56,7 +58,7 @@ The system embeds a static reference table mapping each supported country code t
 | Spain | `ES` | EUR | 3.50% | 0.20% | 8.0% of price (ITP resale) | 20% of price | 35% | 30 years |
 | Germany | `DE` | EUR | 3.80% | 0.15% | 5.0% of price (avg Grunderwerbsteuer + notary) | 20% of price | 35% | 30 years |
 | Portugal | `PT` | EUR | 4.00% | 0.25% | 7.0% of price (IMT + stamp + notary) | 10% of price (residents) | 35% | 30 years |
-| Belgium | `BE` | EUR | 3.20% | 0.25% | 12.5% of price (registration, Wallonia/Brussels) | 20% of price | 35% | 30 years |
+| Belgium _(default)_ | `BE` | EUR | 3.20% | 0.25% | 12.5% of price (registration, Wallonia/Brussels) | 20% of price | 35% | 25 years |
 | Italy | `IT` | EUR | 4.00% | 0.20% | 4.0% of price (avg cadastral + notary) | 20% of price | 35% | 30 years |
 | United Kingdom | `GB` | GBP | 5.00% | 0.25% | 3.0% of price (avg SDLT) | 10% of price | 35% | 35 years |
 | United States | `US` | USD | 7.00% | 0.80% | 2.5% of price (avg closing costs) | 20% of price (conventional) | 43% | 30 years |
@@ -164,7 +166,7 @@ Given the buyer's preference, the system shall search over the space of:
 
 For each `(down_payment, duration)` pair, compute the resulting plan and check all constraints:
 - `debt_ratio <= max_debt_ratio`
-- `monthly_installment <= max_monthly_payment` (if set)
+- `monthly_installment <= max_monthly_payment` (always enforced; defaults to 2,200 EUR)
 - `loan_principal > 0`
 
 Among all **feasible** plans, select the one that best satisfies the declared preference.
@@ -214,40 +216,38 @@ Where:
 
 ## 6. Concrete Examples
 
-### 6.1 France — all parameters auto-resolved from country profile
+### 6.1 Belgium (default) — minimal input, all parameters auto-resolved
 
 **User provides only:**
 
 | Parameter | Value |
 |---|---|
-| Property price | 499,000 EUR |
-| Country | `FR` |
-| Available savings | 100,000 EUR |
-| Monthly net income | 5,500 EUR |
+| Property price | 350,000 EUR |
+| Available savings | 80,000 EUR |
+| Monthly net income | 6,000 EUR |
 | Optimization preference | `minimize_total_cost` |
 
-**Auto-resolved from France country profile:**
+**Auto-resolved (country defaults to `BE`):**
 
 | Parameter | Source | Value |
 |---|---|---|
-| Purchase taxes | estimated (7.5% of price) | ~37,425 EUR |
-| Annual interest rate | FR profile | 3.50% |
-| Insurance rate | FR profile | 0.30% /year |
-| Max debt ratio | FR profile | 35% |
-| Max loan duration | FR profile | 300 months (25 years) |
-| Taxes financeable | FR profile | No |
+| Country | system default | `BE` |
+| Purchase taxes | estimated (12.5% of price) | ~43,750 EUR |
+| Annual interest rate | BE profile | 3.20% |
+| Insurance rate | BE profile | 0.25% /year |
+| Max debt ratio | BE profile | 35% |
+| Max loan duration | BE profile | 300 months (25 years) |
+| Max monthly payment | system default | 2,200 EUR |
 
 **Derived constraints:**
-- Total acquisition cost = 499,000 + 37,425 = 536,425 EUR
-- Minimum down payment = 37,425 EUR (taxes not financeable)
-- Maximum monthly payment = 5,500 × 35% = 1,925 EUR
-- Loan range: 436,425 EUR (min) to 499,000 EUR (max)
+- Total acquisition cost = 350,000 + 43,750 = 393,750 EUR
+- Minimum down payment = 393,750 × 20% = 78,750 EUR
+- Binding monthly cap = min(6,000 × 35%, 2,200) = min(2,100, 2,200) = 2,100 EUR
+- Loan range: 313,750 EUR (min) to 306,250 EUR (max if all savings used)
 
 The simulator returns the `(down_payment, duration)` pair that minimizes total interest + insurance cost while respecting all constraints.
 
 ### 6.2 France — purchase taxes provided explicitly (e.g. notary quote known)
-
-Same as 6.1 but buyer provides `purchase_taxes = 68,000 EUR` (explicit notary quote including agency fees):
 
 | Parameter | Value |
 |---|---|
@@ -256,10 +256,22 @@ Same as 6.1 but buyer provides `purchase_taxes = 68,000 EUR` (explicit notary qu
 | Purchase taxes | 68,000 EUR _(user-supplied, overrides estimate)_ |
 | Available savings | 100,000 EUR |
 | Monthly net income | 5,500 EUR |
+| Max monthly payment | 2,200 EUR _(user-supplied)_ |
 | Optimization preference | `minimize_total_cost` |
 
+**Auto-resolved from France profile:**
+
+| Parameter | Source | Value |
+|---|---|---|
+| Annual interest rate | FR profile | 3.50% |
+| Insurance rate | FR profile | 0.30% /year |
+| Max debt ratio | FR profile | 35% |
+| Max loan duration | FR profile | 300 months (25 years) |
+| Taxes financeable | FR profile | No |
+
 - Total acquisition cost = 567,000 EUR
-- Minimum down payment = 68,000 EUR
+- Minimum down payment = 68,000 EUR (taxes not financeable)
+- Binding monthly cap = min(5,500 × 35%, 2,200) = min(1,925, 2,200) = 1,925 EUR
 - Loan range: 467,000 EUR to 499,000 EUR
 
 ---
