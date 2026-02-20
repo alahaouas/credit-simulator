@@ -185,7 +185,7 @@ If any check fails, the system must return an **ineligibility result** with a cl
 ### 4.3 Optimization Algorithm
 
 Given the buyer's preference, the system shall search over the space of:
-- Down payment amounts: from `min_down_payment` up to `available_savings` (step: 1,000 in the property currency, or configurable)
+- Down payment amounts: from `min_down_payment` up to `available_savings` (step: 1,000 in the country currency)
 - Loan durations: from 12 months up to `max_loan_duration_months` (step: 12 months)
 
 For each `(down_payment, duration)` pair, compute the resulting plan and check all constraints:
@@ -442,7 +442,7 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 | 2 | Should the simulator expose a CLI, a REST API, or a web UI? | @alahaouas | **Closed** — CLI |
 | 3 | What is the target language/runtime? | @alahaouas | **Closed** — Python 3.11+; `decimal` module for fixed-point arithmetic, `rich` for terminal output, `click` for CLI |
 | 4 | Should bank arrangement fees (frais de dossier) be factored into the APR calculation? | @alahaouas | **Closed** — no |
-| 5 | Should the optimization step for down payment be configurable, or fixed at 1,000 in the local currency? | @alahaouas | Open |
+| 5 | Should the optimization step for down payment be configurable, or fixed at 1,000 in the local currency? | @alahaouas | **Closed** — fixed at 1,000 in the country currency |
 | 6 | How should country profile values be updated over time (static file, admin endpoint, periodic release)? | @alahaouas | **Closed** — static file, updated manually |
 | 7 | Should the system warn when user-supplied rates differ significantly from the country profile defaults? | @alahaouas | **Closed** — no warnings |
 | 8 | Should sub-national variations be supported (e.g. Belgian region tax rates, US state closing costs, German Grunderwerbsteuer by Bundesland)? | @alahaouas | **Closed** — not needed, national level only |
