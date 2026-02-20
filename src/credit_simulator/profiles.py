@@ -27,7 +27,6 @@ class CountryProfile:
     purchase_tax_rate: Decimal
     taxes_financeable: bool
     min_down_payment_ratio: Decimal
-    max_debt_ratio: Decimal
     max_loan_duration_months: int
 
     def annual_rate(self, quality: ProfileQuality) -> Decimal:
@@ -49,7 +48,6 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.075"),
         taxes_financeable=False,
         min_down_payment_ratio=Decimal("0.00"),  # minimum = taxes (handled in resolver)
-        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=300,
     ),
     "ES": CountryProfile(
@@ -62,7 +60,6 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.08"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
-        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=360,
     ),
     "DE": CountryProfile(
@@ -75,7 +72,6 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.05"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
-        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=360,
     ),
     "PT": CountryProfile(
@@ -88,7 +84,6 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.07"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.10"),
-        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=360,
     ),
     "BE": CountryProfile(
@@ -101,7 +96,6 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.125"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
-        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=300,
     ),
     "IT": CountryProfile(
@@ -114,7 +108,6 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.04"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
-        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=360,
     ),
     "GB": CountryProfile(
@@ -127,7 +120,6 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.03"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.10"),
-        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=420,
     ),
     "US": CountryProfile(
@@ -140,7 +132,6 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.025"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
-        max_debt_ratio=Decimal("0.43"),
         max_loan_duration_months=360,
     ),
 }

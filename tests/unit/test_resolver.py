@@ -97,10 +97,11 @@ class TestFeasibility:
         with pytest.raises(InfeasibleError, match="Insufficient savings"):
             check_feasibility(params)
 
-    def test_income_too_low(self):
+    def test_monthly_payment_cap_exceeded(self):
+        # Set an extremely low max_monthly_payment so that even the smallest loan is infeasible
         params = resolve(
             _base_inputs(
-                monthly_net_income=Decimal("500"),   # very low income
+                max_monthly_payment=Decimal("1"),  # absurdly low cap
                 available_savings=Decimal("100000"),
             ),
             _store(),

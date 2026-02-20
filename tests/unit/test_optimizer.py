@@ -35,7 +35,6 @@ class TestOptimizeMinimizeTotalCost:
 
     def test_constraints_respected(self):
         result = _run("minimize_total_cost")
-        assert result.debt_ratio <= Decimal("0.35")
         assert result.plan.monthly_installment <= Decimal("2200")
         assert result.down_payment >= Decimal("0")
 

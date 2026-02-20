@@ -36,7 +36,6 @@ class UserInputs:
     min_down_payment_ratio: Optional[Decimal] = None
     max_loan_duration_months: Optional[int] = None
     # Optional buyer constraints
-    max_debt_ratio: Optional[Decimal] = None
     max_monthly_payment: Optional[Decimal] = None
     # Optimization preference
     optimization_preference: str = "balanced"
@@ -62,7 +61,6 @@ class ResolvedParams:
     # Buyer constraints (resolved)
     monthly_net_income: Decimal
     available_savings: Decimal
-    max_debt_ratio: Decimal
     max_monthly_payment: Decimal
     min_down_payment: Decimal
     # Preference
@@ -115,11 +113,6 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         int(store.get_field(country, "max_loan_duration_months")),
         "max_loan_duration_months",
     )
-    max_debt_ratio = _resolve(
-        inputs.max_debt_ratio,
-        Decimal(str(store.get_field(country, "max_debt_ratio"))),
-        "max_debt_ratio",
-    )
     max_monthly_payment = _resolve(
         inputs.max_monthly_payment,
         DEFAULT_MAX_MONTHLY_PAYMENT,
@@ -164,7 +157,6 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         max_loan_duration_months=max_loan_duration_months,
         monthly_net_income=inputs.monthly_net_income,
         available_savings=inputs.available_savings,
-        max_debt_ratio=max_debt_ratio,
         max_monthly_payment=max_monthly_payment,
         min_down_payment=min_down_payment,
         optimization_preference=inputs.optimization_preference,
@@ -187,12 +179,6 @@ def check_feasibility(params: ResolvedParams) -> None:
             f"(you have {params.available_savings:,.2f} {params.currency})."
         )
 
-    # Maximum affordable monthly payment
-    income_cap = (params.monthly_net_income * params.max_debt_ratio).quantize(
-        Decimal("0.01"), rounding="ROUND_HALF_UP"
-    )
-    effective_cap = min(income_cap, params.max_monthly_payment)
-
     # Minimum possible monthly payment = smallest principal at longest duration.
     # Smallest principal = total_acquisition_cost - all available savings.
     min_principal = params.total_acquisition_cost - params.available_savings
@@ -208,12 +194,11 @@ def check_feasibility(params: ResolvedParams) -> None:
     min_insurance = compute_monthly_insurance(min_principal, params.insurance_rate)
     min_payment = best_emi + min_insurance
 
-    if min_payment > effective_cap:
+    if min_payment > params.max_monthly_payment:
         raise InfeasibleError(
             f"Monthly payment for the minimum loan "
             f"({min_principal:,.2f} {params.currency} over {params.max_loan_duration_months} months) "
             f"would be {min_payment:,.2f} {params.currency}, "
-            f"exceeding your maximum affordable payment of "
-            f"{effective_cap:,.2f} {params.currency} "
-            f"(income cap {income_cap:,.2f}, hard cap {params.max_monthly_payment:,.2f})."
+            f"exceeding your maximum monthly payment cap of "
+            f"{params.max_monthly_payment:,.2f} {params.currency}."
         )

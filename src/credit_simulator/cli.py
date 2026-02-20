@@ -87,7 +87,6 @@ def display_result(result: OptimizedResult) -> None:
     t.add_row("Total insurance paid", _fmt_money(plan.total_insurance_paid, cur))
     t.add_row("Total cost of credit", _fmt_money(plan.total_cost_of_credit, cur))
     t.add_row("Total repaid", _fmt_money(plan.total_repaid, cur))
-    t.add_row("Debt ratio", _fmt_pct(result.debt_ratio))
     t.add_row("LTV ratio", _fmt_pct(result.ltv_ratio))
     console.print(t)
 
@@ -140,7 +139,6 @@ def display_params(inputs: UserInputs, params: ResolvedParams) -> None:
     row("max_loan_duration_months", str(params.max_loan_duration_months), params.sources.get("max_loan_duration_months", ""))
     row("monthly_net_income", _fmt_money(params.monthly_net_income, cur))
     row("available_savings", _fmt_money(params.available_savings, cur))
-    row("max_debt_ratio", _fmt_pct(params.max_debt_ratio), params.sources.get("max_debt_ratio", ""))
     row("max_monthly_payment", _fmt_money(params.max_monthly_payment, cur), params.sources.get("max_monthly_payment", ""))
     row("optimization_preference", inputs.optimization_preference)
     console.print(t)
@@ -245,7 +243,7 @@ def _update_profile_manual(store: SessionProfileStore) -> None:
     country = _prompt_country()
     console.print(
         "  Fields: annual_rate, insurance_rate, purchase_tax_rate, "
-        "taxes_financeable, min_down_payment_ratio, max_debt_ratio, max_loan_duration_months"
+        "taxes_financeable, min_down_payment_ratio, max_loan_duration_months"
     )
     field = console.input("[bold]Field to update: [/bold]").strip().lower()
 
@@ -284,11 +282,6 @@ def _update_profile_manual(store: SessionProfileStore) -> None:
         value = _prompt_decimal("New min down payment ratio (e.g. 0.20 for 20%):", allow_zero=True, positive=False)
         store.set_field(country, "min_down_payment_ratio", value)
         console.print(f"  [green]Updated {country} min_down_payment_ratio to {_fmt_pct(value)}[/green]")
-
-    elif field == "max_debt_ratio":
-        value = _prompt_decimal("New max debt ratio (e.g. 0.35 for 35%):", allow_zero=False, positive=True)
-        store.set_field(country, "max_debt_ratio", value)
-        console.print(f"  [green]Updated {country} max_debt_ratio to {_fmt_pct(value)}[/green]")
 
     elif field == "max_loan_duration_months":
         value_int = _prompt_int("New max loan duration (months, 12–600):", min_val=12)
@@ -343,7 +336,7 @@ _UPDATABLE_FIELDS = {
     "property_price", "country", "profile_quality", "purchase_taxes",
     "annual_interest_rate", "insurance_rate", "min_down_payment_ratio",
     "max_loan_duration_months", "monthly_net_income", "available_savings",
-    "max_debt_ratio", "max_monthly_payment", "optimization_preference",
+    "max_monthly_payment", "optimization_preference",
 }
 
 
@@ -445,8 +438,6 @@ def _apply_update(field: str, inputs: UserInputs, store: SessionProfileStore) ->
             inputs.monthly_net_income = _prompt_decimal("New monthly net income:", positive=True)
         elif field == "available_savings":
             inputs.available_savings = _prompt_decimal("New available savings:", allow_zero=True, positive=False)
-        elif field == "max_debt_ratio":
-            inputs.max_debt_ratio = _prompt_decimal("New max debt ratio (e.g. 0.35):", positive=True)
         elif field == "max_monthly_payment":
             inputs.max_monthly_payment = _prompt_decimal("New max monthly payment:", positive=True)
         elif field == "optimization_preference":
@@ -470,8 +461,6 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
         inputs.min_down_payment_ratio = None
     elif field == "max_loan_duration_months":
         inputs.max_loan_duration_months = None
-    elif field == "max_debt_ratio":
-        inputs.max_debt_ratio = None
     elif field == "max_monthly_payment":
         inputs.max_monthly_payment = None
     elif field == "optimization_preference":
@@ -488,6 +477,7 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
 @click.option("--property-price", type=str, default=None, help="Property price")
 @click.option("--income", type=str, default=None, help="Monthly net income")
 @click.option("--savings", type=str, default=None, help="Available savings")
+@click.option("--purchase-taxes", type=str, default=None, help="Purchase taxes (overrides profile estimate)")
 @click.option("--country", type=str, default=None, help=f"Country code (default: {DEFAULT_COUNTRY})")
 @click.option("--quality", type=click.Choice(["average", "best"]), default=None, help="Profile quality")
 @click.option("--preference", type=click.Choice(list(VALID_PREFERENCES)), default="balanced", show_default=True)
@@ -495,6 +485,7 @@ def main(
     property_price: Optional[str],
     income: Optional[str],
     savings: Optional[str],
+    purchase_taxes: Optional[str],
     country: Optional[str],
     quality: Optional[str],
     preference: str,
@@ -526,10 +517,22 @@ def main(
     if sav is None:
         sav = _prompt_decimal("Available savings?", allow_zero=True, positive=False)
 
+    pt = _parse_opt(purchase_taxes, "purchase-taxes")
+    if pt is None:
+        raw_pt = console.input(
+            "[bold]Purchase taxes? (press Enter to estimate from country profile): [/bold]"
+        ).strip()
+        if raw_pt:
+            try:
+                pt = Decimal(raw_pt.replace(",", ".").replace(" ", ""))
+            except InvalidOperation:
+                err_console.print(f"  Invalid number: '{raw_pt}'. Will estimate from profile.")
+
     inputs = UserInputs(
         property_price=pp,
         monthly_net_income=inc,
         available_savings=sav,
+        purchase_taxes=pt,
         country=country,
         profile_quality=quality,  # type: ignore[arg-type]
         optimization_preference=preference,

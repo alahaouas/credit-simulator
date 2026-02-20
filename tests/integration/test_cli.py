@@ -40,14 +40,10 @@ class TestBelgiumDefaultPipeline:
         # 350000 + 350000*12.5% = 350000 + 43750 = 393750
         assert result.total_acquisition_cost == Decimal("393750")
 
-    def test_debt_ratio_within_limit(self):
-        result = _run_pipeline("minimize_total_cost")
-        assert result.debt_ratio <= Decimal("0.35")
-
     def test_monthly_installment_within_cap(self):
         result = _run_pipeline("minimize_total_cost")
-        # income cap = 6000 * 35% = 2100; hard cap = 2200 → effective = 2100
-        assert result.plan.monthly_installment <= Decimal("2100.01")  # tolerance for rounding
+        # max_monthly_payment cap = 2200
+        assert result.plan.monthly_installment <= Decimal("2200.01")  # tolerance for rounding
 
     def test_down_payment_within_savings(self):
         result = _run_pipeline("minimize_total_cost")
