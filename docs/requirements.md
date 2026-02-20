@@ -17,33 +17,66 @@ The simulator must determine the **optimal combination** of:
 
 ### 2.1 Property Inputs
 
-| Field | Description | Constraints |
-|---|---|---|
-| `property_price` | Market price of the property | > 0 |
-| `purchase_taxes` | Total purchase taxes and fees (notary, registration, agency) | >= 0 |
-| `total_acquisition_cost` | Derived: `property_price + purchase_taxes` | Computed, not entered directly |
+| Field | Description | Required | Constraints |
+|---|---|---|---|
+| `property_price` | Market price of the property | Yes | > 0 |
+| `country` | ISO 3166-1 alpha-2 code of the country where the property is located | Yes | e.g. `"FR"`, `"ES"`, `"DE"` |
+| `purchase_taxes` | Total purchase taxes and fees (notary, registration, agency) | No | >= 0; auto-estimated from country profile if omitted |
+| `total_acquisition_cost` | Derived: `property_price + purchase_taxes` | — | Computed, never entered directly |
 
 ### 2.2 Loan Parameters
 
+All fields in this section are **optional**. When a field is not provided, the system resolves it automatically from the country profile (see section 2.4). Any explicitly provided value always overrides the country default.
+
 | Field | Description | Constraints |
 |---|---|---|
-| `annual_interest_rate` | Bank's nominal annual interest rate | > 0, typically 0.5%–10% |
-| `insurance_rate` | Annual borrower insurance rate (assurance emprunteur) | >= 0 |
-| `min_down_payment_ratio` | Minimum down payment as a fraction of total cost | >= 0%, typically >= 10% |
-| `max_loan_duration_months` | Maximum acceptable loan duration | 12–360 months (1–30 years) |
+| `annual_interest_rate` | Bank's nominal annual interest rate | > 0 |
+| `insurance_rate` | Annual borrower insurance rate | >= 0 |
+| `min_down_payment_ratio` | Minimum down payment as a fraction of total acquisition cost | 0%–100% |
+| `max_loan_duration_months` | Maximum acceptable loan duration | 12–600 months |
 
-> **Note**: Banks in France typically require the down payment to cover at least the purchase taxes (notary fees etc.) since those are not financeable. The minimum down payment is therefore at least equal to `purchase_taxes`.
+> **Note**: Whether purchase taxes are financeable by the bank is country-specific and defined in the country profile. For example, in France taxes are not financeable, so the minimum down payment always covers at least `purchase_taxes`.
 
 ### 2.3 Buyer Constraints
 
-| Field | Description | Constraints |
-|---|---|---|
-| `monthly_net_income` | Buyer's total monthly net income | > 0 |
-| `max_debt_ratio` | Maximum debt-to-income ratio allowed | > 0, typically <= 35% |
-| `max_monthly_payment` | Optional hard cap on monthly installment | > 0 if provided |
-| `available_savings` | Total savings available for down payment | >= 0 |
+| Field | Description | Required | Constraints |
+|---|---|---|---|
+| `monthly_net_income` | Buyer's total monthly net income | Yes | > 0 |
+| `available_savings` | Total savings available for down payment | Yes | >= 0 |
+| `max_debt_ratio` | Maximum debt-to-income ratio | No | > 0; defaults to country profile value |
+| `max_monthly_payment` | Optional hard cap on monthly installment | No | > 0 if provided |
 
-### 2.4 Optimization Preferences
+### 2.4 Country Profiles
+
+The system embeds a static reference table mapping each supported country code to its typical loan market parameters. These values are used as defaults when the corresponding input fields are omitted.
+
+| Country | Code | Currency | Typical Interest Rate | Insurance Rate | Purchase Tax Rate | Min Down Payment | Max Debt Ratio | Max Duration |
+|---|---|---|---|---|---|---|---|---|
+| France | `FR` | EUR | 3.50% | 0.30% | 7.5% of price (old) / 2.5% (new) | covers taxes (not financeable) | 35% | 25 years |
+| Spain | `ES` | EUR | 3.50% | 0.20% | 8.0% of price (ITP resale) | 20% of price | 35% | 30 years |
+| Germany | `DE` | EUR | 3.80% | 0.15% | 5.0% of price (avg Grunderwerbsteuer + notary) | 20% of price | 35% | 30 years |
+| Portugal | `PT` | EUR | 4.00% | 0.25% | 7.0% of price (IMT + stamp + notary) | 10% of price (residents) | 35% | 30 years |
+| Belgium | `BE` | EUR | 3.20% | 0.25% | 12.5% of price (registration, Wallonia/Brussels) | 20% of price | 35% | 30 years |
+| Italy | `IT` | EUR | 4.00% | 0.20% | 4.0% of price (avg cadastral + notary) | 20% of price | 35% | 30 years |
+| United Kingdom | `GB` | GBP | 5.00% | 0.25% | 3.0% of price (avg SDLT) | 10% of price | 35% | 35 years |
+| United States | `US` | USD | 7.00% | 0.80% | 2.5% of price (avg closing costs) | 20% of price (conventional) | 43% | 30 years |
+
+> **Disclaimer**: These are reference values representing typical market conditions. They are not real-time rates and do not constitute financial advice. Users are encouraged to provide actual bank-quoted rates for precise results.
+
+**Profile fields per country:**
+
+| Field | Description |
+|---|---|
+| `currency` | ISO 4217 currency code for monetary outputs |
+| `typical_annual_rate` | Default `annual_interest_rate` when not provided |
+| `typical_insurance_rate` | Default `insurance_rate` when not provided |
+| `purchase_tax_rate` | Used to estimate `purchase_taxes` when not provided: `property_price × rate` |
+| `taxes_financeable` | Boolean — whether purchase taxes can be included in the loan principal |
+| `min_down_payment_ratio` | Default minimum down payment ratio when not provided |
+| `max_debt_ratio` | Default maximum debt-to-income ratio when not provided |
+| `max_loan_duration_months` | Default maximum loan duration when not provided |
+
+### 2.5 Optimization Preferences
 
 The buyer must express which objective to prioritize:
 
@@ -63,6 +96,9 @@ The buyer must express which objective to prioritize:
 
 | Field | Description |
 |---|---|
+| `country` | Country code used |
+| `currency` | Currency of all monetary outputs (from country profile) |
+| `parameters_source` | For each loan parameter: `"user"` if explicitly provided, `"country_profile"` if auto-resolved |
 | `down_payment` | Recommended initial amount paid by the buyer |
 | `loan_principal` | Amount borrowed from the bank (`total_acquisition_cost - down_payment`) |
 | `loan_duration_months` | Recommended duration in months |
@@ -99,19 +135,31 @@ When multiple optimization preferences are evaluated, the system shall return on
 
 ## 4. Optimization Logic
 
-### 4.1 Feasibility Check (pre-optimization)
+### 4.1 Parameter Resolution
+
+Before any computation, the system resolves all loan parameters in this order:
+
+1. Load the country profile for the given `country` code. If the country is not supported, return an explicit error.
+2. For each optional loan parameter (`annual_interest_rate`, `insurance_rate`, `min_down_payment_ratio`, `max_loan_duration_months`, `max_debt_ratio`): use the user-supplied value if provided, otherwise use the country profile default.
+3. If `purchase_taxes` is not provided, estimate it as `property_price × country_profile.purchase_tax_rate`.
+4. Compute `total_acquisition_cost = property_price + purchase_taxes`.
+5. Determine the effective minimum down payment:
+   - If `country_profile.taxes_financeable = false`: `min_down_payment = max(purchase_taxes, total_acquisition_cost × min_down_payment_ratio)`
+   - If `country_profile.taxes_financeable = true`: `min_down_payment = total_acquisition_cost × min_down_payment_ratio`
+
+### 4.2 Feasibility Check (pre-optimization)
 
 Before optimizing, the system shall verify:
-1. `available_savings >= purchase_taxes` — taxes must be covered by the buyer (not financeable).
+1. `available_savings >= min_down_payment` — the buyer can cover the minimum required down payment.
 2. `monthly_net_income * max_debt_ratio >= minimum_possible_monthly_payment` — the buyer can afford any loan at all.
-3. The required loan amount does not exceed bank limits.
+3. The required loan amount is positive.
 
 If any check fails, the system must return an **ineligibility result** with a clear, specific reason.
 
-### 4.2 Optimization Algorithm
+### 4.3 Optimization Algorithm
 
 Given the buyer's preference, the system shall search over the space of:
-- Down payment amounts: from `purchase_taxes` up to `available_savings` (step: 1,000 EUR or configurable)
+- Down payment amounts: from `min_down_payment` up to `available_savings` (step: 1,000 in the property currency, or configurable)
 - Loan durations: from 12 months up to `max_loan_duration_months` (step: 12 months)
 
 For each `(down_payment, duration)` pair, compute the resulting plan and check all constraints:
@@ -121,7 +169,7 @@ For each `(down_payment, duration)` pair, compute the resulting plan and check a
 
 Among all **feasible** plans, select the one that best satisfies the declared preference.
 
-### 4.3 EMI Formula
+### 4.4 EMI Formula
 
 The standard reducing-balance monthly installment formula applies:
 
@@ -164,26 +212,55 @@ Where:
 
 ---
 
-## 6. Concrete Example
+## 6. Concrete Examples
+
+### 6.1 France — all parameters auto-resolved from country profile
+
+**User provides only:**
 
 | Parameter | Value |
 |---|---|
 | Property price | 499,000 EUR |
-| Purchase taxes | 68,000 EUR |
-| Total acquisition cost | 567,000 EUR |
-| Annual interest rate | 3.5% |
-| Insurance rate | 0.30% /year |
+| Country | `FR` |
 | Available savings | 100,000 EUR |
 | Monthly net income | 5,500 EUR |
-| Max debt ratio | 35% |
 | Optimization preference | `minimize_total_cost` |
 
-**Expected constraints**:
-- Minimum down payment = 68,000 EUR (covers taxes)
-- Maximum monthly payment = 5,500 × 35% = 1,925 EUR
-- Loan range: 467,000 EUR (min) to 499,000 EUR (max, if savings only cover taxes)
+**Auto-resolved from France country profile:**
 
-The simulator should return the `(down_payment, duration)` pair that minimizes total interest + insurance cost while respecting all constraints.
+| Parameter | Source | Value |
+|---|---|---|
+| Purchase taxes | estimated (7.5% of price) | ~37,425 EUR |
+| Annual interest rate | FR profile | 3.50% |
+| Insurance rate | FR profile | 0.30% /year |
+| Max debt ratio | FR profile | 35% |
+| Max loan duration | FR profile | 300 months (25 years) |
+| Taxes financeable | FR profile | No |
+
+**Derived constraints:**
+- Total acquisition cost = 499,000 + 37,425 = 536,425 EUR
+- Minimum down payment = 37,425 EUR (taxes not financeable)
+- Maximum monthly payment = 5,500 × 35% = 1,925 EUR
+- Loan range: 436,425 EUR (min) to 499,000 EUR (max)
+
+The simulator returns the `(down_payment, duration)` pair that minimizes total interest + insurance cost while respecting all constraints.
+
+### 6.2 France — purchase taxes provided explicitly (e.g. notary quote known)
+
+Same as 6.1 but buyer provides `purchase_taxes = 68,000 EUR` (explicit notary quote including agency fees):
+
+| Parameter | Value |
+|---|---|
+| Property price | 499,000 EUR |
+| Country | `FR` |
+| Purchase taxes | 68,000 EUR _(user-supplied, overrides estimate)_ |
+| Available savings | 100,000 EUR |
+| Monthly net income | 5,500 EUR |
+| Optimization preference | `minimize_total_cost` |
+
+- Total acquisition cost = 567,000 EUR
+- Minimum down payment = 68,000 EUR
+- Loan range: 467,000 EUR to 499,000 EUR
 
 ---
 
@@ -208,4 +285,7 @@ The simulator should return the `(down_payment, duration)` pair that minimizes t
 | 2 | Should the simulator expose a CLI, a REST API, or a web UI? | @alahaouas | Open |
 | 3 | What is the target language/runtime? | @alahaouas | Open |
 | 4 | Should bank arrangement fees (frais de dossier) be factored into the APR calculation? | @alahaouas | Open |
-| 5 | Should the optimization step for down payment be configurable, or fixed at 1,000 EUR? | @alahaouas | Open |
+| 5 | Should the optimization step for down payment be configurable, or fixed at 1,000 in the local currency? | @alahaouas | Open |
+| 6 | How should country profile values be updated over time (static file, admin endpoint, periodic release)? | @alahaouas | Open |
+| 7 | Should the system warn when user-supplied rates differ significantly from the country profile defaults? | @alahaouas | Open |
+| 8 | Should sub-national variations be supported (e.g. Belgian region tax rates, US state closing costs, German Grunderwerbsteuer by Bundesland)? | @alahaouas | Open |
