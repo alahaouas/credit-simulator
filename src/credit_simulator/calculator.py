@@ -9,8 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
-CENT = Decimal("0.01")
-ZERO = Decimal("0")
+from .config import CENT, ZERO
 
 
 def _round(value: Decimal) -> Decimal:

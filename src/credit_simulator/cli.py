@@ -24,10 +24,9 @@ from rich import box
 
 from .calculator import build_amortization_schedule
 from .fetcher import FetchError, fetch_rate
-from .optimizer import VALID_PREFERENCES, OptimizedResult, optimize
+from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, VALID_PREFERENCES
+from .optimizer import OptimizedResult, optimize
 from .profiles import (
-    DEFAULT_COUNTRY,
-    DEFAULT_QUALITY,
     SUPPORTED_COUNTRIES,
     SessionProfileStore,
     get_profile,
