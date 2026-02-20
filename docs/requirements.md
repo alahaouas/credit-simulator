@@ -207,7 +207,7 @@ Where:
 - `P` = loan principal
 - `r` = monthly interest rate = `annual_rate / 12`
 - `n` = loan duration in months
-- Insurance is added on top: `monthly_payment = EMI + (P × annual_insurance_rate / 12)`
+- Insurance is added on top: `monthly_payment = EMI + (P × annual_insurance_rate / 12)` — insurance is computed on the **original principal** `P` and remains constant for the life of the loan
 
 > **Precision requirement**: all intermediate and final monetary values must use decimal fixed-point arithmetic. Floating-point types are forbidden for monetary computations.
 
@@ -438,10 +438,10 @@ The simulator returns the `(down_payment, duration)` pair that minimizes total i
 
 | # | Question | Owner | Status |
 |---|---|---|---|
-| 1 | Should the insurance rate be fixed or decrease over time as the outstanding balance reduces? | @alahaouas | Open |
-| 2 | Should the simulator expose a CLI, a REST API, or a web UI? | @alahaouas | Open |
-| 3 | What is the target language/runtime? | @alahaouas | Open |
-| 4 | Should bank arrangement fees (frais de dossier) be factored into the APR calculation? | @alahaouas | Open |
+| 1 | Should the insurance rate be fixed or decrease over time as the outstanding balance reduces? | @alahaouas | **Closed** — fixed rate applied to the original principal throughout the loan life |
+| 2 | Should the simulator expose a CLI, a REST API, or a web UI? | @alahaouas | **Closed** — CLI |
+| 3 | What is the target language/runtime? | @alahaouas | **Closed** — Python 3.11+; `decimal` module for fixed-point arithmetic, `rich` for terminal output, `click` for CLI |
+| 4 | Should bank arrangement fees (frais de dossier) be factored into the APR calculation? | @alahaouas | **Closed** — no |
 | 5 | Should the optimization step for down payment be configurable, or fixed at 1,000 in the local currency? | @alahaouas | Open |
 | 6 | How should country profile values be updated over time (static file, admin endpoint, periodic release)? | @alahaouas | **Closed** — static file, updated manually |
 | 7 | Should the system warn when user-supplied rates differ significantly from the country profile defaults? | @alahaouas | **Closed** — no warnings |
