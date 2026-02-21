@@ -358,9 +358,7 @@ def analyze_sweet_spot(
             rounding="ROUND_CEILING"
         ) * STEP_DOWN_PAYMENT
         if params.min_down_payment < tier_dp < params.available_savings:
-            tier_rate = params.annual_interest_rate + tier.rate_delta
-            rate_pct = f"{float(tier_rate) * 100:.2f}%"
-            _add(tier_dp, f"LTV≤{int(tier.ltv_max * 100)}% ({rate_pct})")
+            _add(tier_dp, f"LTV≤{int(tier.ltv_max * 100)}% rate↓")
 
     if ltv_dp is not None and ltv_dp != candidates[0] and ltv_dp != candidates[-1]:
         _add(ltv_dp, f"LTV {ltv_pct}% (ref)")
