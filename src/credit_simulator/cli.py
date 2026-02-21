@@ -121,11 +121,6 @@ def _fmt_k(value: Decimal) -> str:
     return f"{value:,.0f}"
 
 
-def _fmt_k(value: Decimal) -> str:
-    """Format a monetary amount as compact integer (no currency, no decimals)."""
-    return f"{value:,.0f}"
-
-
 def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
     console.print()
     console.print(Panel(
@@ -134,9 +129,27 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
         expand=False,
     ))
 
+    # --- Marginal economics header ---
+    yield_pct = f"{float(analysis.effective_annual_yield) * 100:.2f}%"
+    opp_pct   = f"{float(analysis.opportunity_cost_rate)  * 100:.1f}%"
+    saving_k  = _fmt_k(analysis.marginal_saving_per_1k)
+    verdict = (
+        "[green]EFFICIENT — mortgage beats the market[/green]"
+        if analysis.down_payment_is_efficient
+        else "[yellow]INEFFICIENT — market beats the mortgage[/yellow]"
+    )
+    console.print(
+        f"  Marginal saving per extra €1 000 of down payment: "
+        f"[bold]{saving_k} {currency}[/bold] in total cost over the loan term\n"
+        f"  Effective yield (loan APR):  [bold]{yield_pct}[/bold]   "
+        f"Reference rate (opportunity cost): [bold]{opp_pct}[/bold]   {verdict}"
+    )
+
+    # --- Milestone table ---
     t = Table(box=box.SIMPLE_HEAVY, show_header=True, padding=(0, 1), expand=False)
-    t.add_column("Milestone", style="cyan", min_width=14, max_width=18)
+    t.add_column("Milestone", style="cyan", min_width=14, max_width=20)
     t.add_column("Down pmt", justify="right", min_width=9)
+    t.add_column("Rate", justify="right", min_width=6)
     t.add_column("Monthly", justify="right", min_width=7)
     t.add_column("DTI", justify="right", min_width=4)
     t.add_column("LTV", justify="right", min_width=4)
@@ -144,22 +157,22 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
     t.add_column("Liquidity", justify="right", min_width=9)
 
     for m in analysis.milestones:
-        cost = m.plan.total_cost_of_credit
         label = f"[bold green]{m.label}[/bold green]" if m.is_sweet_spot else m.label
         t.add_row(
             label,
             _fmt_k(m.down_payment),
+            f"{float(m.effective_rate) * 100:.2f}%",
             _fmt_k(m.plan.monthly_installment),
             f"{float(m.dti_ratio) * 100:.0f}%",
             f"{float(m.ltv_ratio) * 100:.0f}%",
-            _fmt_k(cost),
+            _fmt_k(m.plan.total_cost_of_credit),
             _fmt_k(m.savings_remaining),
         )
 
     console.print(t)
-    console.print(f"[bold]Sweet spot:[/bold] {analysis.sweet_spot_reason}")
+    console.print(f"[bold]Verdict:[/bold] {analysis.sweet_spot_reason}")
     if analysis.reserve_warning:
-        console.print(f"[bold red]{analysis.reserve_warning}[/bold red]")
+        console.print(f"[yellow]{analysis.reserve_warning}[/yellow]")
     console.print()
 
 

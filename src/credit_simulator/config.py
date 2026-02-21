@@ -36,9 +36,10 @@ VALID_PREFERENCES: frozenset[str] = frozenset({
 
 # ── Sweet-spot analysis thresholds ───────────────────────────────────────────
 
-SWEET_SPOT_LTV_TARGET = Decimal("0.80")   # LTV below this → crossed the key threshold
-SWEET_SPOT_DTI_TARGET = Decimal("0.35")   # Monthly payment / net income ≤ this → affordable
+SWEET_SPOT_LTV_TARGET = Decimal("0.80")   # LTV reference threshold (regulatory / bank threshold)
+SWEET_SPOT_DTI_TARGET = Decimal("0.35")   # Kept for reference; not used in sweet-spot selection
 SWEET_SPOT_RESERVE_MONTHS: int = 6        # Months of income to keep in savings (emergency fund)
+SWEET_SPOT_OPPORTUNITY_COST_RATE = Decimal("0.035")  # Annual benchmark return (e.g. savings / ETF)
 
 # ── Numeric convenience ───────────────────────────────────────────────────────
 
