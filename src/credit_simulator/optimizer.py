@@ -16,7 +16,7 @@ from typing import Optional
 from .calculator import LoanPlan, compute_loan_plan
 from .config import (
     STEP_DOWN_PAYMENT, STEP_DURATION, VALID_PREFERENCES, ZERO,
-    SWEET_SPOT_LTV_TARGET, SWEET_SPOT_DTI_TARGET, SWEET_SPOT_RESERVE_MONTHS,
+    SWEET_SPOT_LTV_TARGET, SWEET_SPOT_RESERVE_MONTHS, SWEET_SPOT_OPPORTUNITY_COST_RATE,
 )
 from .resolver import ResolvedParams
 
@@ -169,18 +169,23 @@ class SweetSpotMilestone:
     down_payment: Decimal
     loan_principal: Decimal
     plan: LoanPlan
-    ltv_ratio: Decimal       # principal / property_price
-    dti_ratio: Decimal       # monthly_installment / monthly_net_income
+    ltv_ratio: Decimal        # principal / property_price
+    dti_ratio: Decimal        # monthly_installment / monthly_net_income
     savings_remaining: Decimal
     is_sweet_spot: bool
 
 
 @dataclass(frozen=True)
 class SweetSpotAnalysis:
-    milestones: list          # list[SweetSpotMilestone], ordered by down_payment
-    sweet_spot_reason: str    # human-readable explanation of how sweet spot was chosen
-    reserve_warning: str      # non-empty if sweet spot drains the emergency fund
+    milestones: list              # list[SweetSpotMilestone], ordered by down_payment
+    sweet_spot_reason: str        # human-readable explanation
+    reserve_warning: str          # non-empty when min down payment already exceeds reserve
     duration_months: int
+    # Marginal economics (constant across all down-payment levels for a fixed-rate loan)
+    marginal_saving_per_1k: Decimal   # total cost saved per extra €1 000 of down payment
+    effective_annual_yield: Decimal   # IRR of the down payment ≈ loan APR
+    opportunity_cost_rate: Decimal    # benchmark annual rate used for comparison
+    down_payment_is_efficient: bool   # True when mortgage yield > opportunity cost
 
 
 def _build_dp_candidates(params: ResolvedParams) -> list:
@@ -200,16 +205,37 @@ def _build_dp_candidates(params: ResolvedParams) -> list:
     return candidates
 
 
-def analyze_sweet_spot(params: ResolvedParams) -> SweetSpotAnalysis:
-    """Compute down-payment milestones and identify the sweet spot.
+def analyze_sweet_spot(
+    params: ResolvedParams,
+    opportunity_cost_rate: Optional[Decimal] = None,
+) -> SweetSpotAnalysis:
+    """Compute down-payment milestones and identify the objective sweet spot.
 
-    Sweet spot = minimum down payment satisfying BOTH:
-      - LTV ≤ SWEET_SPOT_LTV_TARGET (80 %)
-      - DTI ≤ SWEET_SPOT_DTI_TARGET (35 % of net income)
+    For a fixed-rate mortgage the marginal interest saving per extra €1 000 of
+    down payment is **constant** (= loan APR × annuity factor).  There is no
+    mathematical diminishing-return curve — the sweet spot is therefore defined
+    by opportunity cost:
 
-    A 6-month income reserve marks the ceiling beyond which additional
-    down payment drains the emergency fund for diminishing returns.
+      • If loan APR > opportunity cost rate → maximise down payment (up to the
+        6-month income reserve ceiling).  The mortgage "pays" more than you can
+        earn elsewhere.
+
+      • If loan APR ≤ opportunity cost rate → use the minimum required down
+        payment and invest the surplus.  You can beat the mortgage cost in the
+        market.
+
+    The LTV 80 % threshold is shown as a regulatory reference point (banks
+    sometimes offer slightly better terms below it).
+
+    Parameters
+    ----------
+    params:
+        Resolved simulation parameters.
+    opportunity_cost_rate:
+        Override for testing; defaults to SWEET_SPOT_OPPORTUNITY_COST_RATE.
     """
+    opp_rate = opportunity_cost_rate if opportunity_cost_rate is not None else SWEET_SPOT_OPPORTUNITY_COST_RATE
+
     duration = (
         params.fixed_loan_duration_months
         if params.fixed_loan_duration_months is not None
@@ -239,73 +265,72 @@ def analyze_sweet_spot(params: ResolvedParams) -> SweetSpotAnalysis:
             is_sweet_spot=is_sweet,
         )
 
-    # --- Find threshold down payments ---
-    ltv_pct = int(SWEET_SPOT_LTV_TARGET * 100)
-    dti_pct = int(SWEET_SPOT_DTI_TARGET * 100)
+    # --- Marginal economics (computed at the minimum down payment) ---
+    # Reducing principal by €1 000 increases total cost of credit by exactly
+    # this amount — it is constant for any fixed-rate loan.
+    ref_principal = params.total_acquisition_cost - candidates[0]
+    plan_ref = compute_loan_plan(
+        ref_principal, params.annual_interest_rate, params.insurance_rate, duration
+    )
+    plan_ref_minus1k = compute_loan_plan(
+        ref_principal - Decimal("1000"),
+        params.annual_interest_rate, params.insurance_rate, duration,
+    )
+    marginal_saving_per_1k = (
+        plan_ref.total_cost_of_credit - plan_ref_minus1k.total_cost_of_credit
+    )
+    effective_annual_yield = plan_ref.effective_annual_rate   # APR ≈ IRR of down payment
 
-    ltv_dp: Optional[Decimal] = None
-    for c in candidates:
-        principal = params.total_acquisition_cost - c
-        if principal / params.property_price <= SWEET_SPOT_LTV_TARGET:
-            ltv_dp = c
-            break
-
-    dti_dp: Optional[Decimal] = None
-    for c in candidates:
-        principal = params.total_acquisition_cost - c
-        plan = compute_loan_plan(
-            principal, params.annual_interest_rate, params.insurance_rate, duration
-        )
-        if plan.monthly_installment / params.monthly_net_income <= SWEET_SPOT_DTI_TARGET:
-            dti_dp = c
-            break
-
-    # --- Determine sweet spot ---
-    if ltv_dp is not None and dti_dp is not None:
-        sweet_dp = max(ltv_dp, dti_dp)
-        reason = (
-            f"Minimum down payment clearing both LTV ≤ {ltv_pct}% and "
-            f"monthly payment ≤ {dti_pct}% of income. Beyond this point each "
-            f"extra €1 000 saves interest proportionally to the loan rate but "
-            f"provides no additional threshold benefit."
-        )
-    elif ltv_dp is not None:
-        sweet_dp = ltv_dp
-        reason = (
-            f"Minimum down payment clearing LTV ≤ {ltv_pct}% "
-            f"(DTI ≤ {dti_pct}% is not achievable within your savings)."
-        )
-    elif dti_dp is not None:
-        sweet_dp = dti_dp
-        reason = (
-            f"Minimum down payment where monthly payment ≤ {dti_pct}% of income "
-            f"(LTV ≤ {ltv_pct}% is not achievable within your savings)."
-        )
-    else:
-        sweet_dp = candidates[0]
-        reason = (
-            f"Neither LTV ≤ {ltv_pct}% nor DTI ≤ {dti_pct}% is achievable "
-            f"within your savings — showing minimum feasible down payment."
-        )
+    # --- Opportunity-cost decision ---
+    down_payment_is_efficient = effective_annual_yield > opp_rate
 
     # --- 6-month reserve ceiling ---
     reserve_target = SWEET_SPOT_RESERVE_MONTHS * params.monthly_net_income
     reserve_ceiling_exact = params.available_savings - reserve_target
-    # Largest candidate that does not breach the reserve
     reserve_dp: Decimal = candidates[0]
     for c in reversed(candidates):
         if c <= reserve_ceiling_exact:
             reserve_dp = c
             break
 
-    reserve_warning = ""
-    if sweet_dp > reserve_ceiling_exact:
-        reserve_warning = (
-            f"Warning: reaching the sweet spot requires putting more than your "
-            f"{SWEET_SPOT_RESERVE_MONTHS}-month income reserve "
-            f"({reserve_target:,.0f} {params.currency}) would allow. "
-            f"Consider stopping at the '{SWEET_SPOT_RESERVE_MONTHS}m buffer' row."
+    # --- Sweet spot selection ---
+    ltv_pct = int(SWEET_SPOT_LTV_TARGET * 100)
+    opp_pct = f"{float(opp_rate) * 100:.1f}"
+    yield_pct = f"{float(effective_annual_yield) * 100:.2f}"
+
+    if down_payment_is_efficient:
+        sweet_dp = reserve_dp
+        reason = (
+            f"Loan APR ({yield_pct}%) exceeds the reference rate ({opp_pct}%): "
+            f"paying down the mortgage gives a better return than investing the "
+            f"surplus. Maximise the down payment up to the {SWEET_SPOT_RESERVE_MONTHS}-month "
+            f"income reserve ceiling — do not go further."
         )
+    else:
+        sweet_dp = candidates[0]
+        reason = (
+            f"Loan APR ({yield_pct}%) is at or below the reference rate ({opp_pct}%): "
+            f"investing the surplus earns more than it saves in mortgage interest. "
+            f"Put only the minimum required down payment; every extra euro costs "
+            f"you ({opp_pct}% − {yield_pct}%) in forgone returns."
+        )
+
+    # --- Reserve warning ---
+    reserve_warning = ""
+    if candidates[0] > reserve_ceiling_exact:
+        reserve_warning = (
+            f"Note: even the minimum down payment exceeds the {SWEET_SPOT_RESERVE_MONTHS}-month "
+            f"income reserve ({reserve_target:,.0f} {params.currency}). "
+            f"Ensure you have sufficient emergency funds before proceeding."
+        )
+
+    # --- LTV 80 % reference milestone ---
+    ltv_dp: Optional[Decimal] = None
+    for c in candidates:
+        principal = params.total_acquisition_cost - c
+        if principal / params.property_price <= SWEET_SPOT_LTV_TARGET:
+            ltv_dp = c
+            break
 
     # --- Build deduplicated, ordered milestone list ---
     spec: dict = {}   # Decimal -> (label, is_sweet)
@@ -317,16 +342,10 @@ def analyze_sweet_spot(params: ResolvedParams) -> SweetSpotAnalysis:
             spec[dp_val] = (label, True)
 
     _add(candidates[0], "Minimum")
-    if ltv_dp is not None and ltv_dp != sweet_dp:
-        _add(ltv_dp, f"LTV {ltv_pct}% threshold")
-    if dti_dp is not None and dti_dp != sweet_dp:
-        _add(dti_dp, f"DTI {dti_pct}% threshold")
+    if ltv_dp is not None and ltv_dp != candidates[0] and ltv_dp != candidates[-1]:
+        _add(ltv_dp, f"LTV {ltv_pct}% (ref)")
     _add(sweet_dp, "★  Sweet spot", is_sweet=True)
-    if (
-        reserve_dp != sweet_dp
-        and reserve_dp != candidates[0]
-        and reserve_dp != candidates[-1]
-    ):
+    if reserve_dp != sweet_dp and reserve_dp != candidates[0] and reserve_dp != candidates[-1]:
         _add(reserve_dp, f"{SWEET_SPOT_RESERVE_MONTHS}m reserve cap")
     _add(candidates[-1], "Maximum")
 
@@ -340,4 +359,8 @@ def analyze_sweet_spot(params: ResolvedParams) -> SweetSpotAnalysis:
         sweet_spot_reason=reason,
         reserve_warning=reserve_warning,
         duration_months=duration,
+        marginal_saving_per_1k=marginal_saving_per_1k,
+        effective_annual_yield=effective_annual_yield,
+        opportunity_cost_rate=opp_rate,
+        down_payment_is_efficient=down_payment_is_efficient,
     )
