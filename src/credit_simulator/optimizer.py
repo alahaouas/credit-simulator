@@ -14,7 +14,10 @@ from decimal import Decimal
 from typing import Optional
 
 from .calculator import LoanPlan, compute_loan_plan
-from .config import STEP_DOWN_PAYMENT, STEP_DURATION, VALID_PREFERENCES, ZERO
+from .config import (
+    STEP_DOWN_PAYMENT, STEP_DURATION, VALID_PREFERENCES, ZERO,
+    SWEET_SPOT_LTV_TARGET, SWEET_SPOT_DTI_TARGET, SWEET_SPOT_RESERVE_MONTHS,
+)
 from .resolver import ResolvedParams
 
 
@@ -154,4 +157,187 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         total_acquisition_cost=params.total_acquisition_cost,
         optimization_preference=preference,
         parameters_source=dict(params.sources),
+    )
+
+
+# ── Sweet-spot analysis ────────────────────────────────────────────────────────
+
+@dataclass(frozen=True)
+class SweetSpotMilestone:
+    """One row in the sweet-spot comparison table."""
+    label: str
+    down_payment: Decimal
+    loan_principal: Decimal
+    plan: LoanPlan
+    ltv_ratio: Decimal       # principal / property_price
+    dti_ratio: Decimal       # monthly_installment / monthly_net_income
+    savings_remaining: Decimal
+    is_sweet_spot: bool
+
+
+@dataclass(frozen=True)
+class SweetSpotAnalysis:
+    milestones: list          # list[SweetSpotMilestone], ordered by down_payment
+    sweet_spot_reason: str    # human-readable explanation of how sweet spot was chosen
+    reserve_warning: str      # non-empty if sweet spot drains the emergency fund
+    duration_months: int
+
+
+def _build_dp_candidates(params: ResolvedParams) -> list:
+    """Same grid construction as optimize() — reused for sweet-spot analysis."""
+    dp = params.min_down_payment
+    if dp % STEP_DOWN_PAYMENT != ZERO:
+        dp_aligned = (dp // STEP_DOWN_PAYMENT + 1) * STEP_DOWN_PAYMENT
+        candidates = [params.min_down_payment]
+        dp = dp_aligned
+    else:
+        candidates = []
+    while dp <= params.available_savings:
+        candidates.append(dp)
+        dp += STEP_DOWN_PAYMENT
+    if not candidates or candidates[-1] < params.available_savings:
+        candidates.append(params.available_savings)
+    return candidates
+
+
+def analyze_sweet_spot(params: ResolvedParams) -> SweetSpotAnalysis:
+    """Compute down-payment milestones and identify the sweet spot.
+
+    Sweet spot = minimum down payment satisfying BOTH:
+      - LTV ≤ SWEET_SPOT_LTV_TARGET (80 %)
+      - DTI ≤ SWEET_SPOT_DTI_TARGET (35 % of net income)
+
+    A 6-month income reserve marks the ceiling beyond which additional
+    down payment drains the emergency fund for diminishing returns.
+    """
+    duration = (
+        params.fixed_loan_duration_months
+        if params.fixed_loan_duration_months is not None
+        else params.max_loan_duration_months
+    )
+    candidates = _build_dp_candidates(params)
+
+    def _milestone(dp: Decimal, label: str, is_sweet: bool = False) -> SweetSpotMilestone:
+        principal = params.total_acquisition_cost - dp
+        plan = compute_loan_plan(
+            principal, params.annual_interest_rate, params.insurance_rate, duration
+        )
+        ltv = (principal / params.property_price).quantize(
+            Decimal("0.0001"), rounding="ROUND_HALF_UP"
+        )
+        dti = (plan.monthly_installment / params.monthly_net_income).quantize(
+            Decimal("0.0001"), rounding="ROUND_HALF_UP"
+        )
+        return SweetSpotMilestone(
+            label=label,
+            down_payment=dp,
+            loan_principal=principal,
+            plan=plan,
+            ltv_ratio=ltv,
+            dti_ratio=dti,
+            savings_remaining=params.available_savings - dp,
+            is_sweet_spot=is_sweet,
+        )
+
+    # --- Find threshold down payments ---
+    ltv_pct = int(SWEET_SPOT_LTV_TARGET * 100)
+    dti_pct = int(SWEET_SPOT_DTI_TARGET * 100)
+
+    ltv_dp: Optional[Decimal] = None
+    for c in candidates:
+        principal = params.total_acquisition_cost - c
+        if principal / params.property_price <= SWEET_SPOT_LTV_TARGET:
+            ltv_dp = c
+            break
+
+    dti_dp: Optional[Decimal] = None
+    for c in candidates:
+        principal = params.total_acquisition_cost - c
+        plan = compute_loan_plan(
+            principal, params.annual_interest_rate, params.insurance_rate, duration
+        )
+        if plan.monthly_installment / params.monthly_net_income <= SWEET_SPOT_DTI_TARGET:
+            dti_dp = c
+            break
+
+    # --- Determine sweet spot ---
+    if ltv_dp is not None and dti_dp is not None:
+        sweet_dp = max(ltv_dp, dti_dp)
+        reason = (
+            f"Minimum down payment clearing both LTV ≤ {ltv_pct}% and "
+            f"monthly payment ≤ {dti_pct}% of income. Beyond this point each "
+            f"extra €1 000 saves interest proportionally to the loan rate but "
+            f"provides no additional threshold benefit."
+        )
+    elif ltv_dp is not None:
+        sweet_dp = ltv_dp
+        reason = (
+            f"Minimum down payment clearing LTV ≤ {ltv_pct}% "
+            f"(DTI ≤ {dti_pct}% is not achievable within your savings)."
+        )
+    elif dti_dp is not None:
+        sweet_dp = dti_dp
+        reason = (
+            f"Minimum down payment where monthly payment ≤ {dti_pct}% of income "
+            f"(LTV ≤ {ltv_pct}% is not achievable within your savings)."
+        )
+    else:
+        sweet_dp = candidates[0]
+        reason = (
+            f"Neither LTV ≤ {ltv_pct}% nor DTI ≤ {dti_pct}% is achievable "
+            f"within your savings — showing minimum feasible down payment."
+        )
+
+    # --- 6-month reserve ceiling ---
+    reserve_target = SWEET_SPOT_RESERVE_MONTHS * params.monthly_net_income
+    reserve_ceiling_exact = params.available_savings - reserve_target
+    # Largest candidate that does not breach the reserve
+    reserve_dp: Decimal = candidates[0]
+    for c in reversed(candidates):
+        if c <= reserve_ceiling_exact:
+            reserve_dp = c
+            break
+
+    reserve_warning = ""
+    if sweet_dp > reserve_ceiling_exact:
+        reserve_warning = (
+            f"Warning: reaching the sweet spot requires putting more than your "
+            f"{SWEET_SPOT_RESERVE_MONTHS}-month income reserve "
+            f"({reserve_target:,.0f} {params.currency}) would allow. "
+            f"Consider stopping at the '{SWEET_SPOT_RESERVE_MONTHS}m buffer' row."
+        )
+
+    # --- Build deduplicated, ordered milestone list ---
+    spec: dict = {}   # Decimal -> (label, is_sweet)
+
+    def _add(dp_val: Decimal, label: str, is_sweet: bool = False) -> None:
+        if dp_val not in spec:
+            spec[dp_val] = (label, is_sweet)
+        elif is_sweet:
+            spec[dp_val] = (label, True)
+
+    _add(candidates[0], "Minimum")
+    if ltv_dp is not None and ltv_dp != sweet_dp:
+        _add(ltv_dp, f"LTV {ltv_pct}% threshold")
+    if dti_dp is not None and dti_dp != sweet_dp:
+        _add(dti_dp, f"DTI {dti_pct}% threshold")
+    _add(sweet_dp, "★  Sweet spot", is_sweet=True)
+    if (
+        reserve_dp != sweet_dp
+        and reserve_dp != candidates[0]
+        and reserve_dp != candidates[-1]
+    ):
+        _add(reserve_dp, f"{SWEET_SPOT_RESERVE_MONTHS}m reserve cap")
+    _add(candidates[-1], "Maximum")
+
+    milestones = [
+        _milestone(dp, label, is_sweet)
+        for dp, (label, is_sweet) in sorted(spec.items())
+    ]
+
+    return SweetSpotAnalysis(
+        milestones=milestones,
+        sweet_spot_reason=reason,
+        reserve_warning=reserve_warning,
+        duration_months=duration,
     )

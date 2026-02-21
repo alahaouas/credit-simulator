@@ -25,7 +25,7 @@ from rich import box
 from .calculator import build_amortization_schedule
 from .fetcher import FetchError, fetch_rate
 from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_LOAN_DURATION_MONTHS, VALID_PREFERENCES
-from .optimizer import OptimizedResult, optimize
+from .optimizer import OptimizedResult, SweetSpotAnalysis, optimize, analyze_sweet_spot
 from .profiles import (
     SUPPORTED_COUNTRIES,
     SessionProfileStore,
@@ -114,6 +114,53 @@ def display_amortization(result: OptimizedResult) -> None:
             _fmt_money(row.closing_balance, cur),
         )
     console.print(t)
+
+
+def _fmt_k(value: Decimal) -> str:
+    """Format a monetary amount as compact integer (no currency, no decimals)."""
+    return f"{value:,.0f}"
+
+
+def _fmt_k(value: Decimal) -> str:
+    """Format a monetary amount as compact integer (no currency, no decimals)."""
+    return f"{value:,.0f}"
+
+
+def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
+    console.print()
+    console.print(Panel(
+        f"[bold yellow]Down Payment Sweet-Spot Analysis[/bold yellow] "
+        f"— {_fmt_months(analysis.duration_months)} — all amounts in {currency}",
+        expand=False,
+    ))
+
+    t = Table(box=box.SIMPLE_HEAVY, show_header=True, padding=(0, 1), expand=False)
+    t.add_column("Milestone", style="cyan", min_width=14, max_width=18)
+    t.add_column("Down pmt", justify="right", min_width=9)
+    t.add_column("Monthly", justify="right", min_width=7)
+    t.add_column("DTI", justify="right", min_width=4)
+    t.add_column("LTV", justify="right", min_width=4)
+    t.add_column("Total cost", justify="right", min_width=10)
+    t.add_column("Liquidity", justify="right", min_width=9)
+
+    for m in analysis.milestones:
+        cost = m.plan.total_cost_of_credit
+        label = f"[bold green]{m.label}[/bold green]" if m.is_sweet_spot else m.label
+        t.add_row(
+            label,
+            _fmt_k(m.down_payment),
+            _fmt_k(m.plan.monthly_installment),
+            f"{float(m.dti_ratio) * 100:.0f}%",
+            f"{float(m.ltv_ratio) * 100:.0f}%",
+            _fmt_k(cost),
+            _fmt_k(m.savings_remaining),
+        )
+
+    console.print(t)
+    console.print(f"[bold]Sweet spot:[/bold] {analysis.sweet_spot_reason}")
+    if analysis.reserve_warning:
+        console.print(f"[bold red]{analysis.reserve_warning}[/bold red]")
+    console.print()
 
 
 def display_params(inputs: UserInputs, params: ResolvedParams) -> None:
@@ -355,7 +402,7 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
         console.print(
             "[bold]Actions:[/bold] "
             "[cyan]update[/cyan] · [cyan]reset[/cyan] · [cyan]profile[/cyan] · "
-            "[cyan]schedule[/cyan] · [cyan]params[/cyan] · [cyan]exit[/cyan]"
+            "[cyan]schedule[/cyan] · [cyan]sweetspot[/cyan] · [cyan]params[/cyan] · [cyan]exit[/cyan]"
         )
         action = console.input("[bold]> [/bold]").strip().lower()
 
@@ -374,6 +421,16 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
                 display_amortization(last_result)
             else:
                 err_console.print("Run a simulation first.")
+
+        elif action == "sweetspot":
+            if last_params is None:
+                err_console.print("Run a simulation first.")
+            else:
+                try:
+                    analysis = analyze_sweet_spot(last_params)
+                    display_sweet_spot(analysis, last_params.currency)
+                except Exception as exc:
+                    err_console.print(f"Sweet-spot analysis failed: {exc}")
 
         elif action == "update":
             console.print(f"  Fields: {', '.join(sorted(_UPDATABLE_FIELDS))}")

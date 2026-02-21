@@ -4,8 +4,9 @@ from decimal import Decimal
 import pytest
 
 from credit_simulator.profiles import SessionProfileStore
-from credit_simulator.optimizer import optimize
+from credit_simulator.optimizer import optimize, analyze_sweet_spot
 from credit_simulator.resolver import UserInputs, resolve
+from credit_simulator.config import SWEET_SPOT_LTV_TARGET, SWEET_SPOT_DTI_TARGET, SWEET_SPOT_RESERVE_MONTHS
 
 
 def _store() -> SessionProfileStore:
@@ -129,3 +130,99 @@ class TestOptimizeInvalidPreference:
         params = resolve(inputs, _store())
         with pytest.raises(ValueError, match="Unknown optimization preference"):
             optimize(params)
+
+
+class TestAnalyzeSweetSpot:
+    """Unit tests for the sweet-spot down-payment analysis."""
+
+    def _params(self, **kwargs):
+        defaults = dict(
+            property_price=Decimal("350000"),
+            monthly_net_income=Decimal("6000"),
+            available_savings=Decimal("150000"),
+            fixed_loan_duration_months=240,
+        )
+        defaults.update(kwargs)
+        inputs = UserInputs(**defaults)
+        return resolve(inputs, _store())
+
+    def test_returns_analysis_with_milestones(self):
+        params = self._params()
+        analysis = analyze_sweet_spot(params)
+        assert len(analysis.milestones) >= 2  # at least Minimum and Maximum
+
+    def test_always_includes_minimum_and_maximum(self):
+        params = self._params()
+        analysis = analyze_sweet_spot(params)
+        labels = [m.label for m in analysis.milestones]
+        assert any("Minimum" in l for l in labels)
+        assert any("Maximum" in l for l in labels)
+
+    def test_exactly_one_sweet_spot(self):
+        params = self._params()
+        analysis = analyze_sweet_spot(params)
+        sweet = [m for m in analysis.milestones if m.is_sweet_spot]
+        assert len(sweet) == 1
+
+    def test_sweet_spot_within_savings(self):
+        params = self._params()
+        analysis = analyze_sweet_spot(params)
+        sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
+        assert sweet.down_payment <= params.available_savings
+        assert sweet.down_payment >= params.min_down_payment
+
+    def test_sweet_spot_ltv_at_or_below_target_when_achievable(self):
+        # With large savings vs property price, LTV 80% should be reachable
+        params = self._params(
+            property_price=Decimal("200000"),
+            available_savings=Decimal("100000"),
+            monthly_net_income=Decimal("8000"),
+        )
+        analysis = analyze_sweet_spot(params)
+        sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
+        assert sweet.ltv_ratio <= SWEET_SPOT_LTV_TARGET
+
+    def test_sweet_spot_dti_at_or_below_target_when_achievable(self):
+        params = self._params(
+            property_price=Decimal("200000"),
+            available_savings=Decimal("100000"),
+            monthly_net_income=Decimal("8000"),
+        )
+        analysis = analyze_sweet_spot(params)
+        sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
+        assert sweet.dti_ratio <= SWEET_SPOT_DTI_TARGET
+
+    def test_milestones_ordered_by_down_payment(self):
+        params = self._params()
+        analysis = analyze_sweet_spot(params)
+        dps = [m.down_payment for m in analysis.milestones]
+        assert dps == sorted(dps)
+
+    def test_total_cost_decreases_with_down_payment(self):
+        params = self._params()
+        analysis = analyze_sweet_spot(params)
+        costs = [m.plan.total_cost_of_credit for m in analysis.milestones]
+        assert all(costs[i] >= costs[i + 1] for i in range(len(costs) - 1))
+
+    def test_reserve_warning_when_sweet_spot_breaches_buffer(self):
+        # Very low income → 6-month reserve is small → sweet spot may exceed it
+        params = self._params(
+            property_price=Decimal("350000"),
+            monthly_net_income=Decimal("1000"),   # reserve = 6 000 EUR
+            available_savings=Decimal("150000"),
+        )
+        analysis = analyze_sweet_spot(params)
+        sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
+        reserve_ceiling = params.available_savings - SWEET_SPOT_RESERVE_MONTHS * params.monthly_net_income
+        if sweet.down_payment > reserve_ceiling:
+            assert analysis.reserve_warning != ""
+
+    def test_duration_echoed(self):
+        params = self._params(fixed_loan_duration_months=180)
+        analysis = analyze_sweet_spot(params)
+        assert analysis.duration_months == 180
+
+    def test_sweet_spot_reason_non_empty(self):
+        params = self._params()
+        analysis = analyze_sweet_spot(params)
+        assert analysis.sweet_spot_reason != ""
