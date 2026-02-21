@@ -192,12 +192,35 @@ class TestAnalyzeSweetSpot:
     # --- Opportunity-cost logic ---
 
     def test_sweet_spot_is_minimum_when_opp_cost_exceeds_yield(self):
-        # Force opportunity cost >> loan APR so minimum down is optimal
+        # Force opportunity cost >> loan APR so minimum down is optimal.
+        # Default params: 350k price → min LTV exactly 90% (base tier, no surcharge),
+        # so effective_floor_dp == min_down_payment.
         params = self._params()
         analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.20"))
         sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
         assert sweet.down_payment == params.min_down_payment
         assert analysis.down_payment_is_efficient is False
+
+    def test_sweet_spot_exits_surcharge_zone(self):
+        # BE best: 499k price + 68k taxes → total 567k, min_dp = 113 400, LTV = 90.9 %.
+        # That puts the buyer in the +0.35 % surcharge tier (LTV > 90 %).
+        # Even when opp_rate > loan APR at the effective floor, the sweet spot must
+        # be at or above the LTV≤90 % crossing (~118 000), not at the raw minimum.
+        params = self._params(
+            property_price=Decimal("499000"),
+            available_savings=Decimal("300000"),
+            monthly_net_income=Decimal("6000"),
+            purchase_taxes=Decimal("68000"),
+            fixed_loan_duration_months=240,
+        )
+        analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.035"))
+        sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
+        # Sweet spot must NOT be the raw minimum (surcharge zone)
+        assert sweet.down_payment > params.min_down_payment
+        # LTV at sweet spot must be ≤ 90 % (out of surcharge zone)
+        principal = params.total_acquisition_cost - sweet.down_payment
+        ltv = principal / params.property_price
+        assert ltv <= Decimal("0.90")
 
     def test_sweet_spot_is_reserve_ceiling_when_yield_exceeds_opp_cost(self):
         # Force opportunity cost << loan APR so maximising down is optimal

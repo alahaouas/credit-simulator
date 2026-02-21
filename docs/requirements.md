@@ -211,6 +211,46 @@ Where:
 
 > **Precision requirement**: all intermediate and final monetary values must use decimal fixed-point arithmetic. Floating-point types are forbidden for monetary computations.
 
+### 4.5 Down-Payment Sweet-Spot Analysis
+
+On demand (via the `sweetspot` interactive command), the system produces a milestone table that helps the buyer choose a rational down payment.
+
+#### Decision rule
+
+For a fixed-rate mortgage the marginal interest saving per extra unit of down payment is **constant within an LTV tier**. The sweet spot is therefore determined by an opportunity-cost comparison:
+
+| Condition | Sweet spot |
+|---|---|
+| Loan APR > opportunity-cost rate | Maximise down payment up to the 6-month income reserve ceiling |
+| Loan APR ≤ opportunity-cost rate | Use the **effective floor** (see below) and invest the rest |
+
+The default **opportunity-cost rate** is **3.5 %** (configurable in `config.py`).
+
+#### Effective floor (surcharge zone rule)
+
+When the minimum down payment results in an LTV that falls in a **surcharge tier** (rate_delta > 0), anchoring the sweet spot at that minimum is irrational: a small extra payment exits the penalty zone and almost always delivers a saving that exceeds any opportunity-cost argument.
+
+**Rule**: when the minimum down payment is in a surcharge tier, the sweet spot floor is the minimum down payment that exits the surcharge zone (i.e., the cheapest down payment reaching the highest-LTV non-surcharge tier). The opportunity-cost APR comparison is also evaluated at this effective floor, not at the raw minimum.
+
+**Example**: BE best profile, 499 000 EUR property + 68 000 EUR taxes (total 567 000 EUR).
+Minimum down payment = 113 400 EUR → LTV = 90.9 % → surcharge tier (+0.35 %).
+Effective floor = 118 000 EUR → LTV ≤ 90 % → base tier (0.35 % penalty gone).
+Even if loan APR < opportunity-cost rate at the floor, the sweet spot is 118 000 EUR, not 113 400 EUR.
+
+#### Milestone table
+
+The table always shows:
+
+| Milestone | Condition |
+|---|---|
+| Minimum | Absolute minimum down payment (`min_down_payment`) |
+| LTV≤X% rate↓ | Each LTV tier crossing that reduces the interest rate |
+| ★ Sweet spot | The recommended down payment per the rule above |
+| Xm reserve cap | Maximum down payment while keeping X months of income in reserve |
+| Maximum | Full available savings |
+
+Each row shows: down payment, applicable interest rate, monthly installment, DTI ratio, LTV ratio, total cost of credit, and liquidity remaining.
+
 ---
 
 ## 5. Interactive Parameter Update Loop

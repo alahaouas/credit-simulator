@@ -269,10 +269,37 @@ def analyze_sweet_spot(
             effective_rate=eff_rate,
         )
 
-    # --- Marginal economics (computed at the minimum down payment) ---
+    # --- Determine effective floor for sweet-spot decision ---
+    # If the minimum down payment falls in a surcharge LTV tier (rate_delta > 0),
+    # anchoring the sweet spot there is irrational: a small extra amount exits the
+    # penalty zone and delivers a return that dwarfs any opportunity-cost argument.
+    # The effective floor is the cheapest down payment that puts the buyer in a
+    # non-surcharge tier (rate_delta ≤ 0).
+    min_dp = candidates[0]
+    _min_principal = params.total_acquisition_cost - min_dp
+    _min_ltv = _min_principal / params.property_price
+    _min_rate_delta = ZERO
+    for _t in sorted(params.ltv_rate_tiers, key=lambda t: t.ltv_max):
+        if _min_ltv <= _t.ltv_max:
+            _min_rate_delta = _t.rate_delta
+            break
+    effective_floor_dp = min_dp
+    if _min_rate_delta > ZERO:
+        # Find highest-LTV non-surcharge tier (cheapest to reach from above).
+        _non_surcharge = [t for t in params.ltv_rate_tiers if t.rate_delta <= ZERO]
+        if _non_surcharge:
+            _nearest = max(_non_surcharge, key=lambda t: t.ltv_max)
+            _exact = params.total_acquisition_cost - params.property_price * _nearest.ltv_max
+            _floor_cand = (
+                _exact / STEP_DOWN_PAYMENT
+            ).to_integral_value(rounding="ROUND_CEILING") * STEP_DOWN_PAYMENT
+            if _floor_cand <= params.available_savings:
+                effective_floor_dp = _floor_cand
+
+    # --- Marginal economics (computed at the effective floor) ---
     # Uses LTV-adjusted rates: the marginal saving is constant within a tier
     # but jumps at LTV tier crossings (where the rate itself drops).
-    ref_principal = params.total_acquisition_cost - candidates[0]
+    ref_principal = params.total_acquisition_cost - effective_floor_dp
     ref_ltv = ref_principal / params.property_price
     ref_rate = params.rate_for_ltv(ref_ltv)
     plan_ref = compute_loan_plan(ref_principal, ref_rate, params.insurance_rate, duration)
@@ -283,7 +310,7 @@ def analyze_sweet_spot(
     marginal_saving_per_1k = (
         plan_ref.total_cost_of_credit - plan_ref_minus1k.total_cost_of_credit
     )
-    effective_annual_yield = plan_ref.effective_annual_rate   # APR at min down payment LTV
+    effective_annual_yield = plan_ref.effective_annual_rate   # APR at effective floor LTV
 
     # --- Opportunity-cost decision ---
     down_payment_is_efficient = effective_annual_yield > opp_rate
@@ -311,13 +338,25 @@ def analyze_sweet_spot(
             f"income reserve ceiling — do not go further."
         )
     else:
-        sweet_dp = candidates[0]
-        reason = (
-            f"Loan APR ({yield_pct}%) is at or below the reference rate ({opp_pct}%): "
-            f"investing the surplus earns more than it saves in mortgage interest. "
-            f"Put only the minimum required down payment; every extra euro costs "
-            f"you ({opp_pct}% − {yield_pct}%) in forgone returns."
-        )
+        sweet_dp = effective_floor_dp
+        if effective_floor_dp > candidates[0]:
+            extra = effective_floor_dp - candidates[0]
+            reason = (
+                f"Loan APR ({yield_pct}%) is at or below the reference rate ({opp_pct}%): "
+                f"investing the surplus could earn more than the mortgage interest saved. "
+                f"However, the minimum down payment ({candidates[0]:,.0f} {params.currency}) "
+                f"falls in an LTV surcharge tier — committing an extra "
+                f"{extra:,.0f} {params.currency} immediately exits the penalty zone "
+                f"and is almost always worth it regardless of opportunity cost. "
+                f"Beyond this floor, invest any further surplus."
+            )
+        else:
+            reason = (
+                f"Loan APR ({yield_pct}%) is at or below the reference rate ({opp_pct}%): "
+                f"investing the surplus earns more than it saves in mortgage interest. "
+                f"Put only the minimum required down payment; every extra euro costs "
+                f"you ({opp_pct}% − {yield_pct}%) in forgone returns."
+            )
 
     # --- Reserve warning ---
     reserve_warning = ""
