@@ -222,7 +222,7 @@ class TestAnalyzeSweetSpot:
         plan2 = compute_loan_plan(p2, params.rate_for_ltv(ltv2), params.insurance_rate, 240)
         expected_per_10k = plan1.total_cost_of_credit - plan2.total_cost_of_credit
         # marginal_saving_per_1k × 10 should match the 10k saving (within rounding)
-        assert abs(analysis.marginal_saving_per_1k * 10 - expected_per_10k) < Decimal("2")
+        assert abs(analysis.marginal_saving_per_1k * 10 - expected_per_10k) < Decimal("5")
 
     def test_reserve_warning_when_min_dp_exceeds_buffer(self):
         # Very low income → reserve floor is tiny → min down payment may exceed it

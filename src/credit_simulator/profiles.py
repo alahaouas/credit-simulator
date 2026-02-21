@@ -67,11 +67,14 @@ class CountryProfile:
 # ── LTV tier helpers ──────────────────────────────────────────────────────────
 
 def _be_tiers() -> tuple:
+    # Base rate anchored at LTV ≤ 90% (standard 20% down).
+    # Best lenders (KBC, Belfius, BNP) quote ~2.74% for premium LTV ≤ 80%:
+    # with best=2.90%, a -0.20% delta gives 2.70% ≈ market floor.
     return (
-        LtvRateTier(Decimal("0.75"), Decimal("-0.0025")),  # LTV ≤ 75%: −0.25%
-        LtvRateTier(Decimal("0.80"), Decimal("-0.0015")),  # LTV ≤ 80%: −0.15%
+        LtvRateTier(Decimal("0.75"), Decimal("-0.0030")),  # LTV ≤ 75%: −0.30%
+        LtvRateTier(Decimal("0.80"), Decimal("-0.0020")),  # LTV ≤ 80%: −0.20%
         LtvRateTier(Decimal("0.90"), Decimal("0.0000")),   # LTV ≤ 90%: base
-        LtvRateTier(Decimal("1.00"), Decimal("0.0025")),   # LTV ≤ 100%: +0.25%
+        LtvRateTier(Decimal("1.00"), Decimal("0.0035")),   # LTV ≤ 100%: +0.35%
     )
 
 def _fr_tiers() -> tuple:
@@ -187,8 +190,9 @@ _PROFILES: dict[str, CountryProfile] = {
     "BE": CountryProfile(
         code="BE",
         currency="EUR",
-        annual_rate_average=Decimal("0.0320"),
-        annual_rate_best=Decimal("0.0270"),
+        # Immotheker barometer Dec-2025: 3.61% avg, best deals ~2.74–2.90%
+        annual_rate_average=Decimal("0.0360"),
+        annual_rate_best=Decimal("0.0290"),
         insurance_rate_average=Decimal("0.0025"),
         insurance_rate_best=Decimal("0.0010"),
         purchase_tax_rate=Decimal("0.125"),
