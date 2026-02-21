@@ -347,13 +347,16 @@ def analyze_sweet_spot(
 
     _add(candidates[0], "Minimum")
 
-    # Add LTV tier rate-discount milestones (where extra down payment unlocks a lower rate)
-    for tier in params.ltv_rate_tiers:
-        if tier.rate_delta >= ZERO:
-            continue  # only highlight discount tiers
-        # Minimum down payment needed to achieve this LTV tier
+    # Add milestones at every LTV tier crossing that improves the rate.
+    # Tiers are sorted ascending by ltv_max; crossing tier[i].ltv_max downward
+    # switches from tier[i+1] to tier[i], which is a rate improvement when
+    # tier[i].rate_delta < tier[i+1].rate_delta.
+    tiers = params.ltv_rate_tiers
+    for i in range(len(tiers) - 1):
+        tier, next_tier = tiers[i], tiers[i + 1]
+        if tier.rate_delta >= next_tier.rate_delta:
+            continue  # crossing this threshold does not improve the rate
         exact_dp = params.total_acquisition_cost - params.property_price * tier.ltv_max
-        # Round up to nearest grid step so we just cross the LTV threshold
         tier_dp = (exact_dp / STEP_DOWN_PAYMENT).to_integral_value(
             rounding="ROUND_CEILING"
         ) * STEP_DOWN_PAYMENT
