@@ -208,16 +208,18 @@ class TestAnalyzeSweetSpot:
         assert sweet.down_payment <= reserve_ceiling
         assert analysis.down_payment_is_efficient is True
 
-    def test_marginal_saving_is_constant(self):
-        # Marginal saving is the same regardless of down payment level (fixed-rate property)
+    def test_marginal_saving_matches_direct_calculation(self):
+        # Verify that marginal_saving_per_1k matches a direct calculation using
+        # LTV-adjusted rates (constant within a single LTV tier, larger at crossings).
         params = self._params()
         analysis = analyze_sweet_spot(params)
-        # Verify by computing it directly for two different principals
         from credit_simulator.calculator import compute_loan_plan
         p1 = params.total_acquisition_cost - params.min_down_payment
         p2 = p1 - Decimal("10000")
-        plan1 = compute_loan_plan(p1, params.annual_interest_rate, params.insurance_rate, 240)
-        plan2 = compute_loan_plan(p2, params.annual_interest_rate, params.insurance_rate, 240)
+        ltv1 = p1 / params.property_price
+        ltv2 = p2 / params.property_price
+        plan1 = compute_loan_plan(p1, params.rate_for_ltv(ltv1), params.insurance_rate, 240)
+        plan2 = compute_loan_plan(p2, params.rate_for_ltv(ltv2), params.insurance_rate, 240)
         expected_per_10k = plan1.total_cost_of_credit - plan2.total_cost_of_credit
         # marginal_saving_per_1k × 10 should match the 10k saving (within rounding)
         assert abs(analysis.marginal_saving_per_1k * 10 - expected_per_10k) < Decimal("2")

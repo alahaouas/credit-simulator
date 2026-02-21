@@ -14,7 +14,7 @@ from decimal import Decimal
 from typing import Optional
 
 from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_MAX_MONTHLY_PAYMENT, ProfileQuality, ZERO
-from .profiles import SessionProfileStore, get_profile
+from .profiles import LtvRateTier, SessionProfileStore, get_profile
 
 
 @dataclass
@@ -63,10 +63,21 @@ class ResolvedParams:
     available_savings: Decimal
     max_monthly_payment: Decimal
     min_down_payment: Decimal
+    # LTV-based rate tiers (from static profile, ordered ascending ltv_max)
+    ltv_rate_tiers: tuple  # tuple[LtvRateTier, ...]
     # Preference
     optimization_preference: str
     # Provenance — 'user' or 'profile' for each optional param
     sources: dict[str, str] = field(default_factory=dict)
+
+    def rate_for_ltv(self, ltv: Decimal) -> Decimal:
+        """Effective annual rate for the given LTV (base rate + tier delta)."""
+        for tier in self.ltv_rate_tiers:
+            if ltv <= tier.ltv_max:
+                return self.annual_interest_rate + tier.rate_delta
+        if self.ltv_rate_tiers:
+            return self.annual_interest_rate + self.ltv_rate_tiers[-1].rate_delta
+        return self.annual_interest_rate
 
 
 class InfeasibleError(Exception):
@@ -81,9 +92,10 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
     country = (inputs.country or DEFAULT_COUNTRY).upper()
     quality: ProfileQuality = inputs.profile_quality or DEFAULT_QUALITY
     # Validate country code (will raise ValueError if unknown)
-    get_profile(country)
+    profile = get_profile(country)
 
     currency = str(store.get_field(country, "currency"))
+    ltv_rate_tiers = profile.ltv_rate_tiers
 
     # --- Step 2: optional loan parameters ---
     def _resolve(user_val, profile_val, name: str):
@@ -156,6 +168,7 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         min_down_payment_ratio=min_down_payment_ratio,
         max_loan_duration_months=max_loan_duration_months,
         fixed_loan_duration_months=inputs.fixed_loan_duration_months,
+        ltv_rate_tiers=ltv_rate_tiers,
         monthly_net_income=inputs.monthly_net_income,
         available_savings=inputs.available_savings,
         max_monthly_payment=max_monthly_payment,
@@ -189,8 +202,9 @@ def check_feasibility(params: ResolvedParams) -> None:
 
     from .calculator import compute_emi, compute_monthly_insurance
 
+    min_ltv = min_principal / params.property_price
     best_emi = compute_emi(
-        min_principal, params.annual_interest_rate, params.max_loan_duration_months
+        min_principal, params.rate_for_ltv(min_ltv), params.max_loan_duration_months
     )
     min_insurance = compute_monthly_insurance(min_principal, params.insurance_rate)
     min_payment = best_emi + min_insurance

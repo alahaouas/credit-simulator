@@ -147,8 +147,9 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
 
     # --- Milestone table ---
     t = Table(box=box.SIMPLE_HEAVY, show_header=True, padding=(0, 1), expand=False)
-    t.add_column("Milestone", style="cyan", min_width=14, max_width=18)
+    t.add_column("Milestone", style="cyan", min_width=14, max_width=20)
     t.add_column("Down pmt", justify="right", min_width=9)
+    t.add_column("Rate", justify="right", min_width=6)
     t.add_column("Monthly", justify="right", min_width=7)
     t.add_column("DTI", justify="right", min_width=4)
     t.add_column("LTV", justify="right", min_width=4)
@@ -160,6 +161,7 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
         t.add_row(
             label,
             _fmt_k(m.down_payment),
+            f"{float(m.effective_rate) * 100:.2f}%",
             _fmt_k(m.plan.monthly_installment),
             f"{float(m.dti_ratio) * 100:.0f}%",
             f"{float(m.ltv_ratio) * 100:.0f}%",

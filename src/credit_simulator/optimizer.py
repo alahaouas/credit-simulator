@@ -107,6 +107,9 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
             # Buyer pays cash — trivially feasible but unusual; skip (loan = 0)
             continue
 
+        ltv = principal / params.property_price
+        effective_rate = params.rate_for_ltv(ltv)
+
         duration_candidates = (
             [params.fixed_loan_duration_months]
             if params.fixed_loan_duration_months is not None
@@ -115,7 +118,7 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         for duration in duration_candidates:
             plan = compute_loan_plan(
                 principal,
-                params.annual_interest_rate,
+                effective_rate,
                 params.insurance_rate,
                 duration,
             )
@@ -173,6 +176,7 @@ class SweetSpotMilestone:
     dti_ratio: Decimal        # monthly_installment / monthly_net_income
     savings_remaining: Decimal
     is_sweet_spot: bool
+    effective_rate: Decimal   # LTV-adjusted annual interest rate for this milestone
 
 
 @dataclass(frozen=True)
@@ -245,12 +249,11 @@ def analyze_sweet_spot(
 
     def _milestone(dp: Decimal, label: str, is_sweet: bool = False) -> SweetSpotMilestone:
         principal = params.total_acquisition_cost - dp
-        plan = compute_loan_plan(
-            principal, params.annual_interest_rate, params.insurance_rate, duration
-        )
         ltv = (principal / params.property_price).quantize(
             Decimal("0.0001"), rounding="ROUND_HALF_UP"
         )
+        eff_rate = params.rate_for_ltv(ltv)
+        plan = compute_loan_plan(principal, eff_rate, params.insurance_rate, duration)
         dti = (plan.monthly_installment / params.monthly_net_income).quantize(
             Decimal("0.0001"), rounding="ROUND_HALF_UP"
         )
@@ -263,23 +266,24 @@ def analyze_sweet_spot(
             dti_ratio=dti,
             savings_remaining=params.available_savings - dp,
             is_sweet_spot=is_sweet,
+            effective_rate=eff_rate,
         )
 
     # --- Marginal economics (computed at the minimum down payment) ---
-    # Reducing principal by €1 000 increases total cost of credit by exactly
-    # this amount — it is constant for any fixed-rate loan.
+    # Uses LTV-adjusted rates: the marginal saving is constant within a tier
+    # but jumps at LTV tier crossings (where the rate itself drops).
     ref_principal = params.total_acquisition_cost - candidates[0]
-    plan_ref = compute_loan_plan(
-        ref_principal, params.annual_interest_rate, params.insurance_rate, duration
-    )
-    plan_ref_minus1k = compute_loan_plan(
-        ref_principal - Decimal("1000"),
-        params.annual_interest_rate, params.insurance_rate, duration,
-    )
+    ref_ltv = ref_principal / params.property_price
+    ref_rate = params.rate_for_ltv(ref_ltv)
+    plan_ref = compute_loan_plan(ref_principal, ref_rate, params.insurance_rate, duration)
+    alt_principal = ref_principal - Decimal("1000")
+    alt_ltv = alt_principal / params.property_price
+    alt_rate = params.rate_for_ltv(alt_ltv)
+    plan_ref_minus1k = compute_loan_plan(alt_principal, alt_rate, params.insurance_rate, duration)
     marginal_saving_per_1k = (
         plan_ref.total_cost_of_credit - plan_ref_minus1k.total_cost_of_credit
     )
-    effective_annual_yield = plan_ref.effective_annual_rate   # APR ≈ IRR of down payment
+    effective_annual_yield = plan_ref.effective_annual_rate   # APR at min down payment LTV
 
     # --- Opportunity-cost decision ---
     down_payment_is_efficient = effective_annual_yield > opp_rate
@@ -342,6 +346,22 @@ def analyze_sweet_spot(
             spec[dp_val] = (label, True)
 
     _add(candidates[0], "Minimum")
+
+    # Add LTV tier rate-discount milestones (where extra down payment unlocks a lower rate)
+    for tier in params.ltv_rate_tiers:
+        if tier.rate_delta >= ZERO:
+            continue  # only highlight discount tiers
+        # Minimum down payment needed to achieve this LTV tier
+        exact_dp = params.total_acquisition_cost - params.property_price * tier.ltv_max
+        # Round up to nearest grid step so we just cross the LTV threshold
+        tier_dp = (exact_dp / STEP_DOWN_PAYMENT).to_integral_value(
+            rounding="ROUND_CEILING"
+        ) * STEP_DOWN_PAYMENT
+        if params.min_down_payment < tier_dp < params.available_savings:
+            tier_rate = params.annual_interest_rate + tier.rate_delta
+            rate_pct = f"{float(tier_rate) * 100:.2f}%"
+            _add(tier_dp, f"LTV≤{int(tier.ltv_max * 100)}% ({rate_pct})")
+
     if ltv_dp is not None and ltv_dp != candidates[0] and ltv_dp != candidates[-1]:
         _add(ltv_dp, f"LTV {ltv_pct}% (ref)")
     _add(sweet_dp, "★  Sweet spot", is_sweet=True)
