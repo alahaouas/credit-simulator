@@ -34,6 +34,12 @@ VALID_PREFERENCES: frozenset[str] = frozenset({
     "balanced",
 })
 
+# ── Sweet-spot analysis thresholds ───────────────────────────────────────────
+
+SWEET_SPOT_LTV_TARGET = Decimal("0.80")   # LTV below this → crossed the key threshold
+SWEET_SPOT_DTI_TARGET = Decimal("0.35")   # Monthly payment / net income ≤ this → affordable
+SWEET_SPOT_RESERVE_MONTHS: int = 6        # Months of income to keep in savings (emergency fund)
+
 # ── Numeric convenience ───────────────────────────────────────────────────────
 
 ZERO = Decimal("0")
