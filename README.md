@@ -19,6 +19,12 @@ loan plan and walks you through an amortization schedule — all in your termina
   down payment, or let the tool pick a balanced trade-off.
 - **Full amortization schedule** — month-by-month breakdown of principal,
   interest, and insurance components.
+- **Down-payment sweet-spot analysis** — compares the loan APR against an
+  opportunity-cost benchmark to identify the rational floor for your down
+  payment. Highlights all LTV tier crossings (rate discounts and surcharge
+  exits), the 6-month income reserve ceiling, and the absolute maximum. When
+  the minimum down payment falls in a surcharge LTV tier, the sweet spot is
+  automatically raised to the cheapest exit from that penalty zone.
 - **Interactive update loop** — change any parameter and re-run instantly;
   no restart needed.
 - **Country profile overrides** — adjust any rate manually, or fetch the latest
@@ -111,6 +117,7 @@ After each simulation result, you can type one of the following:
 | `reset` | Reset a parameter to its country-profile default |
 | `profile` | Update a country profile field (manual or online fetch) |
 | `schedule` | Display the full month-by-month amortization schedule |
+| `sweetspot` | Down-payment sweet-spot analysis with LTV tier milestones |
 | `params` | Show all current parameter values and their sources |
 | `exit` | Quit the session |
 
@@ -210,8 +217,9 @@ credit-simulator/
 pytest
 ```
 
-64 tests covering EMI arithmetic, amortization schedule invariants, parameter
-resolution, feasibility checks, all optimization preferences, and CLI integration.
+77 tests covering EMI arithmetic, amortization schedule invariants, parameter
+resolution, feasibility checks, all optimization preferences, sweet-spot analysis
+(including LTV surcharge zone handling), and CLI integration.
 
 ---
 
