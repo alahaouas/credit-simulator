@@ -7,14 +7,15 @@
   # Use https://search.nixos.org/packages to find packages
   packages = [
     # pkgs.go
-    # pkgs.python311
-    # pkgs.python311Packages.pip
-    # pkgs.nodejs_20
-    # pkgs.nodePackages.nodemon
+    pkgs.python312
+    pkgs.python312Packages.pip
   ];
 
   # Sets environment variables in the workspace
-  env = {};
+  env = {
+    PATH = "$PATH:/home/user/.local/bin";
+  };
+
   idx = {
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
@@ -42,8 +43,7 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        # Example: install JS dependencies from NPM
-        # npm-install = "npm install";
+        install-deps = "python3.12 -m ensurepip --upgrade && pip install --user --break-system-packages -e .\"[dev]\"";
       };
       # Runs when the workspace is (re)started
       onStart = {
