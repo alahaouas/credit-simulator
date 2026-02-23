@@ -94,6 +94,7 @@ Available flags:
 | `--country` | ISO country code | `BE` |
 | `--quality` | `average` or `best` | `average` |
 | `--preference` | Optimization preference (see below) | `balanced` |
+| `--duration` | Pin loan duration in months (e.g. `240`) or years (e.g. `20y`). Omit to let the optimizer search freely. | free search |
 
 ### Optimization preferences
 
@@ -147,7 +148,7 @@ Goodbye.
 
 | Country | Code | Currency | Avg rate | Best rate | Max duration |
 |---|---|---|---|---|---|
-| Belgium _(default)_ | `BE` | EUR | 3.20% | 2.70% | 25 years |
+| Belgium _(default)_ | `BE` | EUR | 3.60% | 2.90% | 25 years |
 | France | `FR` | EUR | 3.50% | 2.90% | 25 years |
 | Spain | `ES` | EUR | 3.50% | 2.80% | 30 years |
 | Germany | `DE` | EUR | 3.80% | 3.10% | 30 years |
@@ -217,7 +218,7 @@ credit-simulator/
 pytest
 ```
 
-77 tests covering EMI arithmetic, amortization schedule invariants, parameter
+Tests covering EMI arithmetic, amortization schedule invariants, parameter
 resolution, feasibility checks, all optimization preferences, sweet-spot analysis
 (including LTV surcharge zone handling), and CLI integration.
 

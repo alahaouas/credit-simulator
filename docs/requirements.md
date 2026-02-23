@@ -68,7 +68,7 @@ Profile quality only affects **market-driven fields** (`annual_interest_rate`, `
 | Spain | `ES` | EUR | 3.50% | 2.80% | 0.20% | 0.09% |
 | Germany | `DE` | EUR | 3.80% | 3.10% | 0.15% | 0.08% |
 | Portugal | `PT` | EUR | 4.00% | 3.20% | 0.25% | 0.10% |
-| Belgium _(default)_ | `BE` | EUR | 3.20% | 2.70% | 0.25% | 0.10% |
+| Belgium _(default)_ | `BE` | EUR | 3.60% | 2.90% | 0.25% | 0.10% |
 | Italy | `IT` | EUR | 4.00% | 3.20% | 0.20% | 0.08% |
 | United Kingdom | `GB` | GBP | 5.00% | 4.20% | 0.25% | 0.12% |
 | United States | `US` | USD | 7.00% | 6.20% | 0.80% | 0.40% |
@@ -98,7 +98,7 @@ Profile quality only affects **market-driven fields** (`annual_interest_rate`, `
 | `purchase_tax_rate` | No | Used to estimate `purchase_taxes`: `property_price × rate` |
 | `taxes_financeable` | No | Boolean — whether purchase taxes can be included in the loan principal |
 | `min_down_payment_ratio` | No | Default minimum down payment ratio |
-| `max_debt_ratio` | No | Default maximum debt-to-income ratio |
+| `max_debt_ratio` | No | Default maximum debt-to-income ratio (e.g. 0.35 = 35%) |
 | `max_loan_duration_months` | No | Default maximum loan duration |
 
 ### 2.5 Optimization Preferences
@@ -189,8 +189,7 @@ Given the buyer's preference, the system shall search over the space of:
 - Loan durations: from 12 months up to `max_loan_duration_months` (step: 12 months)
 
 For each `(down_payment, duration)` pair, compute the resulting plan and check all constraints:
-- `debt_ratio <= max_debt_ratio`
-- `monthly_installment <= max_monthly_payment` (always enforced; defaults to 2,200 EUR)
+- `monthly_installment <= effective_monthly_cap` where `effective_monthly_cap = min(monthly_net_income × max_debt_ratio, max_monthly_payment)`
 - `loan_principal > 0`
 
 Among all **feasible** plans, select the one that best satisfies the declared preference.
@@ -357,7 +356,7 @@ The ECB series key `MIR.M.{CC}.B.A2C.F.R.A.2250.EUR.N` encodes: monthly frequenc
 | `purchase_tax_rate` | No (shared) | Yes | No | >= 0 |
 | `taxes_financeable` | No (shared) | Yes | No | `true` or `false` |
 | `min_down_payment_ratio` | No (shared) | Yes | No | 0%–100% |
-| `max_debt_ratio` | No (shared) | Yes | No | > 0 |
+| `max_debt_ratio` | No (shared) | Yes | No | > 0, ≤ 1 |
 | `max_loan_duration_months` | No (shared) | Yes | No | 12–600 |
 
 > **Invariant**: `best` rates must always be ≤ the corresponding `average` rates. The system rejects any manual update that would violate this and displays an explicit error.

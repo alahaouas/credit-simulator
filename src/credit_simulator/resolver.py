@@ -35,6 +35,7 @@ class UserInputs:
     max_loan_duration_months: Optional[int] = None
     fixed_loan_duration_months: Optional[int] = None  # pin optimizer to exactly this duration
     # Optional buyer constraints
+    max_debt_ratio: Optional[Decimal] = None
     max_monthly_payment: Optional[Decimal] = None
     # Optimization preference
     optimization_preference: str = "balanced"
@@ -61,6 +62,7 @@ class ResolvedParams:
     # Buyer constraints (resolved)
     monthly_net_income: Decimal
     available_savings: Decimal
+    max_debt_ratio: Decimal
     max_monthly_payment: Decimal
     min_down_payment: Decimal
     # LTV-based rate tiers (from static profile, ordered ascending ltv_max)
@@ -125,6 +127,11 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         int(store.get_field(country, "max_loan_duration_months")),
         "max_loan_duration_months",
     )
+    max_debt_ratio = _resolve(
+        inputs.max_debt_ratio,
+        Decimal(str(store.get_field(country, "max_debt_ratio"))),
+        "max_debt_ratio",
+    )
     max_monthly_payment = _resolve(
         inputs.max_monthly_payment,
         DEFAULT_MAX_MONTHLY_PAYMENT,
@@ -171,6 +178,7 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         ltv_rate_tiers=ltv_rate_tiers,
         monthly_net_income=inputs.monthly_net_income,
         available_savings=inputs.available_savings,
+        max_debt_ratio=max_debt_ratio,
         max_monthly_payment=max_monthly_payment,
         min_down_payment=min_down_payment,
         optimization_preference=inputs.optimization_preference,
@@ -202,6 +210,12 @@ def check_feasibility(params: ResolvedParams) -> None:
 
     from .calculator import compute_emi, compute_monthly_insurance
 
+    # Effective monthly cap = stricter of DTI limit and absolute payment cap.
+    effective_cap = min(
+        params.monthly_net_income * params.max_debt_ratio,
+        params.max_monthly_payment,
+    )
+
     min_ltv = min_principal / params.property_price
     best_emi = compute_emi(
         min_principal, params.rate_for_ltv(min_ltv), params.max_loan_duration_months
@@ -209,11 +223,13 @@ def check_feasibility(params: ResolvedParams) -> None:
     min_insurance = compute_monthly_insurance(min_principal, params.insurance_rate)
     min_payment = best_emi + min_insurance
 
-    if min_payment > params.max_monthly_payment:
+    if min_payment > effective_cap:
         raise InfeasibleError(
             f"Monthly payment for the minimum loan "
             f"({min_principal:,.2f} {params.currency} over {params.max_loan_duration_months} months) "
             f"would be {min_payment:,.2f} {params.currency}, "
-            f"exceeding your maximum monthly payment cap of "
-            f"{params.max_monthly_payment:,.2f} {params.currency}."
+            f"exceeding the effective monthly cap of "
+            f"{effective_cap:,.2f} {params.currency} "
+            f"(DTI limit: {params.max_debt_ratio:.0%} of income, "
+            f"absolute cap: {params.max_monthly_payment:,.2f} {params.currency})."
         )

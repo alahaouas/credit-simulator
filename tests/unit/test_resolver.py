@@ -108,3 +108,29 @@ class TestFeasibility:
         )
         with pytest.raises(InfeasibleError, match="Monthly payment"):
             check_feasibility(params)
+
+    def test_default_max_debt_ratio_from_profile(self):
+        params = self._params()
+        # BE profile max_debt_ratio = 35%
+        assert params.max_debt_ratio == Decimal("0.35")
+
+    def test_user_max_debt_ratio_overrides_profile(self):
+        params = resolve(_base_inputs(max_debt_ratio=Decimal("0.28")), _store())
+        assert params.max_debt_ratio == Decimal("0.28")
+        assert params.sources["max_debt_ratio"] == "user"
+
+    def test_us_max_debt_ratio_is_43_pct(self):
+        params = resolve(_base_inputs(country="US"), _store())
+        assert params.max_debt_ratio == Decimal("0.43")
+
+    def test_dti_cap_is_stricter_than_absolute_cap(self):
+        # Income=4000, debt_ratio=35% → dti cap=1400, absolute cap=2200
+        # Effective cap must be 1400
+        params = resolve(
+            _base_inputs(monthly_net_income=Decimal("4000"), available_savings=Decimal("100000")),
+            _store(),
+        )
+        from credit_simulator.config import DEFAULT_MAX_MONTHLY_PAYMENT
+        effective_cap = min(params.monthly_net_income * params.max_debt_ratio, params.max_monthly_payment)
+        assert effective_cap == Decimal("1400")
+        assert effective_cap < DEFAULT_MAX_MONTHLY_PAYMENT

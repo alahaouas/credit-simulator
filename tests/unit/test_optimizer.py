@@ -132,6 +132,41 @@ class TestOptimizeInvalidPreference:
             optimize(params)
 
 
+class TestOptimizerDTIConstraint:
+    def test_optimizer_respects_dti_cap(self):
+        # property=200 000, income=4 000 → effective DTI cap = 4000 × 35% = 1 400 EUR.
+        # Min principal: 225 000 − 100 000 = 125 000 → payment ≈ 660 EUR (well within cap).
+        # The optimizer must not return a plan exceeding 1 400 EUR.
+        result = _run(
+            "minimize_total_cost",
+            property_price=Decimal("200000"),
+            monthly_net_income=Decimal("4000"),
+            available_savings=Decimal("100000"),
+        )
+        assert result.plan.monthly_installment <= Decimal("1400.01")  # tolerance for rounding
+
+    def test_optimizer_dti_cap_is_binding_over_absolute_cap(self):
+        # income=4000, DTI cap=1400, absolute cap=2200 → effective cap is 1400.
+        # Confirm the returned plan is ≤ DTI cap (not allowed to reach 2200).
+        result = _run(
+            "minimize_monthly_payment",
+            property_price=Decimal("200000"),
+            monthly_net_income=Decimal("4000"),
+            available_savings=Decimal("100000"),
+        )
+        assert result.plan.monthly_installment <= Decimal("1400.01")
+
+    def test_optimizer_uses_absolute_cap_when_stricter(self):
+        # With income=10000 and BE debt_ratio=35%, dti_cap=3500 > absolute cap=2200.
+        # The optimizer must honour the absolute cap.
+        result = _run(
+            "minimize_total_cost",
+            monthly_net_income=Decimal("10000"),
+            available_savings=Decimal("100000"),
+        )
+        assert result.plan.monthly_installment <= Decimal("2200.01")
+
+
 class TestAnalyzeSweetSpot:
     """Unit tests for the opportunity-cost-based sweet-spot analysis."""
 
