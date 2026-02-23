@@ -96,9 +96,7 @@ def compute_loan_plan(
     r = annual_interest_rate / Decimal(12)
     monthly_interest_first = _round(principal * r)
 
-    total_emi = emi * Decimal(duration_months)
-    # Total interest = total EMI payments - principal (exact, no rounding of intermediate)
-    # We compute it precisely via the amortization schedule to avoid accumulated rounding.
+    # Total interest computed precisely via the amortization schedule to avoid accumulated rounding.
     schedule = build_amortization_schedule(
         principal, annual_interest_rate, annual_insurance_rate, duration_months
     )

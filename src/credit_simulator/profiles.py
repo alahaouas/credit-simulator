@@ -43,6 +43,7 @@ class CountryProfile:
     purchase_tax_rate: Decimal
     taxes_financeable: bool
     min_down_payment_ratio: Decimal
+    max_debt_ratio: Decimal
     max_loan_duration_months: int
     # LTV-based rate adjustment tiers (ascending ltv_max order)
     ltv_rate_tiers: tuple = ()   # tuple[LtvRateTier, ...]
@@ -145,6 +146,7 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.075"),
         taxes_financeable=False,
         min_down_payment_ratio=Decimal("0.00"),  # minimum = taxes (handled in resolver)
+        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=300,
         ltv_rate_tiers=_fr_tiers(),
     ),
@@ -158,6 +160,7 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.08"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
+        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=360,
         ltv_rate_tiers=_es_tiers(),
     ),
@@ -171,6 +174,7 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.05"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
+        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=360,
         ltv_rate_tiers=_de_tiers(),
     ),
@@ -184,6 +188,7 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.07"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.10"),
+        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=360,
         ltv_rate_tiers=_pt_tiers(),
     ),
@@ -198,6 +203,7 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.125"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
+        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=300,
         ltv_rate_tiers=_be_tiers(),
     ),
@@ -211,6 +217,7 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.04"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
+        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=360,
         ltv_rate_tiers=_it_tiers(),
     ),
@@ -224,6 +231,7 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.03"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.10"),
+        max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=420,
         ltv_rate_tiers=_gb_tiers(),
     ),
@@ -237,6 +245,7 @@ _PROFILES: dict[str, CountryProfile] = {
         purchase_tax_rate=Decimal("0.025"),
         taxes_financeable=True,
         min_down_payment_ratio=Decimal("0.20"),
+        max_debt_ratio=Decimal("0.43"),
         max_loan_duration_months=360,
         ltv_rate_tiers=_us_tiers(),
     ),

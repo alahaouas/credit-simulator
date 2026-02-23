@@ -6,18 +6,16 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
 
 ## Project Overview
 
-**credit-simulator** is a project for simulating credit-related financial scenarios. As of the initial commit, the project is in its bootstrapping phase — no application code, framework, or tooling has been added yet.
-
-This document should be updated as the project evolves.
+**credit-simulator** is an interactive command-line mortgage / credit loan simulator. Given a property price, income, and savings, it finds the optimal loan plan, shows a full amortization schedule, and provides a down-payment sweet-spot analysis — all in the terminal.
 
 ---
 
-## Repository State (as of 2026-02-20)
+## Repository State (as of 2026-02-23)
 
 | Item | Status |
 |---|---|
-| Source code | **In progress** — initial implementation on `claude/explain-codebase-mlvdnzl75enhzw3c-v8Qnv` |
-| Framework / language | **Python 3.11+** (chosen) |
+| Source code | **Complete** — all modules implemented and tested |
+| Framework / language | **Python 3.11+** |
 | Build system | `pyproject.toml` (PEP 517/518, `hatchling`) |
 | Tests | Unit + integration tests under `tests/` |
 | CI/CD | Not yet configured |

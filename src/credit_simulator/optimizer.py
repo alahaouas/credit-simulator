@@ -76,7 +76,11 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
             f"Valid values: {', '.join(sorted(VALID_PREFERENCES))}"
         )
 
-    effective_cap = params.max_monthly_payment
+    # Effective monthly cap = stricter of DTI limit and absolute payment cap (§4.2).
+    effective_cap = min(
+        params.monthly_net_income * params.max_debt_ratio,
+        params.max_monthly_payment,
+    )
 
     best_plan: Optional[LoanPlan] = None
     best_down_payment = ZERO
