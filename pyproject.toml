@@ -22,5 +22,8 @@ dev = [
 [project.scripts]
 credit-simulator = "credit_simulator.__main__:main"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/credit_simulator"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
