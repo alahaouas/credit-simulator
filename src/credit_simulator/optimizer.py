@@ -114,11 +114,7 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         ltv = principal / params.property_price
         effective_rate = params.rate_for_ltv(ltv)
 
-        duration_candidates = (
-            [params.fixed_loan_duration_months]
-            if params.fixed_loan_duration_months is not None
-            else range(STEP_DURATION, params.max_loan_duration_months + 1, STEP_DURATION)
-        )
+        duration_candidates = [params.fixed_loan_duration_months]
         for duration in duration_candidates:
             plan = compute_loan_plan(
                 principal,
@@ -244,11 +240,7 @@ def analyze_sweet_spot(
     """
     opp_rate = opportunity_cost_rate if opportunity_cost_rate is not None else SWEET_SPOT_OPPORTUNITY_COST_RATE
 
-    duration = (
-        params.fixed_loan_duration_months
-        if params.fixed_loan_duration_months is not None
-        else params.max_loan_duration_months
-    )
+    duration = params.fixed_loan_duration_months
     candidates = _build_dp_candidates(params)
 
     def _milestone(dp: Decimal, label: str, is_sweet: bool = False) -> SweetSpotMilestone:

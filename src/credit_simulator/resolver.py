@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional
 
-from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_MAX_MONTHLY_PAYMENT, ProfileQuality, ZERO
+from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_LOAN_DURATION_MONTHS, DEFAULT_MAX_MONTHLY_PAYMENT, ProfileQuality, ZERO
 from .profiles import LtvRateTier, SessionProfileStore, get_profile
 
 
@@ -58,7 +58,7 @@ class ResolvedParams:
     insurance_rate: Decimal
     min_down_payment_ratio: Decimal
     max_loan_duration_months: int
-    fixed_loan_duration_months: Optional[int]  # None means free grid search
+    fixed_loan_duration_months: int  # defaults to DEFAULT_LOAN_DURATION_MONTHS
     # Buyer constraints (resolved)
     monthly_net_income: Decimal
     available_savings: Decimal
@@ -138,7 +138,15 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         "max_monthly_payment",
     )
 
-    # --- Step 3: purchase_taxes ---
+    # --- Step 3: fixed loan duration ---
+    if inputs.fixed_loan_duration_months is not None:
+        fixed_loan_duration_months = inputs.fixed_loan_duration_months
+        sources["fixed_loan_duration_months"] = "user"
+    else:
+        fixed_loan_duration_months = DEFAULT_LOAN_DURATION_MONTHS
+        sources["fixed_loan_duration_months"] = "default"
+
+    # --- Step 4: purchase_taxes ---
     taxes_financeable = bool(store.get_field(country, "taxes_financeable"))
     if inputs.purchase_taxes is not None:
         purchase_taxes = inputs.purchase_taxes
@@ -150,10 +158,10 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         )
         sources["purchase_taxes"] = "profile"
 
-    # --- Step 4: total acquisition cost ---
+    # --- Step 5: total acquisition cost ---
     total_acquisition_cost = inputs.property_price + purchase_taxes
 
-    # --- Step 5: effective minimum down payment ---
+    # --- Step 6: effective minimum down payment ---
     if not taxes_financeable:
         min_down_payment = max(
             purchase_taxes,
@@ -174,7 +182,7 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         insurance_rate=insurance_rate,
         min_down_payment_ratio=min_down_payment_ratio,
         max_loan_duration_months=max_loan_duration_months,
-        fixed_loan_duration_months=inputs.fixed_loan_duration_months,
+        fixed_loan_duration_months=fixed_loan_duration_months,
         ltv_rate_tiers=ltv_rate_tiers,
         monthly_net_income=inputs.monthly_net_income,
         available_savings=inputs.available_savings,
