@@ -8,6 +8,7 @@
   packages = [
     pkgs.python312
     pkgs.python312Packages.pip
+    pkgs.python312Packages.hatchling
     pkgs.python312Packages.click
     pkgs.python312Packages.rich
     pkgs.python312Packages.requests
@@ -48,7 +49,7 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        install-deps = "python3.12 -m ensurepip --upgrade && python3.12 -m pip install --user --break-system-packages -e '.[dev]'";
+        install-deps = "python3.12 -m pip install --user --break-system-packages --no-build-isolation -e '.[dev]'";
       };
       # Runs when the workspace is (re)started
       onStart = {
