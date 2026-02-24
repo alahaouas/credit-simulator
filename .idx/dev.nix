@@ -18,7 +18,6 @@
 
   # Sets environment variables in the workspace
   env = {
-    PATH = "/home/user/.local/bin:$PATH";
     PYTHONPATH = "$PWD/src";
   };
 
