@@ -48,7 +48,7 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        install-deps = "python3.12 -m pip install --user --break-system-packages --no-build-isolation -e '.[dev]'";
+        install-deps = "pip install --user --break-system-packages --no-build-isolation -e '.[dev]'";
       };
       # Runs when the workspace is (re)started
       onStart = {
