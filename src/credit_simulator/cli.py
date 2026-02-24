@@ -159,7 +159,12 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
     t.add_column("Liquidity", justify="right", min_width=9)
 
     for m in analysis.milestones:
-        label = f"[bold green]{m.label}[/bold green]" if m.is_sweet_spot else m.label
+        if m.is_sweet_spot:
+            label = f"[bold green]{m.label}[/bold green]"
+        elif "Your choice" in m.label:
+            label = f"[bold cyan]{m.label}[/bold cyan]"
+        else:
+            label = m.label
         t.add_row(
             label,
             _fmt_k(m.down_payment),

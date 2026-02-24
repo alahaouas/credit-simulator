@@ -410,6 +410,15 @@ def analyze_sweet_spot(
         _add(reserve_dp, f"{SWEET_SPOT_RESERVE_MONTHS}m reserve cap")
     _add(candidates[-1], "Maximum")
 
+    # Mark the user's preferred down payment so they can compare it to the sweet spot.
+    if params.preferred_down_payment is not None:
+        pref = params.preferred_down_payment
+        if pref in spec:
+            existing_label, existing_sweet = spec[pref]
+            spec[pref] = (existing_label + "  ← Your choice", existing_sweet)
+        else:
+            spec[pref] = ("Your choice", False)
+
     milestones = [
         _milestone(dp, label, is_sweet)
         for dp, (label, is_sweet) in sorted(spec.items())
