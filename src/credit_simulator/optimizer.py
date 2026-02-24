@@ -87,23 +87,28 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
     best_duration = 0
     best_score: Optional[tuple] = None
 
-    # Build down payment grid: min_down_payment, min+1000, min+2000, … up to available_savings
-    dp = params.min_down_payment
-    # Round up to nearest 1000 if not already aligned
-    if dp % STEP_DOWN_PAYMENT != ZERO:
-        dp = (dp // STEP_DOWN_PAYMENT + 1) * STEP_DOWN_PAYMENT
-        # Ensure we still include the exact min_down_payment as first candidate
-        candidates_dp = [params.min_down_payment]
+    # Build down payment candidates.
+    # If the user specified a preferred down payment, use only that amount.
+    # Otherwise grid-search from min_down_payment to available_savings in steps.
+    if params.preferred_down_payment is not None:
+        candidates_dp = [params.preferred_down_payment]
     else:
-        candidates_dp = []
+        dp = params.min_down_payment
+        # Round up to nearest 1000 if not already aligned
+        if dp % STEP_DOWN_PAYMENT != ZERO:
+            dp = (dp // STEP_DOWN_PAYMENT + 1) * STEP_DOWN_PAYMENT
+            # Ensure we still include the exact min_down_payment as first candidate
+            candidates_dp = [params.min_down_payment]
+        else:
+            candidates_dp = []
 
-    while dp <= params.available_savings:
-        candidates_dp.append(dp)
-        dp += STEP_DOWN_PAYMENT
+        while dp <= params.available_savings:
+            candidates_dp.append(dp)
+            dp += STEP_DOWN_PAYMENT
 
-    # Always include available_savings as the last candidate (max down payment)
-    if not candidates_dp or candidates_dp[-1] < params.available_savings:
-        candidates_dp.append(params.available_savings)
+        # Always include available_savings as the last candidate (max down payment)
+        if not candidates_dp or candidates_dp[-1] < params.available_savings:
+            candidates_dp.append(params.available_savings)
 
     for down_payment in candidates_dp:
         principal = params.total_acquisition_cost - down_payment

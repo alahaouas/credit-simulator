@@ -37,6 +37,7 @@ class UserInputs:
     # Optional buyer constraints
     max_debt_ratio: Optional[Decimal] = None
     max_monthly_payment: Optional[Decimal] = None
+    preferred_down_payment: Optional[Decimal] = None  # pin optimizer to exactly this amount
     # Optimization preference
     optimization_preference: str = "balanced"
 
@@ -59,6 +60,7 @@ class ResolvedParams:
     min_down_payment_ratio: Decimal
     max_loan_duration_months: int
     fixed_loan_duration_months: int  # defaults to DEFAULT_LOAN_DURATION_MONTHS
+    preferred_down_payment: Optional[Decimal]  # None means free grid search
     # Buyer constraints (resolved)
     monthly_net_income: Decimal
     available_savings: Decimal
@@ -146,7 +148,11 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         fixed_loan_duration_months = DEFAULT_LOAN_DURATION_MONTHS
         sources["fixed_loan_duration_months"] = "default"
 
-    # --- Step 4: purchase_taxes ---
+    # --- Step 4: preferred down payment ---
+    if inputs.preferred_down_payment is not None:
+        sources["preferred_down_payment"] = "user"
+
+    # --- Step 5: purchase_taxes ---
     taxes_financeable = bool(store.get_field(country, "taxes_financeable"))
     if inputs.purchase_taxes is not None:
         purchase_taxes = inputs.purchase_taxes
@@ -158,10 +164,10 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         )
         sources["purchase_taxes"] = "profile"
 
-    # --- Step 5: total acquisition cost ---
+    # --- Step 6: total acquisition cost ---
     total_acquisition_cost = inputs.property_price + purchase_taxes
 
-    # --- Step 6: effective minimum down payment ---
+    # --- Step 7: effective minimum down payment ---
     if not taxes_financeable:
         min_down_payment = max(
             purchase_taxes,
@@ -183,6 +189,7 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         min_down_payment_ratio=min_down_payment_ratio,
         max_loan_duration_months=max_loan_duration_months,
         fixed_loan_duration_months=fixed_loan_duration_months,
+        preferred_down_payment=inputs.preferred_down_payment,
         ltv_rate_tiers=ltv_rate_tiers,
         monthly_net_income=inputs.monthly_net_income,
         available_savings=inputs.available_savings,
@@ -208,6 +215,18 @@ def check_feasibility(params: ResolvedParams) -> None:
             f"{params.min_down_payment:,.2f} {params.currency} as a down payment "
             f"(you have {params.available_savings:,.2f} {params.currency})."
         )
+
+    if params.preferred_down_payment is not None:
+        if params.preferred_down_payment < params.min_down_payment:
+            raise InfeasibleError(
+                f"Preferred down payment {params.preferred_down_payment:,.2f} {params.currency} "
+                f"is below the required minimum of {params.min_down_payment:,.2f} {params.currency}."
+            )
+        if params.preferred_down_payment > params.available_savings:
+            raise InfeasibleError(
+                f"Preferred down payment {params.preferred_down_payment:,.2f} {params.currency} "
+                f"exceeds available savings of {params.available_savings:,.2f} {params.currency}."
+            )
 
     # Minimum possible monthly payment = smallest principal at longest duration.
     # Smallest principal = total_acquisition_cost - all available savings.
