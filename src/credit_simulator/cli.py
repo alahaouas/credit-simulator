@@ -198,8 +198,7 @@ def display_params(inputs: UserInputs, params: ResolvedParams) -> None:
     row("insurance_rate", _fmt_pct(params.insurance_rate), params.sources.get("insurance_rate", ""))
     row("min_down_payment_ratio", _fmt_pct(params.min_down_payment_ratio), params.sources.get("min_down_payment_ratio", ""))
     row("max_loan_duration_months", str(params.max_loan_duration_months), params.sources.get("max_loan_duration_months", ""))
-    if params.fixed_loan_duration_months is not None:
-        row("fixed_loan_duration_months", _fmt_months(params.fixed_loan_duration_months), "user")
+    row("fixed_loan_duration_months", _fmt_months(params.fixed_loan_duration_months), params.sources.get("fixed_loan_duration_months", "default"))
     row("monthly_net_income", _fmt_money(params.monthly_net_income, cur))
     row("available_savings", _fmt_money(params.available_savings, cur))
     row("max_debt_ratio", _fmt_pct(params.max_debt_ratio), params.sources.get("max_debt_ratio", ""))
@@ -571,7 +570,7 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
 @click.option("--country", type=str, default=None, help=f"Country code (default: {DEFAULT_COUNTRY})")
 @click.option("--quality", type=click.Choice(["average", "best"]), default=None, help="Profile quality")
 @click.option("--preference", type=click.Choice(list(VALID_PREFERENCES)), default="balanced", show_default=True)
-@click.option("--duration", type=str, default=None, help="Pin loan duration: months (e.g. 240) or years (e.g. 20y). Omit to let the optimizer search freely.")
+@click.option("--duration", type=str, default=None, help="Loan duration: months (e.g. 240) or years (e.g. 20y). Default: 20y.")
 def main(
     property_price: Optional[str],
     income: Optional[str],
