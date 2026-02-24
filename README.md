@@ -19,12 +19,15 @@ loan plan and walks you through an amortization schedule — all in your termina
   down payment, or let the tool pick a balanced trade-off.
 - **Full amortization schedule** — month-by-month breakdown of principal,
   interest, and insurance components.
-- **Down-payment sweet-spot analysis** — compares the loan APR against an
-  opportunity-cost benchmark to identify the rational floor for your down
-  payment. Highlights all LTV tier crossings (rate discounts and surcharge
-  exits), the 6-month income reserve ceiling, and the absolute maximum. When
-  the minimum down payment falls in a surcharge LTV tier, the sweet spot is
-  automatically raised to the cheapest exit from that penalty zone.
+- **Down-payment sweet-spot analysis** — automatically shown after every
+  simulation. Compares the loan APR against an opportunity-cost benchmark to
+  identify the rational floor for your down payment. Highlights all LTV tier
+  crossings (rate discounts and surcharge exits), the 6-month income reserve
+  ceiling, and the absolute maximum. When the minimum down payment falls in a
+  surcharge LTV tier, the sweet spot is automatically raised to the cheapest
+  exit from that penalty zone. If you set a preferred down payment, it appears
+  as a "Your choice" row in the table so you can compare it instantly to the
+  recommendation.
 - **Interactive update loop** — change any parameter and re-run instantly;
   no restart needed.
 - **Country profile overrides** — adjust any rate manually, or fetch the latest
@@ -61,13 +64,15 @@ pip install -e ".[dev]"
 python -m credit_simulator
 ```
 
-The tool will prompt for the three mandatory inputs and then enter the
-interactive loop:
+The tool will prompt for mandatory inputs and optional overrides, then enter
+the interactive loop:
 
 ```
 Property price? 350000
 Monthly net income? 6000
-Available savings? 80000
+Available savings (maximum you can use for down payment)? 80000
+Purchase taxes? (press Enter to estimate from country profile):
+Preferred down payment? (press Enter to let optimizer find the best):
 ```
 
 ### With CLI flags
@@ -90,11 +95,12 @@ Available flags:
 |---|---|---|
 | `--property-price` | Market price of the property | prompted |
 | `--income` | Monthly net income | prompted |
-| `--savings` | Available savings | prompted |
+| `--savings` | Maximum savings available for down payment | prompted |
+| `--down-payment` | Intended down payment (pins optimizer to this amount) | optimizer finds the best |
 | `--country` | ISO country code | `BE` |
 | `--quality` | `average` or `best` | `average` |
 | `--preference` | Optimization preference (see below) | `balanced` |
-| `--duration` | Pin loan duration in months (e.g. `240`) or years (e.g. `20y`). Omit to let the optimizer search freely. | free search |
+| `--duration` | Loan duration in months (e.g. `240`) or years (e.g. `20y`) | `20y` (240 months) |
 
 ### Optimization preferences
 
@@ -118,7 +124,7 @@ After each simulation result, you can type one of the following:
 | `reset` | Reset a parameter to its country-profile default |
 | `profile` | Update a country profile field (manual or online fetch) |
 | `schedule` | Display the full month-by-month amortization schedule |
-| `sweetspot` | Down-payment sweet-spot analysis with LTV tier milestones |
+| `sweetspot` | Re-display the sweet-spot analysis (also shown automatically after each run) |
 | `params` | Show all current parameter values and their sources |
 | `exit` | Quit the session |
 

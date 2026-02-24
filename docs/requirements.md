@@ -35,6 +35,7 @@ All fields in this section are **optional**. When a field is not provided, the s
 | `insurance_rate` | Annual borrower insurance rate | >= 0 |
 | `min_down_payment_ratio` | Minimum down payment as a fraction of total acquisition cost | 0%–100% |
 | `max_loan_duration_months` | Maximum acceptable loan duration | 12–600 months |
+| `fixed_loan_duration_months` | Pin the loan to an exact duration instead of optimizing over it | 12–`max_loan_duration_months`; defaults to 240 months (20 years) if omitted |
 
 > **Note**: Whether purchase taxes are financeable by the bank is country-specific and defined in the country profile. For example, in France taxes are not financeable, so the minimum down payment always covers at least `purchase_taxes`.
 
@@ -43,7 +44,8 @@ All fields in this section are **optional**. When a field is not provided, the s
 | Field | Description | Required | Constraints |
 |---|---|---|---|
 | `monthly_net_income` | Buyer's total monthly net income | Yes | > 0 |
-| `available_savings` | Total savings available for down payment | Yes | >= 0 |
+| `available_savings` | **Maximum** savings available — the absolute ceiling the buyer can draw on for the down payment | Yes | >= 0 |
+| `preferred_down_payment` | Intended down payment — the specific amount the buyer plans to contribute at acquisition | No | >= `min_down_payment`, <= `available_savings`; if omitted the optimizer searches the full range |
 | `max_debt_ratio` | Maximum debt-to-income ratio | No | > 0; defaults to country profile value |
 | `max_monthly_payment` | Hard cap on monthly installment | No | > 0; defaults to 2,200 EUR (or equivalent in country currency) |
 
@@ -212,7 +214,7 @@ Where:
 
 ### 4.5 Down-Payment Sweet-Spot Analysis
 
-On demand (via the `sweetspot` interactive command), the system produces a milestone table that helps the buyer choose a rational down payment.
+After every simulation result the system automatically produces a sweet-spot milestone table that helps the buyer choose a rational down payment. The table can also be re-displayed at any time using the `sweetspot` interactive command.
 
 #### Decision rule
 
@@ -250,6 +252,8 @@ The table always shows:
 
 Each row shows: down payment, applicable interest rate, monthly installment, DTI ratio, LTV ratio, total cost of credit, and liquidity remaining.
 
+When a `preferred_down_payment` is set, the table includes an additional **"Your choice"** milestone at that amount (or appends "← Your choice" to an existing row if the amounts coincide), rendered in a distinct colour so the buyer can immediately compare their intended contribution to the optimizer's recommendation.
+
 ---
 
 ## 5. Interactive Parameter Update Loop
@@ -258,19 +262,21 @@ After displaying simulation results, the system shall enter an interactive promp
 
 ### 5.1 Session Startup
 
-At the start of a session, the system prompts for the three mandatory parameters that have no default:
+At the start of a session, the system prompts for mandatory parameters and optional overrides:
 
-| Parameter | Prompt |
-|---|---|
-| `property_price` | "Property price?" |
-| `monthly_net_income` | "Monthly net income?" |
-| `available_savings` | "Available savings?" |
+| Parameter | Prompt | Required |
+|---|---|---|
+| `property_price` | "Property price?" | Yes |
+| `monthly_net_income` | "Monthly net income?" | Yes |
+| `available_savings` | "Available savings (maximum you can use for down payment)?" | Yes |
+| `purchase_taxes` | "Purchase taxes? (press Enter to estimate from country profile)" | No |
+| `preferred_down_payment` | "Preferred down payment? (press Enter to let optimizer find the best)" | No |
 
-All other parameters are optional at startup and resolved automatically (see section 2). Once the three mandatory values are collected, the system runs an initial simulation and displays the result before entering the update loop.
+All other parameters are optional at startup and resolved automatically (see section 2). Once the mandatory values are collected, the system runs an initial simulation — including the sweet-spot analysis — and displays the results before entering the update loop.
 
 ### 5.2 Behaviour
 
-1. After each result is shown, the system prints the **current parameter values** (including which were user-set vs. auto-resolved from the country profile) and prompts the user to choose an action:
+1. After each result is shown, the system automatically displays the **sweet-spot analysis** (see §4.5), then prints the available actions and prompts the user. The current parameter values (including source attribution) can be inspected at any time with the `params` command. Available actions:
    - Update one or more simulation parameters
    - Change the optimization preference
    - Reset a parameter to its country-profile default
@@ -292,8 +298,8 @@ All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except d
 | Category | Updatable fields |
 |---|---|
 | Property | `property_price`, `country`, `profile_quality`, `purchase_taxes` |
-| Loan parameters | `annual_interest_rate`, `insurance_rate`, `min_down_payment_ratio`, `max_loan_duration_months` |
-| Buyer constraints | `monthly_net_income`, `available_savings`, `max_debt_ratio`, `max_monthly_payment` |
+| Loan parameters | `annual_interest_rate`, `insurance_rate`, `min_down_payment_ratio`, `max_loan_duration_months`, `fixed_loan_duration_months` |
+| Buyer constraints | `monthly_net_income`, `available_savings`, `preferred_down_payment`, `max_debt_ratio`, `max_monthly_payment` |
 | Preference | `optimization_preference` |
 | Country profile | Any market-driven or regulatory field for any supported country (see §5.5) |
 

@@ -281,8 +281,12 @@ def _prompt_preference() -> str:
 # Simulation runner
 # ──────────────────────────────────────────────────────────────────────────────
 
-def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> Optional[tuple[ResolvedParams, OptimizedResult]]:
-    """Resolve, check feasibility, optimize. Prints errors and returns None on failure."""
+def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> Optional[tuple]:
+    """Resolve, check feasibility, optimize, and show sweet-spot analysis.
+
+    Returns (params, result, analysis) on success, or None on any failure.
+    analysis may be None if the sweet-spot computation itself fails.
+    """
     try:
         params = resolve(inputs, store)
     except ValueError as exc:
@@ -302,7 +306,15 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> Optional[t
         return None
 
     display_result(result)
-    return params, result
+
+    analysis: Optional[SweetSpotAnalysis] = None
+    try:
+        analysis = analyze_sweet_spot(params)
+        display_sweet_spot(analysis, params.currency)
+    except Exception as exc:
+        err_console.print(f"Sweet-spot analysis failed: {exc}")
+
+    return params, result, analysis
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -419,10 +431,11 @@ _UPDATABLE_FIELDS = {
 def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
     last_params: Optional[ResolvedParams] = None
     last_result: Optional[OptimizedResult] = None
+    last_analysis: Optional[SweetSpotAnalysis] = None
 
-    result = run_simulation(inputs, store)
-    if result:
-        last_params, last_result = result
+    run_result = run_simulation(inputs, store)
+    if run_result:
+        last_params, last_result, last_analysis = run_result
 
     while True:
         console.print()
@@ -450,14 +463,16 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
                 err_console.print("Run a simulation first.")
 
         elif action == "sweetspot":
-            if last_params is None:
-                err_console.print("Run a simulation first.")
-            else:
+            if last_analysis is not None:
+                display_sweet_spot(last_analysis, last_params.currency)
+            elif last_params is not None:
                 try:
-                    analysis = analyze_sweet_spot(last_params)
-                    display_sweet_spot(analysis, last_params.currency)
+                    last_analysis = analyze_sweet_spot(last_params)
+                    display_sweet_spot(last_analysis, last_params.currency)
                 except Exception as exc:
                     err_console.print(f"Sweet-spot analysis failed: {exc}")
+            else:
+                err_console.print("Run a simulation first.")
 
         elif action == "update":
             console.print(f"  Fields: {', '.join(sorted(_UPDATABLE_FIELDS))}")
@@ -467,17 +482,17 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
                 continue
 
             _apply_update(field, inputs, store)
-            result = run_simulation(inputs, store)
-            if result:
-                last_params, last_result = result
+            run_result = run_simulation(inputs, store)
+            if run_result:
+                last_params, last_result, last_analysis = run_result
 
         elif action == "reset":
             console.print(f"  Fields: {', '.join(sorted(_UPDATABLE_FIELDS))}")
             field = console.input("[bold]Field to reset to profile default: [/bold]").strip().lower()
             _reset_field(field, inputs)
-            result = run_simulation(inputs, store)
-            if result:
-                last_params, last_result = result
+            run_result = run_simulation(inputs, store)
+            if run_result:
+                last_params, last_result, last_analysis = run_result
 
         elif action == "profile":
             mode = console.input("[bold]Update mode (manual / online): [/bold]").strip().lower()
@@ -488,9 +503,9 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
             else:
                 err_console.print("  Enter 'manual' or 'online'.")
                 continue
-            result = run_simulation(inputs, store)
-            if result:
-                last_params, last_result = result
+            run_result = run_simulation(inputs, store)
+            if run_result:
+                last_params, last_result, last_analysis = run_result
 
         else:
             err_console.print(f"  Unknown action '{action}'.")

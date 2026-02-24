@@ -145,3 +145,72 @@ class TestCLIRunner:
         )
         assert result.exit_code == 0
         assert "Ineligible" in result.output or "savings" in result.output.lower()
+
+    def test_sweet_spot_shown_automatically(self):
+        """Sweet-spot analysis is displayed without the user typing 'sweetspot'."""
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "--property-price", "350000",
+                "--income", "6000",
+                "--savings", "80000",
+                "--country", "BE",
+                "--quality", "average",
+                "--preference", "balanced",
+            ],
+            input="exit\n",
+        )
+        assert result.exit_code == 0
+        assert "Sweet" in result.output
+
+    def test_sweetspot_command_redisplays_analysis(self):
+        """The 'sweetspot' interactive command re-displays a previously shown analysis."""
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "--property-price", "350000",
+                "--income", "6000",
+                "--savings", "80000",
+                "--country", "BE",
+            ],
+            input="sweetspot\nexit\n",
+        )
+        assert result.exit_code == 0
+        # "Sweet" should appear at least twice: automatic + re-display
+        assert result.output.count("Sweet") >= 2
+
+    def test_preferred_down_payment_flag(self):
+        """--down-payment pins the optimizer to a specific down payment."""
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "--property-price", "350000",
+                "--income", "6000",
+                "--savings", "80000",
+                "--country", "BE",
+                "--down-payment", "50000",
+            ],
+            input="exit\n",
+        )
+        assert result.exit_code == 0
+        assert "50,000" in result.output or "50000" in result.output
+
+    def test_duration_flag_overrides_default(self):
+        """--duration accepts years notation and pins the loan term."""
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "--property-price", "350000",
+                "--income", "6000",
+                "--savings", "80000",
+                "--country", "BE",
+                "--duration", "25y",
+            ],
+            input="exit\n",
+        )
+        assert result.exit_code == 0
+        assert "300" in result.output  # 25 years = 300 months
