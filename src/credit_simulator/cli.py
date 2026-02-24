@@ -159,7 +159,12 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
     t.add_column("Liquidity", justify="right", min_width=9)
 
     for m in analysis.milestones:
-        label = f"[bold green]{m.label}[/bold green]" if m.is_sweet_spot else m.label
+        if m.is_sweet_spot:
+            label = f"[bold green]{m.label}[/bold green]"
+        elif "Your choice" in m.label:
+            label = f"[bold cyan]{m.label}[/bold cyan]"
+        else:
+            label = m.label
         t.add_row(
             label,
             _fmt_k(m.down_payment),
@@ -201,6 +206,8 @@ def display_params(inputs: UserInputs, params: ResolvedParams) -> None:
     row("fixed_loan_duration_months", _fmt_months(params.fixed_loan_duration_months), params.sources.get("fixed_loan_duration_months", "default"))
     row("monthly_net_income", _fmt_money(params.monthly_net_income, cur))
     row("available_savings", _fmt_money(params.available_savings, cur))
+    if params.preferred_down_payment is not None:
+        row("preferred_down_payment", _fmt_money(params.preferred_down_payment, cur), params.sources.get("preferred_down_payment", "user"))
     row("max_debt_ratio", _fmt_pct(params.max_debt_ratio), params.sources.get("max_debt_ratio", ""))
     row("max_monthly_payment", _fmt_money(params.max_monthly_payment, cur), params.sources.get("max_monthly_payment", ""))
     row("optimization_preference", inputs.optimization_preference)
@@ -274,8 +281,12 @@ def _prompt_preference() -> str:
 # Simulation runner
 # ──────────────────────────────────────────────────────────────────────────────
 
-def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> Optional[tuple[ResolvedParams, OptimizedResult]]:
-    """Resolve, check feasibility, optimize. Prints errors and returns None on failure."""
+def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> Optional[tuple]:
+    """Resolve, check feasibility, optimize, and show sweet-spot analysis.
+
+    Returns (params, result, analysis) on success, or None on any failure.
+    analysis may be None if the sweet-spot computation itself fails.
+    """
     try:
         params = resolve(inputs, store)
     except ValueError as exc:
@@ -295,7 +306,15 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> Optional[t
         return None
 
     display_result(result)
-    return params, result
+
+    analysis: Optional[SweetSpotAnalysis] = None
+    try:
+        analysis = analyze_sweet_spot(params)
+        display_sweet_spot(analysis, params.currency)
+    except Exception as exc:
+        err_console.print(f"Sweet-spot analysis failed: {exc}")
+
+    return params, result, analysis
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -404,7 +423,7 @@ _UPDATABLE_FIELDS = {
     "property_price", "country", "profile_quality", "purchase_taxes",
     "annual_interest_rate", "insurance_rate", "min_down_payment_ratio",
     "max_loan_duration_months", "fixed_loan_duration_months",
-    "monthly_net_income", "available_savings",
+    "monthly_net_income", "available_savings", "preferred_down_payment",
     "max_debt_ratio", "max_monthly_payment", "optimization_preference",
 }
 
@@ -412,10 +431,11 @@ _UPDATABLE_FIELDS = {
 def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
     last_params: Optional[ResolvedParams] = None
     last_result: Optional[OptimizedResult] = None
+    last_analysis: Optional[SweetSpotAnalysis] = None
 
-    result = run_simulation(inputs, store)
-    if result:
-        last_params, last_result = result
+    run_result = run_simulation(inputs, store)
+    if run_result:
+        last_params, last_result, last_analysis = run_result
 
     while True:
         console.print()
@@ -443,14 +463,16 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
                 err_console.print("Run a simulation first.")
 
         elif action == "sweetspot":
-            if last_params is None:
-                err_console.print("Run a simulation first.")
-            else:
+            if last_analysis is not None:
+                display_sweet_spot(last_analysis, last_params.currency)
+            elif last_params is not None:
                 try:
-                    analysis = analyze_sweet_spot(last_params)
-                    display_sweet_spot(analysis, last_params.currency)
+                    last_analysis = analyze_sweet_spot(last_params)
+                    display_sweet_spot(last_analysis, last_params.currency)
                 except Exception as exc:
                     err_console.print(f"Sweet-spot analysis failed: {exc}")
+            else:
+                err_console.print("Run a simulation first.")
 
         elif action == "update":
             console.print(f"  Fields: {', '.join(sorted(_UPDATABLE_FIELDS))}")
@@ -460,17 +482,17 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
                 continue
 
             _apply_update(field, inputs, store)
-            result = run_simulation(inputs, store)
-            if result:
-                last_params, last_result = result
+            run_result = run_simulation(inputs, store)
+            if run_result:
+                last_params, last_result, last_analysis = run_result
 
         elif action == "reset":
             console.print(f"  Fields: {', '.join(sorted(_UPDATABLE_FIELDS))}")
             field = console.input("[bold]Field to reset to profile default: [/bold]").strip().lower()
             _reset_field(field, inputs)
-            result = run_simulation(inputs, store)
-            if result:
-                last_params, last_result = result
+            run_result = run_simulation(inputs, store)
+            if run_result:
+                last_params, last_result, last_analysis = run_result
 
         elif action == "profile":
             mode = console.input("[bold]Update mode (manual / online): [/bold]").strip().lower()
@@ -481,9 +503,9 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
             else:
                 err_console.print("  Enter 'manual' or 'online'.")
                 continue
-            result = run_simulation(inputs, store)
-            if result:
-                last_params, last_result = result
+            run_result = run_simulation(inputs, store)
+            if run_result:
+                last_params, last_result, last_analysis = run_result
 
         else:
             err_console.print(f"  Unknown action '{action}'.")
@@ -518,7 +540,9 @@ def _apply_update(field: str, inputs: UserInputs, store: SessionProfileStore) ->
         elif field == "monthly_net_income":
             inputs.monthly_net_income = _prompt_decimal("New monthly net income:", positive=True)
         elif field == "available_savings":
-            inputs.available_savings = _prompt_decimal("New available savings:", allow_zero=True, positive=False)
+            inputs.available_savings = _prompt_decimal("New available savings (maximum you can use for down payment):", allow_zero=True, positive=False)
+        elif field == "preferred_down_payment":
+            inputs.preferred_down_payment = _prompt_decimal("New preferred down payment:", allow_zero=True, positive=False)
         elif field == "max_debt_ratio":
             inputs.max_debt_ratio = _prompt_decimal(
                 "New max debt ratio (e.g. 0.35 for 35%):", allow_zero=False, positive=True
@@ -548,6 +572,8 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
         inputs.max_loan_duration_months = None
     elif field == "fixed_loan_duration_months":
         inputs.fixed_loan_duration_months = None
+    elif field == "preferred_down_payment":
+        inputs.preferred_down_payment = None
     elif field == "max_debt_ratio":
         inputs.max_debt_ratio = None
     elif field == "max_monthly_payment":
@@ -570,6 +596,7 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
 @click.option("--country", type=str, default=None, help=f"Country code (default: {DEFAULT_COUNTRY})")
 @click.option("--quality", type=click.Choice(["average", "best"]), default=None, help="Profile quality")
 @click.option("--preference", type=click.Choice(list(VALID_PREFERENCES)), default="balanced", show_default=True)
+@click.option("--down-payment", type=str, default=None, help="Intended down payment amount. Omit to let the optimizer find the best within your savings.")
 @click.option("--duration", type=str, default=None, help="Loan duration: months (e.g. 240) or years (e.g. 20y). Default: 20y.")
 def main(
     property_price: Optional[str],
@@ -579,6 +606,7 @@ def main(
     country: Optional[str],
     quality: Optional[str],
     preference: str,
+    down_payment: Optional[str],
     duration: Optional[str],
 ) -> None:
     """Interactive credit / mortgage loan simulator."""
@@ -606,7 +634,7 @@ def main(
 
     sav = _parse_opt(savings, "savings")
     if sav is None:
-        sav = _prompt_decimal("Available savings?", allow_zero=True, positive=False)
+        sav = _prompt_decimal("Available savings (maximum you can use for down payment)?", allow_zero=True, positive=False)
 
     pt = _parse_opt(purchase_taxes, "purchase-taxes")
     if pt is None:
@@ -618,6 +646,20 @@ def main(
                 pt = Decimal(raw_pt.replace(",", ".").replace(" ", ""))
             except InvalidOperation:
                 err_console.print(f"  Invalid number: '{raw_pt}'. Will estimate from profile.")
+
+    preferred_dp: Optional[Decimal] = _parse_opt(down_payment, "down-payment")
+    if preferred_dp is None and down_payment is None:
+        try:
+            raw_dp = console.input(
+                "[bold]Preferred down payment? (press Enter to let optimizer find the best): [/bold]"
+            ).strip()
+        except (EOFError, KeyboardInterrupt):
+            raw_dp = ""
+        if raw_dp:
+            try:
+                preferred_dp = Decimal(raw_dp.replace(",", ".").replace(" ", ""))
+            except InvalidOperation:
+                err_console.print(f"  Invalid number: '{raw_dp}'. Will optimize automatically.")
 
     fixed_duration: Optional[int] = None
     if duration is not None:
@@ -642,6 +684,7 @@ def main(
         country=country,
         profile_quality=quality,  # type: ignore[arg-type]
         optimization_preference=preference,
+        preferred_down_payment=preferred_dp,
         fixed_loan_duration_months=fixed_duration,
     )
 

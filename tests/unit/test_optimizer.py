@@ -300,3 +300,83 @@ class TestAnalyzeSweetSpot:
         analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.20"))
         labels = [m.label for m in analysis.milestones]
         assert any("LTV" in l for l in labels)
+
+
+class TestSweetSpotPreferredDownPayment:
+    """Tests for preferred_down_payment milestone rendering in sweet-spot analysis."""
+
+    def _params(self, preferred_down_payment=None, **kwargs):
+        defaults = dict(
+            property_price=Decimal("350000"),
+            monthly_net_income=Decimal("6000"),
+            available_savings=Decimal("150000"),
+            fixed_loan_duration_months=240,
+        )
+        defaults.update(kwargs)
+        if preferred_down_payment is not None:
+            defaults["preferred_down_payment"] = preferred_down_payment
+        inputs = UserInputs(**defaults)
+        from credit_simulator.profiles import SessionProfileStore
+        return resolve(inputs, SessionProfileStore())
+
+    def test_preferred_dp_adds_your_choice_milestone(self):
+        """A unique preferred_down_payment creates a 'Your choice' row."""
+        params = self._params(preferred_down_payment=Decimal("90000"))
+        analysis = analyze_sweet_spot(params)
+        labels = [m.label for m in analysis.milestones]
+        assert any("Your choice" in l for l in labels)
+
+    def test_preferred_dp_coinciding_with_sweet_spot_appended(self):
+        """When preferred equals the sweet spot its label gets '← Your choice' appended."""
+        # Force sweet spot to minimum by using high opp cost
+        params = self._params()
+        analysis_base = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.20"))
+        sweet_dp = next(m.down_payment for m in analysis_base.milestones if m.is_sweet_spot)
+
+        # Now set preferred_down_payment to that exact sweet_dp amount
+        params2 = self._params(preferred_down_payment=sweet_dp)
+        analysis2 = analyze_sweet_spot(params2, opportunity_cost_rate=Decimal("0.20"))
+        labels = [m.label for m in analysis2.milestones]
+        assert any("← Your choice" in l for l in labels)
+
+    def test_preferred_dp_none_adds_no_your_choice(self):
+        """Without a preferred_down_payment, no 'Your choice' milestone is added."""
+        params = self._params()
+        analysis = analyze_sweet_spot(params)
+        labels = [m.label for m in analysis.milestones]
+        assert not any("Your choice" in l for l in labels)
+
+    def test_preferred_dp_milestone_ordered_correctly(self):
+        """'Your choice' row is sorted in ascending down-payment order."""
+        params = self._params(preferred_down_payment=Decimal("100000"))
+        analysis = analyze_sweet_spot(params)
+        dps = [m.down_payment for m in analysis.milestones]
+        assert dps == sorted(dps)
+
+
+class TestOptimizePreferredDownPayment:
+    """Tests for preferred_down_payment pinning in optimize()."""
+
+    def _run(self, preferred_down_payment, **kwargs):
+        defaults = dict(
+            # High income → wide feasibility window; high savings → broad dp range
+            property_price=Decimal("350000"),
+            monthly_net_income=Decimal("10000"),
+            available_savings=Decimal("200000"),
+            optimization_preference="balanced",
+            preferred_down_payment=preferred_down_payment,
+        )
+        defaults.update(kwargs)
+        inputs = UserInputs(**defaults)
+        from credit_simulator.profiles import SessionProfileStore
+        params = resolve(inputs, SessionProfileStore())
+        return optimize(params)
+
+    def test_optimizer_uses_preferred_down_payment(self):
+        """When preferred_down_payment is set the optimizer returns exactly that amount."""
+        result = self._run(Decimal("100000"))
+        assert result.down_payment == Decimal("100000")
+
+    def test_preferred_dp_does_not_exceed_savings(self):
+        result = self._run(Decimal("150000"))
+        assert result.down_payment <= Decimal("200000")
