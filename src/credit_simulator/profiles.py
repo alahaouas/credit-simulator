@@ -201,7 +201,7 @@ _PROFILES: dict[str, CountryProfile] = {
         #   25 yr → avg 3.38% / best 3.20%
         annual_rate_average=Decimal("0.0327"),
         annual_rate_best=Decimal("0.0305"),
-        insurance_rate_average=Decimal("0.0025"),
+        insurance_rate_average=Decimal("0.0020"),
         insurance_rate_best=Decimal("0.0010"),
         purchase_tax_rate=Decimal("0.125"),
         taxes_financeable=True,
