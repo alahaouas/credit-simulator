@@ -46,7 +46,7 @@ class CountryProfile:
     max_debt_ratio: Decimal
     max_loan_duration_months: int
     # LTV-based rate adjustment tiers (ascending ltv_max order)
-    ltv_rate_tiers: tuple = ()   # tuple[LtvRateTier, ...]
+    ltv_rate_tiers: tuple[LtvRateTier, ...] = ()
 
     def annual_rate(self, quality: ProfileQuality) -> Decimal:
         return self.annual_rate_average if quality == "average" else self.annual_rate_best

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional
 
+from .calculator import compute_emi, compute_monthly_insurance
 from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_LOAN_DURATION_MONTHS, DEFAULT_MAX_MONTHLY_PAYMENT, ProfileQuality, ZERO
 from .profiles import LtvRateTier, SessionProfileStore, get_profile
 
@@ -234,8 +235,6 @@ def check_feasibility(params: ResolvedParams) -> None:
     if min_principal <= ZERO:
         # Buyer can pay cash — loan is trivially feasible (loan = 0)
         return
-
-    from .calculator import compute_emi, compute_monthly_insurance
 
     # Effective monthly cap = stricter of DTI limit and absolute payment cap.
     effective_cap = min(
