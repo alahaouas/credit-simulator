@@ -14,7 +14,9 @@ import requests
 _TIMEOUT = 10
 
 # ECB country codes that use the MIR series
-_ECB_COUNTRIES = frozenset({"BE", "FR", "DE", "ES", "IT", "PT"})
+# Note: BE is excluded — the ECB MIR endpoint for Belgium is unreliable;
+# use the manually maintained static rate in profiles.py instead.
+_ECB_COUNTRIES = frozenset({"FR", "DE", "ES", "IT", "PT"})
 
 # ECB Data Portal endpoint template
 # Series: MIR.M.{CC}.B.A2C.F.R.A.2250.EUR.N
