@@ -1,11 +1,12 @@
 """Grid-search optimizer (§4.3).
 
-Searches over all (down_payment, duration) pairs and selects the best
-feasible plan according to the declared optimization preference.
+Searches over down_payment candidates and selects the best feasible plan
+according to the declared optimization preference.
 
 Search space:
 - down_payment: min_down_payment to available_savings, step 1 000 (country currency)
-- duration: 12 to max_loan_duration_months, step 12 months
+- duration: fixed to params.fixed_loan_duration_months (default 20 years)
+  Duration grid-search is not yet implemented; use --duration to vary it.
 """
 from __future__ import annotations
 
@@ -15,7 +16,7 @@ from typing import Optional
 
 from .calculator import LoanPlan, compute_loan_plan
 from .config import (
-    STEP_DOWN_PAYMENT, STEP_DURATION, VALID_PREFERENCES, ZERO,
+    STEP_DOWN_PAYMENT, VALID_PREFERENCES, ZERO,
     SWEET_SPOT_LTV_TARGET, SWEET_SPOT_RESERVE_MONTHS, SWEET_SPOT_OPPORTUNITY_COST_RATE,
 )
 from .resolver import ResolvedParams
@@ -60,8 +61,31 @@ def _score(
     elif preference == "minimize_down_payment":
         return (dp, tc, mp)
     else:  # balanced
-        # Composite: normalize and sum — use ratios to keep comparable
+        # Composite score: penalises both total cost and monthly burden.
+        # tc + mp * duration ≈ total_interest + total_repaid, so for a fixed
+        # duration this simply weights total cost twice vs a pure cost sort.
         return (tc + mp * Decimal(duration), mp, dp)
+
+
+def _build_dp_candidates(params: ResolvedParams) -> list:
+    """Return the ordered list of down-payment amounts to evaluate.
+
+    Starts from min_down_payment (exact), then steps in STEP_DOWN_PAYMENT
+    increments up to available_savings (always included as the last entry).
+    """
+    dp = params.min_down_payment
+    if dp % STEP_DOWN_PAYMENT != ZERO:
+        dp_aligned = (dp // STEP_DOWN_PAYMENT + 1) * STEP_DOWN_PAYMENT
+        candidates: list = [params.min_down_payment]
+        dp = dp_aligned
+    else:
+        candidates = []
+    while dp <= params.available_savings:
+        candidates.append(dp)
+        dp += STEP_DOWN_PAYMENT
+    if not candidates or candidates[-1] < params.available_savings:
+        candidates.append(params.available_savings)
+    return candidates
 
 
 def optimize(params: ResolvedParams) -> OptimizedResult:
@@ -87,28 +111,11 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
     best_duration = 0
     best_score: Optional[tuple] = None
 
-    # Build down payment candidates.
-    # If the user specified a preferred down payment, use only that amount.
-    # Otherwise grid-search from min_down_payment to available_savings in steps.
+    # If the user pinned a down payment, evaluate only that; otherwise grid-search.
     if params.preferred_down_payment is not None:
         candidates_dp = [params.preferred_down_payment]
     else:
-        dp = params.min_down_payment
-        # Round up to nearest 1000 if not already aligned
-        if dp % STEP_DOWN_PAYMENT != ZERO:
-            dp = (dp // STEP_DOWN_PAYMENT + 1) * STEP_DOWN_PAYMENT
-            # Ensure we still include the exact min_down_payment as first candidate
-            candidates_dp = [params.min_down_payment]
-        else:
-            candidates_dp = []
-
-        while dp <= params.available_savings:
-            candidates_dp.append(dp)
-            dp += STEP_DOWN_PAYMENT
-
-        # Always include available_savings as the last candidate (max down payment)
-        if not candidates_dp or candidates_dp[-1] < params.available_savings:
-            candidates_dp.append(params.available_savings)
+        candidates_dp = _build_dp_candidates(params)
 
     for down_payment in candidates_dp:
         principal = params.total_acquisition_cost - down_payment
@@ -196,22 +203,6 @@ class SweetSpotAnalysis:
     opportunity_cost_rate: Decimal    # benchmark annual rate used for comparison
     down_payment_is_efficient: bool   # True when mortgage yield > opportunity cost
 
-
-def _build_dp_candidates(params: ResolvedParams) -> list:
-    """Same grid construction as optimize() — reused for sweet-spot analysis."""
-    dp = params.min_down_payment
-    if dp % STEP_DOWN_PAYMENT != ZERO:
-        dp_aligned = (dp // STEP_DOWN_PAYMENT + 1) * STEP_DOWN_PAYMENT
-        candidates = [params.min_down_payment]
-        dp = dp_aligned
-    else:
-        candidates = []
-    while dp <= params.available_savings:
-        candidates.append(dp)
-        dp += STEP_DOWN_PAYMENT
-    if not candidates or candidates[-1] < params.available_savings:
-        candidates.append(params.available_savings)
-    return candidates
 
 
 def analyze_sweet_spot(

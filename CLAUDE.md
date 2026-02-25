@@ -10,7 +10,7 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
 
 ---
 
-## Repository State (as of 2026-02-23)
+## Repository State (as of 2026-02-25)
 
 | Item | Status |
 |---|---|
@@ -20,6 +20,7 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
 | Tests | Unit + integration tests under `tests/` |
 | CI/CD | Not yet configured |
 | Documentation | Requirements doc complete (`docs/requirements.md`) |
+| BE mortgage rates | Manually maintained in `profiles.py` (Feb 2026 data; ECB MIR endpoint excluded — see `fetcher.py`) |
 
 ---
 

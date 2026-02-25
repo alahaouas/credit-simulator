@@ -273,14 +273,15 @@ class TestAnalyzeSweetSpot:
         analysis = analyze_sweet_spot(params)
         from credit_simulator.calculator import compute_loan_plan
         p1 = params.total_acquisition_cost - params.min_down_payment
-        p2 = p1 - Decimal("10000")
+        p2 = p1 - Decimal("1000")
         ltv1 = p1 / params.property_price
         ltv2 = p2 / params.property_price
         plan1 = compute_loan_plan(p1, params.rate_for_ltv(ltv1), params.insurance_rate, 240)
         plan2 = compute_loan_plan(p2, params.rate_for_ltv(ltv2), params.insurance_rate, 240)
-        expected_per_10k = plan1.total_cost_of_credit - plan2.total_cost_of_credit
-        # marginal_saving_per_1k × 10 should match the 10k saving (within rounding)
-        assert abs(analysis.marginal_saving_per_1k * 10 - expected_per_10k) < Decimal("5")
+        expected_per_1k = plan1.total_cost_of_credit - plan2.total_cost_of_credit
+        # The analyzer computes marginal_saving_per_1k with the same 1 k step, so
+        # results must agree to within 1 EUR (pure Decimal rounding, no nonlinearity).
+        assert abs(analysis.marginal_saving_per_1k - expected_per_1k) <= Decimal("1")
 
     def test_reserve_warning_when_min_dp_exceeds_buffer(self):
         # Very low income → reserve floor is tiny → min down payment may exceed it

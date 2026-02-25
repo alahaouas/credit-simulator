@@ -25,7 +25,7 @@ DEFAULT_MAX_MONTHLY_PAYMENT = Decimal("2200")
 DEFAULT_LOAN_DURATION_MONTHS: int = 240  # 20 years
 
 STEP_DOWN_PAYMENT = Decimal("1000")
-STEP_DURATION: int = 12
+STEP_DURATION: int = 12          # reserved for future duration grid-search
 VALID_PREFERENCES: frozenset[str] = frozenset({
     "minimize_total_cost",
     "minimize_monthly_payment",
@@ -37,7 +37,6 @@ VALID_PREFERENCES: frozenset[str] = frozenset({
 # ── Sweet-spot analysis thresholds ───────────────────────────────────────────
 
 SWEET_SPOT_LTV_TARGET = Decimal("0.80")   # LTV reference threshold (regulatory / bank threshold)
-SWEET_SPOT_DTI_TARGET = Decimal("0.35")   # Kept for reference; not used in sweet-spot selection
 SWEET_SPOT_RESERVE_MONTHS: int = 6        # Months of income to keep in savings (emergency fund)
 SWEET_SPOT_OPPORTUNITY_COST_RATE = Decimal("0.035")  # Annual benchmark return (e.g. savings / ETF)
 
