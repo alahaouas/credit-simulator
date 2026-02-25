@@ -195,9 +195,12 @@ _PROFILES: dict[str, CountryProfile] = {
     "BE": CountryProfile(
         code="BE",
         currency="EUR",
-        # Immotheker barometer Dec-2025: 3.61% avg, best deals ~2.74–2.90%
-        annual_rate_average=Decimal("0.0360"),
-        annual_rate_best=Decimal("0.0290"),
+        # Manually sourced rates — Feb 2026 (20-year term used as base):
+        #   15 yr → avg 3.18% / best 2.95%
+        #   20 yr → avg 3.27% / best 3.05%   ← base used here
+        #   25 yr → avg 3.38% / best 3.20%
+        annual_rate_average=Decimal("0.0327"),
+        annual_rate_best=Decimal("0.0305"),
         insurance_rate_average=Decimal("0.0025"),
         insurance_rate_best=Decimal("0.0010"),
         purchase_tax_rate=Decimal("0.125"),
