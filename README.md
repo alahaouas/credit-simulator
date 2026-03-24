@@ -154,7 +154,7 @@ Goodbye.
 
 | Country | Code | Currency | Avg rate | Best rate | Max duration |
 |---|---|---|---|---|---|
-| Belgium _(default)_ | `BE` | EUR | 3.60% | 2.90% | 25 years |
+| Belgium _(default)_ | `BE` | EUR | 3.27% | 3.05% | 25 years |
 | France | `FR` | EUR | 3.50% | 2.90% | 25 years |
 | Spain | `ES` | EUR | 3.50% | 2.80% | 30 years |
 | Germany | `DE` | EUR | 3.80% | 3.10% | 30 years |

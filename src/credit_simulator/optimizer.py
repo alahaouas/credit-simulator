@@ -11,7 +11,7 @@ Search space:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Optional
 
 from .calculator import LoanPlan, compute_loan_plan
@@ -154,7 +154,7 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
 
     principal = params.total_acquisition_cost - best_down_payment
     ltv_ratio = (principal / params.property_price).quantize(
-        Decimal("0.0001"), rounding="ROUND_HALF_UP"
+        Decimal("0.0001"), rounding=ROUND_HALF_UP
     )
 
     return OptimizedResult(
@@ -193,7 +193,7 @@ class SweetSpotMilestone:
 
 @dataclass(frozen=True)
 class SweetSpotAnalysis:
-    milestones: list              # list[SweetSpotMilestone], ordered by down_payment
+    milestones: list[SweetSpotMilestone]  # ordered by down_payment
     sweet_spot_reason: str        # human-readable explanation
     reserve_warning: str          # non-empty when min down payment already exceeds reserve
     duration_months: int
@@ -242,12 +242,12 @@ def analyze_sweet_spot(
     def _milestone(dp: Decimal, label: str, is_sweet: bool = False) -> SweetSpotMilestone:
         principal = params.total_acquisition_cost - dp
         ltv = (principal / params.property_price).quantize(
-            Decimal("0.0001"), rounding="ROUND_HALF_UP"
+            Decimal("0.0001"), rounding=ROUND_HALF_UP
         )
         eff_rate = params.rate_for_ltv(ltv)
         plan = compute_loan_plan(principal, eff_rate, params.insurance_rate, duration)
         dti = (plan.monthly_installment / params.monthly_net_income).quantize(
-            Decimal("0.0001"), rounding="ROUND_HALF_UP"
+            Decimal("0.0001"), rounding=ROUND_HALF_UP
         )
         return SweetSpotMilestone(
             label=label,
@@ -318,8 +318,8 @@ def analyze_sweet_spot(
 
     # --- Sweet spot selection ---
     ltv_pct = int(SWEET_SPOT_LTV_TARGET * 100)
-    opp_pct = f"{float(opp_rate) * 100:.1f}"
-    yield_pct = f"{float(effective_annual_yield) * 100:.2f}"
+    opp_pct = f"{opp_rate * Decimal('100'):.1f}"
+    yield_pct = f"{effective_annual_yield * Decimal('100'):.2f}"
 
     if down_payment_is_efficient:
         sweet_dp = reserve_dp

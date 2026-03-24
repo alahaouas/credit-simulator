@@ -70,7 +70,7 @@ Profile quality only affects **market-driven fields** (`annual_interest_rate`, `
 | Spain | `ES` | EUR | 3.50% | 2.80% | 0.20% | 0.09% |
 | Germany | `DE` | EUR | 3.80% | 3.10% | 0.15% | 0.08% |
 | Portugal | `PT` | EUR | 4.00% | 3.20% | 0.25% | 0.10% |
-| Belgium _(default)_ | `BE` | EUR | 3.60% | 2.90% | 0.25% | 0.10% |
+| Belgium _(default)_ | `BE` | EUR | 3.27% | 3.05% | 0.20% | 0.15% |
 | Italy | `IT` | EUR | 4.00% | 3.20% | 0.20% | 0.08% |
 | United Kingdom | `GB` | GBP | 5.00% | 4.20% | 0.25% | 0.12% |
 | United States | `US` | USD | 7.00% | 6.20% | 0.80% | 0.40% |

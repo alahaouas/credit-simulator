@@ -214,3 +214,24 @@ class TestCLIRunner:
         )
         assert result.exit_code == 0
         assert "300" in result.output  # 25 years = 300 months
+
+
+class TestUpdatableFieldsConsistency:
+    """Verify that _UPDATABLE_FIELDS stays in sync with _apply_update()."""
+
+    def test_all_updatable_fields_handled_by_apply_update(self):
+        """Every field in _UPDATABLE_FIELDS must have a branch in _apply_update.
+
+        This test guards against someone adding a field to _UPDATABLE_FIELDS
+        without adding the corresponding handler in _apply_update(), which would
+        silently offer to update a field that does nothing.
+        """
+        import inspect
+        from credit_simulator.cli import _UPDATABLE_FIELDS, _apply_update
+
+        source = inspect.getsource(_apply_update)
+        for field in _UPDATABLE_FIELDS:
+            assert f'"{field}"' in source or f"'{field}'" in source, (
+                f"Field '{field}' is in _UPDATABLE_FIELDS but has no handler "
+                f"in _apply_update(). Add a handler or remove it from the set."
+            )

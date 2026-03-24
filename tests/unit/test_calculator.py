@@ -46,6 +46,10 @@ class TestComputeEMI:
         with pytest.raises(ValueError, match="principal"):
             compute_emi(Decimal("-1"), Decimal("0.035"), 120)
 
+    def test_negative_annual_rate(self):
+        with pytest.raises(ValueError, match="annual_rate"):
+            compute_emi(Decimal("100000"), Decimal("-0.01"), 120)
+
 
 class TestComputeMonthlyInsurance:
     def test_standard(self):
