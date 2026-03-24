@@ -10,7 +10,7 @@ Resolution order:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Optional
 
 from .calculator import compute_emi, compute_monthly_insurance
@@ -69,7 +69,7 @@ class ResolvedParams:
     max_monthly_payment: Decimal
     min_down_payment: Decimal
     # LTV-based rate tiers (from static profile, ordered ascending ltv_max)
-    ltv_rate_tiers: tuple  # tuple[LtvRateTier, ...]
+    ltv_rate_tiers: tuple[LtvRateTier, ...]
     # Preference
     optimization_preference: str
     # Provenance — 'user' or 'profile' for each optional param
@@ -161,7 +161,7 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
     else:
         tax_rate = Decimal(str(store.get_field(country, "purchase_tax_rate")))
         purchase_taxes = (inputs.property_price * tax_rate).quantize(
-            Decimal("0.01"), rounding="ROUND_HALF_UP"
+            Decimal("0.01"), rounding=ROUND_HALF_UP
         )
         sources["purchase_taxes"] = "profile"
 

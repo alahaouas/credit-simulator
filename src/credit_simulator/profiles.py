@@ -47,6 +47,8 @@ class CountryProfile:
     max_loan_duration_months: int
     # LTV-based rate adjustment tiers (ascending ltv_max order)
     ltv_rate_tiers: tuple[LtvRateTier, ...] = ()
+    # Date when the market-driven rates were last updated (ISO 8601, empty = unknown)
+    last_updated_date: str = ""
 
     def annual_rate(self, quality: ProfileQuality) -> Decimal:
         return self.annual_rate_average if quality == "average" else self.annual_rate_best
@@ -209,6 +211,7 @@ _PROFILES: dict[str, CountryProfile] = {
         max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=300,
         ltv_rate_tiers=_be_tiers(),
+        last_updated_date="2026-02",
     ),
     "IT": CountryProfile(
         code="IT",

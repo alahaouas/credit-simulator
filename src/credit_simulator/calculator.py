@@ -7,7 +7,7 @@ full precision for all intermediate steps.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from .config import CENT, ZERO
 
@@ -62,6 +62,8 @@ def compute_emi(
         raise ValueError("duration_months must be > 0")
     if principal < ZERO:
         raise ValueError("principal must be >= 0")
+    if annual_rate < ZERO:
+        raise ValueError("annual_rate must be >= 0")
 
     if annual_rate == ZERO:
         return _round(principal / Decimal(duration_months))
@@ -182,36 +184,49 @@ def compute_apr(
 
     Returns the annualised rate (monthly_rate * 12).
     No bank fees are included (per spec §9, Q4 closed: no arrangement fees).
+
+    All arithmetic uses Decimal throughout — float is never used.
+    Convergence tolerance: 1e-12 (monthly rate).  Maximum 100 iterations.
     """
     if principal <= ZERO or monthly_installment <= ZERO:
         return ZERO
 
-    C = float(monthly_installment)
-    P = float(principal)
+    C = monthly_installment
+    P = principal
     n = duration_months
+    _n = Decimal(n)
 
-    # Initial guess: nominal monthly rate
-    r = C / P / n  # rough starting point
+    # Initial guess: nominal monthly rate (P*r ≈ first-month interest ≈ C/n)
+    r = C / P / _n
+
+    _tolerance = Decimal("1E-12")
 
     for _ in range(100):
-        # f(r) = C * (1 - (1+r)^-n) / r - P
         try:
-            factor = (1 + r) ** n
-            f = C * (factor - 1) / (r * factor) - P
-            # f'(r)
-            df = C * (
-                (n * (1 + r) ** (n - 1) * r * factor - (factor - 1) * (factor + r * n * (1 + r) ** (n - 1)))
-                / (r * factor) ** 2
+            one_plus_r_n = (1 + r) ** n           # (1+r)^n  — Decimal integer power
+            one_plus_r_n1 = (1 + r) ** (n - 1)   # (1+r)^(n-1)
+            r_factor = r * one_plus_r_n            # r * (1+r)^n  — denominator
+
+            # f(r) = C * ((1+r)^n - 1) / (r * (1+r)^n) - P
+            f = C * (one_plus_r_n - 1) / r_factor - P
+
+            # f'(r) via quotient rule: d/dr [ (factor-1)/(r*factor) ]
+            # = [ n*(1+r)^(n-1)*r*factor - (factor-1)*(factor + r*n*(1+r)^(n-1)) ] / (r*factor)^2
+            numerator = (
+                _n * one_plus_r_n1 * r_factor
+                - (one_plus_r_n - 1) * (one_plus_r_n + r * _n * one_plus_r_n1)
             )
-            if df == 0:
+            df = C * numerator / (r_factor ** 2)
+
+            if df == ZERO:
                 break
             r_new = r - f / df
-            if abs(r_new - r) < 1e-12:
+            if abs(r_new - r) < _tolerance:
                 r = r_new
                 break
             r = r_new
-        except (ZeroDivisionError, OverflowError):
+        except (ZeroDivisionError, InvalidOperation):
             break
 
-    annual_apr = Decimal(str(round(r * 12, 6)))
+    annual_apr = (r * 12).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
     return annual_apr

@@ -45,7 +45,7 @@ def _fmt_money(value: Decimal, currency: str) -> str:
 
 
 def _fmt_pct(value: Decimal) -> str:
-    return f"{float(value) * 100:.4f}%"
+    return f"{value * Decimal('100'):.4f}%"
 
 
 def _fmt_months(n: int) -> str:
@@ -132,8 +132,8 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
     ))
 
     # --- Marginal economics header ---
-    yield_pct = f"{float(analysis.effective_annual_yield) * 100:.2f}%"
-    opp_pct   = f"{float(analysis.opportunity_cost_rate)  * 100:.1f}%"
+    yield_pct = f"{analysis.effective_annual_yield * Decimal('100'):.2f}%"
+    opp_pct   = f"{analysis.opportunity_cost_rate * Decimal('100'):.1f}%"
     saving_k  = _fmt_k(analysis.marginal_saving_per_1k)
     verdict = (
         "[green]EFFICIENT — mortgage beats the market[/green]"
@@ -168,10 +168,10 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
         t.add_row(
             label,
             _fmt_k(m.down_payment),
-            f"{float(m.effective_rate) * 100:.2f}%",
+            f"{m.effective_rate * Decimal('100'):.2f}%",
             _fmt_k(m.plan.monthly_installment),
-            f"{float(m.dti_ratio) * 100:.0f}%",
-            f"{float(m.ltv_ratio) * 100:.0f}%",
+            f"{m.dti_ratio * Decimal('100'):.0f}%",
+            f"{m.ltv_ratio * Decimal('100'):.0f}%",
             _fmt_k(m.plan.total_cost_of_credit),
             _fmt_k(m.savings_remaining),
         )

@@ -108,17 +108,28 @@ def _fetch_boe() -> Decimal:
 
     try:
         lines = resp.text.strip().splitlines()
-        # CSV: DATE,IUMTLMV — take last data row
+        if len(lines) < 2:
+            raise FetchError("No data returned from Bank of England.")
+        # Locate the rate column by header name, not by position.
+        header = [h.strip() for h in lines[0].split(",")]
+        try:
+            rate_col = header.index("IUMTLMV")
+        except ValueError:
+            raise FetchError(
+                f"Expected column 'IUMTLMV' not found in BoE CSV header: {header}"
+            )
         last_value = None
-        for line in lines[1:]:  # skip header
+        for line in lines[1:]:
             parts = line.split(",")
-            if len(parts) >= 2 and parts[1].strip():
-                last_value = parts[1].strip()
+            if len(parts) > rate_col and parts[rate_col].strip():
+                last_value = parts[rate_col].strip()
         if last_value is None:
             raise FetchError("No data returned from Bank of England.")
         # BoE returns percentage
         rate = Decimal(last_value) / Decimal("100")
         return rate
+    except FetchError:
+        raise
     except (IndexError, ValueError) as exc:
         raise FetchError(f"Failed to parse Bank of England response: {exc}") from exc
 
