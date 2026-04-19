@@ -246,6 +246,7 @@ The table always shows:
 |---|---|
 | Minimum | Absolute minimum down payment (`min_down_payment`) |
 | LTV≤X% rate↓ | Each LTV tier crossing that reduces the interest rate |
+| Rate floor | Down payment at which the interest rate reaches its minimum (lowest LTV tier); highlighted in magenta. Beyond this point, extra down payment reduces principal only — not the rate. |
 | ★ Sweet spot | The recommended down payment per the rule above |
 | Xm reserve cap | Maximum down payment while keeping X months of income in reserve |
 | Maximum | Full available savings |
@@ -253,6 +254,16 @@ The table always shows:
 Each row shows: down payment, applicable interest rate, monthly installment, DTI ratio, LTV ratio, total cost of credit, and liquidity remaining.
 
 When a `preferred_down_payment` is set, the table includes an additional **"Your choice"** milestone at that amount (or appends "← Your choice" to an existing row if the amounts coincide), rendered in a distinct colour so the buyer can immediately compare their intended contribution to the optimizer's recommendation.
+
+#### Crossover note
+
+Below the milestone table, the system prints a one-line crossover note indicating the opportunity-cost rate at which the loan APR equals the investment benchmark. Example:
+
+> Crossover at 3.50%: above this your investments beat the mortgage; below this paying down the mortgage beats investing.
+
+#### Per-tier economics table
+
+A secondary table lists each LTV tier with: LTV range, effective rate, rate-delta label (e.g. `+0.35%`, `base`, `−0.20%`), marginal saving per €1 000 of extra down payment within the tier, and annualised yield equivalent. The best tier (lowest rate) is highlighted.
 
 ---
 
@@ -262,17 +273,29 @@ After displaying simulation results, the system shall enter an interactive promp
 
 ### 5.1 Session Startup
 
-At the start of a session, the system prompts for mandatory parameters and optional overrides:
+Startup is two-stage:
+
+**Stage 1 — mandatory inputs** (always collected):
 
 | Parameter | Prompt | Required |
 |---|---|---|
 | `property_price` | "Property price?" | Yes |
 | `monthly_net_income` | "Monthly net income?" | Yes |
-| `available_savings` | "Available savings (maximum you can use for down payment)?" | Yes |
-| `purchase_taxes` | "Purchase taxes? (press Enter to estimate from country profile)" | No |
-| `preferred_down_payment` | "Preferred down payment? (press Enter to let optimizer find the best)" | No |
+| `available_savings` | "Available savings?" | Yes |
 
-All other parameters are optional at startup and resolved automatically (see section 2). Once the mandatory values are collected, the system runs an initial simulation — including the sweet-spot analysis — and displays the results before entering the update loop.
+After Stage 1, the system displays a **country profile summary** panel (rates, insurance, taxes, DTI limit, max duration) and asks: `"Use all country defaults and run immediately? [Y/n]"`. Answering `Y` skips Stage 2 and runs immediately.
+
+**Stage 2 — optional overrides** (skipped on quick-start):
+
+| Parameter | Inline hint shown |
+|---|---|
+| `purchase_taxes` | Estimated value from profile, e.g. `~43 750 EUR` |
+| `preferred_down_payment` | Maximum available savings, e.g. `max 80 000` |
+| `fixed_loan_duration_months` | Default duration, e.g. `default 240` |
+
+Every prompt supports a **`?` help token**: typing `?` instead of a value prints contextual help for that field and re-displays the prompt.
+
+All other parameters are optional at startup and resolved automatically (see §2). The `--opp-rate` CLI flag sets the opportunity-cost benchmark rate at launch. Once mandatory values are collected, the system runs an initial simulation — including the sweet-spot analysis — and displays the results before entering the update loop.
 
 ### 5.2 Behaviour
 

@@ -1,5 +1,15 @@
 # CLAUDE.md — AI Assistant Guide for credit-simulator
 
+## Cost-Efficiency Rules
+
+- No sub-agents unless genuine parallel isolation is required.
+- Grep/Glob before Read; use `offset`+`limit` to read only needed lines.
+- Read a file only when about to edit it.
+- Batch independent tool calls in one message.
+- Short responses — no recaps, no preambles.
+
+---
+
 This file provides context and conventions for AI assistants (e.g. Claude Code) working on this repository.
 
 ---
