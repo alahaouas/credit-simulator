@@ -11,7 +11,7 @@ Search space:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 from typing import Optional
 
 from .calculator import LoanPlan, compute_loan_plan
@@ -284,7 +284,7 @@ def analyze_sweet_spot(
             _exact = params.total_acquisition_cost - params.property_price * _nearest.ltv_max
             _floor_cand = (
                 _exact / STEP_DOWN_PAYMENT
-            ).to_integral_value(rounding="ROUND_CEILING") * STEP_DOWN_PAYMENT
+            ).to_integral_value(rounding=ROUND_CEILING) * STEP_DOWN_PAYMENT
             if _floor_cand <= params.available_savings:
                 effective_floor_dp = _floor_cand
 

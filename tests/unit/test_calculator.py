@@ -5,6 +5,7 @@ import pytest
 
 from credit_simulator.calculator import (
     build_amortization_schedule,
+    compute_apr,
     compute_emi,
     compute_loan_plan,
     compute_monthly_insurance,
@@ -140,3 +141,51 @@ class TestLoanPlan:
         )
         assert plan.monthly_insurance == ZERO
         assert plan.total_insurance_paid == ZERO
+
+    def test_zero_interest_zero_insurance_apr_is_zero(self):
+        """A zero-cost loan (no interest, no insurance) → APR = 0."""
+        plan = compute_loan_plan(Decimal("60000"), ZERO, ZERO, 60)
+        assert plan.effective_annual_rate == ZERO
+
+    def test_zero_interest_with_insurance_apr_positive(self):
+        """Insurance cost alone still produces a positive APR."""
+        plan = compute_loan_plan(
+            Decimal("100000"), ZERO, Decimal("0.003"), 120
+        )
+        assert plan.effective_annual_rate > ZERO
+
+    def test_high_rate_plan_converges(self):
+        """APR computation must converge even at high (15%) rates."""
+        plan = compute_loan_plan(
+            Decimal("200000"), Decimal("0.15"), Decimal("0.001"), 120
+        )
+        assert plan.effective_annual_rate > Decimal("0.14")
+
+    def test_very_short_loan_single_period(self):
+        """1-month loan: entire principal repaid in one installment."""
+        plan = compute_loan_plan(Decimal("1000"), Decimal("0.12"), ZERO, 1)
+        assert plan.total_repaid == plan.loan_principal + plan.total_cost_of_credit
+
+
+class TestComputeAprDirect:
+    """Direct unit tests for compute_apr boundary cases."""
+
+    def test_zero_principal_returns_zero(self):
+        assert compute_apr(ZERO, Decimal("500"), 120) == ZERO
+
+    def test_zero_installment_returns_zero(self):
+        assert compute_apr(Decimal("100000"), ZERO, 120) == ZERO
+
+    def test_installment_matches_principal_one_period(self):
+        """1-period: monthly_installment equals principal+interest; APR must be positive."""
+        apr = compute_apr(Decimal("1000"), Decimal("1010"), 1)
+        assert apr > ZERO
+
+    @pytest.mark.parametrize("annual_rate", [
+        Decimal("0.01"), Decimal("0.05"), Decimal("0.10"), Decimal("0.15"),
+    ])
+    def test_apr_roundtrip_close_to_nominal(self, annual_rate):
+        """APR from compute_loan_plan should be within ±0.5% of stated nominal rate."""
+        principal = Decimal("150000")
+        plan = compute_loan_plan(principal, annual_rate, ZERO, 240)
+        assert abs(plan.effective_annual_rate - annual_rate) < Decimal("0.005")

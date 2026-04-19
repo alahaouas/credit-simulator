@@ -134,3 +134,70 @@ class TestFeasibility:
         effective_cap = min(params.monthly_net_income * params.max_debt_ratio, params.max_monthly_payment)
         assert effective_cap == Decimal("1400")
         assert effective_cap < DEFAULT_MAX_MONTHLY_PAYMENT
+
+    def test_preferred_down_payment_below_minimum_raises(self):
+        params = resolve(
+            _base_inputs(preferred_down_payment=Decimal("1000")),
+            _store(),
+        )
+        with pytest.raises(InfeasibleError, match="below the required minimum"):
+            check_feasibility(params)
+
+    def test_preferred_down_payment_above_savings_raises(self):
+        params = resolve(
+            _base_inputs(preferred_down_payment=Decimal("999999")),
+            _store(),
+        )
+        with pytest.raises(InfeasibleError, match="exceeds available savings"):
+            check_feasibility(params)
+
+    def test_cash_purchase_is_feasible(self):
+        """Buyer with savings >= total acquisition cost can pay cash; always feasible."""
+        params = resolve(
+            _base_inputs(
+                property_price=Decimal("200000"),
+                available_savings=Decimal("999999"),
+            ),
+            _store(),
+        )
+        check_feasibility(params)  # should not raise
+
+
+class TestResolveEdgeCases:
+    def test_taxes_not_financeable_taxes_dominate(self):
+        """When purchase_taxes > total_acquisition_cost * ratio, taxes set the floor."""
+        params = resolve(
+            _base_inputs(
+                country="FR",
+                property_price=Decimal("500000"),
+                purchase_taxes=Decimal("100000"),  # 20% — exceeds any ratio*total
+                available_savings=Decimal("150000"),
+            ),
+            _store(),
+        )
+        # min_dp = max(100000, 600000 * 0) = 100000
+        assert params.min_down_payment == Decimal("100000")
+
+    def test_fixed_loan_duration_stored_in_sources(self):
+        params = resolve(
+            _base_inputs(fixed_loan_duration_months=180),
+            _store(),
+        )
+        assert params.fixed_loan_duration_months == 180
+        assert params.sources["fixed_loan_duration_months"] == "user"
+
+    def test_default_fixed_loan_duration_is_240(self):
+        from credit_simulator.config import DEFAULT_LOAN_DURATION_MONTHS
+        params = resolve(_base_inputs(), _store())
+        assert params.fixed_loan_duration_months == DEFAULT_LOAN_DURATION_MONTHS
+        assert params.sources["fixed_loan_duration_months"] == "default"
+
+    def test_rate_for_ltv_uses_resolved_rate(self):
+        """rate_for_ltv on ResolvedParams must apply tier delta on top of resolved rate."""
+        params = resolve(
+            _base_inputs(annual_interest_rate=Decimal("0.04")),
+            _store(),
+        )
+        # BE ≤75% tier has delta -0.30% → effective = 4% - 0.30% = 3.70%
+        rate = params.rate_for_ltv(Decimal("0.70"))
+        assert rate == Decimal("0.04") + Decimal("-0.0030")

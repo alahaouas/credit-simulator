@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
-from .config import CENT, ZERO
+from .config import APR_MAX_ITERATIONS, APR_PRECISION, APR_TOLERANCE, CENT, ZERO
 
 
 def _round(value: Decimal) -> Decimal:
@@ -199,9 +199,7 @@ def compute_apr(
     # Initial guess: nominal monthly rate (P*r ≈ first-month interest ≈ C/n)
     r = C / P / _n
 
-    _tolerance = Decimal("1E-12")
-
-    for _ in range(100):
+    for _ in range(APR_MAX_ITERATIONS):
         try:
             one_plus_r_n = (1 + r) ** n           # (1+r)^n  — Decimal integer power
             one_plus_r_n1 = (1 + r) ** (n - 1)   # (1+r)^(n-1)
@@ -221,12 +219,12 @@ def compute_apr(
             if df == ZERO:
                 break
             r_new = r - f / df
-            if abs(r_new - r) < _tolerance:
+            if abs(r_new - r) < APR_TOLERANCE:
                 r = r_new
                 break
             r = r_new
         except (ZeroDivisionError, InvalidOperation):
             break
 
-    annual_apr = (r * 12).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+    annual_apr = (r * 12).quantize(APR_PRECISION, rounding=ROUND_HALF_UP)
     return annual_apr
