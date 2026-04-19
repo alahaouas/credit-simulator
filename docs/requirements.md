@@ -394,7 +394,8 @@ The ECB series key `MIR.M.{CC}.B.A2C.F.R.A.2250.EUR.N` encodes: monthly frequenc
 ### 6.4 Testability
 - Every calculation function (EMI, APR, amortization row, debt ratio) must have unit tests with known expected values.
 - Optimizer must have integration tests covering each preference mode.
-- Edge cases: zero insurance, minimum duration (12 months), buyer savings exactly equal to taxes, max debt ratio exactly met.
+- Edge cases: zero insurance, minimum duration (12 months), buyer savings exactly equal to taxes, max debt ratio exactly met, APR convergence at extreme rates, LTV tier structural invariants for every supported country.
+- Branch coverage gate: core modules (calculator, optimizer, profiles, resolver, fetcher) must maintain ≥ 90% branch coverage measured by `pytest-cov` (CLI excluded from the gate — covered separately by integration tests).
 
 ### 6.5 Security
 - No external inputs used in shell or database operations without sanitization.
@@ -422,8 +423,8 @@ The ECB series key `MIR.M.{CC}.B.A2C.F.R.A.2250.EUR.N` encodes: monthly frequenc
 | Country | system default | `BE` |
 | Profile quality | system default | `average` |
 | Purchase taxes | estimated (12.5% of price) | ~43,750 EUR |
-| Annual interest rate | BE average profile | 3.20% |
-| Insurance rate | BE average profile | 0.25% /year |
+| Annual interest rate | BE average profile | 3.27% |
+| Insurance rate | BE average profile | 0.20% /year |
 | Max debt ratio | BE profile | 35% |
 | Max loan duration | BE profile | 300 months (25 years) |
 | Max monthly payment | system default | 2,200 EUR |
@@ -432,7 +433,7 @@ The ECB series key `MIR.M.{CC}.B.A2C.F.R.A.2250.EUR.N` encodes: monthly frequenc
 - Total acquisition cost = 350,000 + 43,750 = 393,750 EUR
 - Minimum down payment = 393,750 × 20% = 78,750 EUR
 - Binding monthly cap = min(6,000 × 35%, 2,200) = min(2,100, 2,200) = 2,100 EUR
-- Loan range: 313,750 EUR (min, if all savings used as down payment) to 315,000 EUR (max, at minimum down payment)
+- Loan range: 313,750 EUR (max principal, savings fully consumed) to 315,000 EUR (min principal, at minimum down payment)
 
 The simulator returns the `(down_payment, duration)` pair that minimizes total interest + insurance cost while respecting all constraints.
 

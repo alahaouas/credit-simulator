@@ -54,6 +54,8 @@ cd credit-simulator
 pip install -e ".[dev]"
 ```
 
+Dev extras include `pytest`, `pytest-cov`, `pytest-mock`, and `ruff`.
+
 ---
 
 ## Usage
@@ -198,20 +200,25 @@ population-average rates; competitive "best" rates have no public API).
 ```
 credit-simulator/
 ├── pyproject.toml
+├── docs/
+│   └── requirements.md     # Full product specification
 ├── src/
 │   └── credit_simulator/
 │       ├── __main__.py     # Entry point
 │       ├── cli.py          # Interactive CLI and update loop
+│       ├── config.py       # Application-wide constants and defaults
 │       ├── profiles.py     # Country profiles + session-scoped store
 │       ├── resolver.py     # Parameter resolution and feasibility check
 │       ├── calculator.py   # EMI, amortization schedule, APR
-│       ├── optimizer.py    # Grid-search optimizer
+│       ├── optimizer.py    # Grid-search optimizer and sweet-spot analysis
 │       └── fetcher.py      # Online rate fetch (ECB / BoE / FRED)
 └── tests/
     ├── unit/
     │   ├── test_calculator.py
+    │   ├── test_profiles.py
     │   ├── test_optimizer.py
-    │   └── test_resolver.py
+    │   ├── test_resolver.py
+    │   └── test_fetcher.py
     └── integration/
         └── test_cli.py
 ```
@@ -224,9 +231,25 @@ credit-simulator/
 pytest
 ```
 
-Tests covering EMI arithmetic, amortization schedule invariants, parameter
-resolution, feasibility checks, all optimization preferences, sweet-spot analysis
-(including LTV surcharge zone handling), and CLI integration.
+`pytest` is pre-configured (via `pyproject.toml`) to run with branch coverage
+enabled and produce a terminal missing-lines report. Core modules must maintain
+**≥ 90% branch coverage** — the build fails if the gate is not met.
+
+Test suite covers:
+- EMI arithmetic, amortization schedule invariants, APR convergence and round-trip accuracy
+- All optimization preferences and sweet-spot analysis (including LTV surcharge-zone handling)
+- Country profile structural invariants (LTV tier ordering, effective rate positivity) for all 8 countries
+- Parameter resolution, feasibility checks, and edge cases
+- Online rate fetcher with mocked HTTP responses
+- CLI integration (smoke tests)
+
+### Linting
+
+```bash
+ruff check src/ tests/
+```
+
+`ruff` is configured for Python 3.11 with rules E, F, W, I (import order), UP (pyupgrade), B (flake8-bugbear), and SIM (simplification).
 
 ---
 
