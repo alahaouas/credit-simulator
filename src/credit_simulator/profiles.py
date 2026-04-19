@@ -354,15 +354,15 @@ class SessionProfileStore:
             avg = self.get_annual_rate(code, "average")
             if value > avg:
                 raise ValueError(
-                    f"'best' annual rate ({value:%}) cannot exceed "
-                    f"'average' rate ({avg:%}) for {code}."
+                    f"'best' annual rate ({value * 100:.4f}%) cannot exceed "
+                    f"'average' rate ({avg * 100:.4f}%) for {code}."
                 )
         else:  # quality == "average"
             best = self.get_annual_rate(code, "best")
             if value < best:
                 raise ValueError(
-                    f"'average' annual rate ({value:%}) cannot be lower than "
-                    f"'best' rate ({best:%}) for {code}."
+                    f"'average' annual rate ({value * 100:.4f}%) cannot be lower than "
+                    f"'best' rate ({best * 100:.4f}%) for {code}."
                 )
 
     def _validate_insurance_invariant(
@@ -372,13 +372,13 @@ class SessionProfileStore:
             avg = self.get_insurance_rate(code, "average")
             if value > avg:
                 raise ValueError(
-                    f"'best' insurance rate ({value:%}) cannot exceed "
-                    f"'average' rate ({avg:%}) for {code}."
+                    f"'best' insurance rate ({value * 100:.4f}%) cannot exceed "
+                    f"'average' rate ({avg * 100:.4f}%) for {code}."
                 )
         else:
             best = self.get_insurance_rate(code, "best")
             if value < best:
                 raise ValueError(
-                    f"'average' insurance rate ({value:%}) cannot be lower than "
-                    f"'best' rate ({best:%}) for {code}."
+                    f"'average' insurance rate ({value * 100:.4f}%) cannot be lower than "
+                    f"'best' rate ({best * 100:.4f}%) for {code}."
                 )

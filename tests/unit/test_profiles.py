@@ -187,3 +187,57 @@ class TestSessionProfileStore:
         """BE profile has a non-empty last_updated_date."""
         profile = get_profile("BE")
         assert profile.last_updated_date != ""
+
+    def test_validation_error_message_is_valid_string(self):
+        """Rate validation error messages must not raise TypeError (Decimal % format bug)."""
+        store = self._store()
+        with pytest.raises(ValueError) as exc_info:
+            store.set_annual_rate("BE", "best", Decimal("0.99"), manual=True)
+        msg = str(exc_info.value)
+        assert "%" in msg
+        assert "BE" in msg
+
+    def test_insurance_validation_error_message_is_valid_string(self):
+        store = self._store()
+        with pytest.raises(ValueError) as exc_info:
+            store.set_insurance_rate("BE", "best", Decimal("0.99"))
+        msg = str(exc_info.value)
+        assert "%" in msg
+        assert "BE" in msg
+
+
+class TestLtvTierInvariants:
+    """Structural invariants that all country LTV tier definitions must satisfy."""
+
+    ALL_COUNTRIES = ("BE", "FR", "DE", "ES", "IT", "PT", "GB", "US")
+
+    @pytest.mark.parametrize("code", ALL_COUNTRIES)
+    def test_ltv_tiers_ascending_ltv_max(self, code):
+        """LTV tier list must be ordered by ascending ltv_max."""
+        profile = get_profile(code)
+        tiers = profile.ltv_rate_tiers
+        for i in range(len(tiers) - 1):
+            assert tiers[i].ltv_max < tiers[i + 1].ltv_max, (
+                f"{code}: tier {i} ltv_max={tiers[i].ltv_max} >= "
+                f"tier {i+1} ltv_max={tiers[i+1].ltv_max}"
+            )
+
+    @pytest.mark.parametrize("code", ALL_COUNTRIES)
+    def test_ltv_tier_max_values_positive(self, code):
+        """Every LTV cap must be a positive fraction (0 < ltv_max <= 1.5)."""
+        profile = get_profile(code)
+        for tier in profile.ltv_rate_tiers:
+            assert ZERO < tier.ltv_max <= Decimal("1.5"), (
+                f"{code}: ltv_max={tier.ltv_max} out of range"
+            )
+
+    @pytest.mark.parametrize("code", ALL_COUNTRIES)
+    def test_effective_rate_always_positive(self, code):
+        """rate_delta must not make the effective rate negative for any LTV."""
+        profile = get_profile(code)
+        base = profile.annual_rate("average")
+        for tier in profile.ltv_rate_tiers:
+            effective = base + tier.rate_delta
+            assert effective > ZERO, (
+                f"{code}: effective rate {effective} <= 0 at ltv_max={tier.ltv_max}"
+            )

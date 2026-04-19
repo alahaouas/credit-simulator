@@ -10,8 +10,7 @@ from decimal import Decimal
 
 import requests
 
-# Timeout for HTTP calls (seconds)
-_TIMEOUT = 10
+from .config import FETCH_TIMEOUT_SECONDS as _TIMEOUT
 
 # ECB country codes that use the MIR series
 # Note: BE is excluded — the ECB MIR endpoint for Belgium is unreliable;
