@@ -10,15 +10,16 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
 
 ---
 
-## Repository State (as of 2026-02-25)
+## Repository State (as of 2026-04-19)
 
 | Item | Status |
 |---|---|
 | Source code | **Complete** — all modules implemented and tested |
 | Framework / language | **Python 3.11+** |
 | Build system | `pyproject.toml` (PEP 517/518, `hatchling`) |
-| Tests | Unit + integration tests under `tests/` |
-| CI/CD | Not yet configured |
+| Tests | 186 unit + integration tests; branch coverage gate ≥ 90% on core modules (actual: ~94%) |
+| CI/CD | Local coverage gate via `pytest-cov`; no remote CI pipeline yet |
+| Linting | `ruff` configured (rules E/F/W/I/UP/B/SIM, py311, 100-char line length) |
 | Documentation | Requirements doc complete (`docs/requirements.md`) |
 | BE mortgage rates | Manually maintained in `profiles.py` (Feb 2026 data; ECB MIR endpoint excluded — see `fetcher.py`) |
 
@@ -68,10 +69,15 @@ Never commit:
 - **Key dependencies**:
   - `click` — CLI framework
   - `rich` — terminal formatting and tables
+  - `requests` — online rate fetch
   - *(no ORM or DB — no persistent storage in v1)*
-- **Install dependencies**: `pip install -e ".[dev]"`
+- **Dev dependencies** (`pip install -e ".[dev]"`):
+  - `pytest` + `pytest-cov` — test runner + branch coverage gate
+  - `pytest-mock` — mock fixtures for HTTP and external calls
+  - `ruff` — linter (`ruff check src/ tests/`)
 - **Run locally**: `python -m credit_simulator` (or `credit-simulator` once installed)
-- **Run tests**: `pytest`
+- **Run tests**: `pytest` (coverage report printed automatically; gate: ≥ 90% on core modules)
+- **Lint**: `ruff check src/ tests/`
 - **Arithmetic**: Python built-in `decimal.Decimal` — **never `float` for monetary values**
 
 ### Environment Variables
@@ -86,7 +92,7 @@ No `.env` required for v1. The FRED API key (needed for US rate fetch) will be r
 credit-simulator/
 ├── CLAUDE.md                   # This file
 ├── README.md                   # Human-facing project overview
-├── pyproject.toml              # Package metadata and dependencies
+├── pyproject.toml              # Package metadata, dependencies, pytest/coverage/ruff config
 ├── .gitignore
 ├── docs/
 │   └── requirements.md         # Full product specification
@@ -94,18 +100,21 @@ credit-simulator/
 │   └── credit_simulator/
 │       ├── __main__.py         # Entry point: `python -m credit_simulator`
 │       ├── cli.py              # click CLI definition and interactive loop
-│       ├── profiles.py         # Static country profiles data
-│       ├── resolver.py         # Parameter resolution (§4.1)
-│       ├── calculator.py       # EMI, amortization, APR (§4.4)
-│       ├── optimizer.py        # Grid-search optimizer (§4.3)
+│       ├── config.py           # Application-wide constants and tuneable defaults
+│       ├── profiles.py         # Static country profiles + SessionProfileStore
+│       ├── resolver.py         # Parameter resolution (§4.1) and feasibility check (§4.2)
+│       ├── calculator.py       # EMI, amortization schedule, APR (§4.4)
+│       ├── optimizer.py        # Grid-search optimizer (§4.3) + sweet-spot analysis (§4.5)
 │       └── fetcher.py          # Online rate fetch — ECB / BoE / FRED (§5.4)
 └── tests/
     ├── unit/
-    │   ├── test_calculator.py
-    │   ├── test_optimizer.py
-    │   └── test_resolver.py
+    │   ├── test_calculator.py  # EMI, APR, amortization schedule
+    │   ├── test_profiles.py    # Country profiles, LTV tiers, SessionProfileStore
+    │   ├── test_optimizer.py   # Grid-search optimizer and sweet-spot analysis
+    │   ├── test_resolver.py    # Parameter resolution and feasibility
+    │   └── test_fetcher.py     # Online rate fetch (mocked HTTP)
     └── integration/
-        └── test_cli.py
+        └── test_cli.py         # End-to-end CLI smoke tests
 ```
 
 ---
@@ -143,8 +152,11 @@ When implementing features, be aware of these credit-domain terms:
 
 - All core financial calculation functions require unit tests.
 - Use table-driven / parameterized tests for formula verification.
-- Test edge cases: zero interest, 100% LTV, maximum loan term, negative inputs.
-- Integration tests should use a dedicated test database or in-memory store — never production data.
+- Test edge cases: zero interest, 100% LTV, maximum loan term, negative inputs, APR convergence at extreme rates.
+- Structural invariants (LTV tier ascending order, effective rate positivity) must be asserted for every supported country — not just BE.
+- Integration tests should use in-memory state only — never production data.
+- Run `pytest` to execute the full suite with automatic branch coverage. The gate is **≥ 90%** for core modules (`cli.py` is excluded from the gate).
+- External HTTP calls in fetcher tests must be mocked via `pytest-mock` — never make real network requests in tests.
 
 ---
 
