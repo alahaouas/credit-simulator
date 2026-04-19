@@ -22,10 +22,12 @@ from rich.panel import Panel
 from rich.table import Table
 from rich import box
 
+from decimal import ROUND_HALF_UP as _ROUND_HALF_UP
+
 from .calculator import build_amortization_schedule
 from .fetcher import FetchError, fetch_rate
 from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_LOAN_DURATION_MONTHS, VALID_PREFERENCES
-from .optimizer import OptimizedResult, SweetSpotAnalysis, optimize, analyze_sweet_spot
+from .optimizer import OptimizedResult, SweetSpotAnalysis, TierEconomics, optimize, analyze_sweet_spot
 from .profiles import (
     SUPPORTED_COUNTRIES,
     SessionProfileStore,
@@ -144,12 +146,13 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
         f"  Marginal saving per extra 1 000 {currency} of down payment: "
         f"[bold]{saving_k} {currency}[/bold] in total cost over the loan term\n"
         f"  Effective yield (loan APR):  [bold]{yield_pct}[/bold]   "
-        f"Reference rate (opportunity cost): [bold]{opp_pct}[/bold]   {verdict}"
+        f"Reference rate (opportunity cost): [bold]{opp_pct}[/bold]   {verdict}\n"
+        f"  [dim]{analysis.crossover_note}[/dim]"
     )
 
     # --- Milestone table ---
     t = Table(box=box.SIMPLE_HEAVY, show_header=True, padding=(0, 1), expand=False)
-    t.add_column("Milestone", style="cyan", min_width=14, max_width=20)
+    t.add_column("Milestone", style="cyan", min_width=18, max_width=26)
     t.add_column("Down pmt", justify="right", min_width=9)
     t.add_column("Rate", justify="right", min_width=6)
     t.add_column("Monthly", justify="right", min_width=7)
@@ -161,6 +164,8 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
     for m in analysis.milestones:
         if m.is_sweet_spot:
             label = f"[bold green]{m.label}[/bold green]"
+        elif m.is_rate_floor:
+            label = f"[bold magenta]{m.label}[/bold magenta]"
         elif "Your choice" in m.label:
             label = f"[bold cyan]{m.label}[/bold cyan]"
         else:
@@ -180,7 +185,65 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
     console.print(f"[bold]Verdict:[/bold] {analysis.sweet_spot_reason}")
     if analysis.reserve_warning:
         console.print(f"[yellow]{analysis.reserve_warning}[/yellow]")
+
+    # --- Per-tier economics table ---
+    if analysis.tier_economics:
+        console.print()
+        console.print("[bold]Per-tier down-payment economics[/bold] "
+                      f"(extra 1 000 {currency} in each LTV band):")
+        te = Table(box=box.SIMPLE, show_header=True, padding=(0, 1), expand=False)
+        te.add_column("LTV tier", style="dim", min_width=10)
+        te.add_column("Rate", justify="right", min_width=8)
+        te.add_column("Delta", justify="right", min_width=7)
+        te.add_column(f"Saves (total)", justify="right", min_width=12)
+        te.add_column("Yield", justify="right", min_width=6)
+        for tier in analysis.tier_economics:
+            rate_str = f"{tier.effective_rate * Decimal('100'):.2f}%"
+            save_str = f"{_fmt_k(tier.saving_per_1k)} {currency}"
+            yield_str = f"{tier.annual_yield * Decimal('100'):.2f}%"
+            if tier.is_best_tier:
+                te.add_row(
+                    f"[magenta]{tier.ltv_range}[/magenta]",
+                    f"[magenta]{rate_str}[/magenta]",
+                    f"[magenta]{tier.rate_delta_label}[/magenta]",
+                    f"[magenta]{save_str}[/magenta]",
+                    f"[magenta]{yield_str}[/magenta]",
+                )
+            else:
+                te.add_row(tier.ltv_range, rate_str, tier.rate_delta_label, save_str, yield_str)
+        console.print(te)
+        console.print(
+            f"  [dim magenta]Magenta row = rate floor: paying beyond this LTV tier "
+            f"reduces principal but not the interest rate.[/dim magenta]"
+        )
+
     console.print()
+
+
+def _display_profile_summary(store: SessionProfileStore, country: str) -> None:
+    """Show a compact profile defaults box so users know what they'll get."""
+    cur = str(store.get_field(country, "currency"))
+    avg_rate = store.get_annual_rate(country, "average")
+    best_rate = store.get_annual_rate(country, "best")
+    avg_ins = store.get_insurance_rate(country, "average")
+    best_ins = store.get_insurance_rate(country, "best")
+    tax_rate = Decimal(str(store.get_field(country, "purchase_tax_rate")))
+    min_dp = Decimal(str(store.get_field(country, "min_down_payment_ratio")))
+    max_debt = Decimal(str(store.get_field(country, "max_debt_ratio")))
+    max_dur = int(store.get_field(country, "max_loan_duration_months"))
+    taxes_fin = bool(store.get_field(country, "taxes_financeable"))
+    console.print(Panel(
+        f"[bold]{country}[/bold] profile  (currency: {cur})\n"
+        f"  Interest  avg [cyan]{_fmt_pct(avg_rate)}[/cyan]  /  best [cyan]{_fmt_pct(best_rate)}[/cyan]\n"
+        f"  Insurance avg [cyan]{_fmt_pct(avg_ins)}[/cyan]  /  best [cyan]{_fmt_pct(best_ins)}[/cyan]\n"
+        f"  Purchase taxes ~[cyan]{_fmt_pct(tax_rate)}[/cyan] of price  ·  "
+        f"financeable: {'[green]yes[/green]' if taxes_fin else '[yellow]no[/yellow]'}\n"
+        f"  Min down pmt [cyan]{_fmt_pct(min_dp)}[/cyan]  ·  "
+        f"Max DTI [cyan]{_fmt_pct(max_debt)}[/cyan]  ·  "
+        f"Max duration [cyan]{max_dur // 12}y[/cyan]",
+        title="Country Defaults",
+        expand=False,
+    ))
 
 
 def display_params(inputs: UserInputs, params: ResolvedParams) -> None:
@@ -211,6 +274,8 @@ def display_params(inputs: UserInputs, params: ResolvedParams) -> None:
     row("max_debt_ratio", _fmt_pct(params.max_debt_ratio), params.sources.get("max_debt_ratio", ""))
     row("max_monthly_payment", _fmt_money(params.max_monthly_payment, cur), params.sources.get("max_monthly_payment", ""))
     row("optimization_preference", inputs.optimization_preference)
+    opp_src = "user" if inputs.opportunity_cost_rate is not None else "default"
+    row("opportunity_cost_rate", _fmt_pct(params.opportunity_cost_rate), opp_src)
     console.print(t)
 
 
@@ -218,13 +283,25 @@ def display_params(inputs: UserInputs, params: ResolvedParams) -> None:
 # Input helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _prompt_decimal(prompt: str, *, positive: bool = True, allow_zero: bool = False) -> Decimal:
+def _prompt_decimal(
+    prompt: str,
+    *,
+    positive: bool = True,
+    allow_zero: bool = False,
+    hint: str = "",
+    help_text: str = "",
+) -> Decimal:
+    """Prompt for a Decimal value.  Type '?' for inline help."""
+    display = f"{prompt} [{hint}]" if hint else prompt
     while True:
-        raw = console.input(f"[bold]{prompt}[/bold] ").strip()
+        raw = console.input(f"[bold]{display}[/bold] ").strip()
+        if raw == "?":
+            console.print(f"  [dim]{help_text or 'No additional help available.'}[/dim]")
+            continue
         try:
             value = Decimal(raw.replace(",", ".").replace(" ", ""))
         except InvalidOperation:
-            err_console.print(f"  Invalid number: '{raw}'")
+            err_console.print(f"  Invalid number: '{raw}'. Type ? for help.")
             continue
         if positive and value <= 0 and not (allow_zero and value == 0):
             err_console.print("  Value must be > 0." if not allow_zero else "  Value must be >= 0.")
@@ -235,13 +312,24 @@ def _prompt_decimal(prompt: str, *, positive: bool = True, allow_zero: bool = Fa
         return value
 
 
-def _prompt_int(prompt: str, *, min_val: int = 1) -> int:
+def _prompt_int(
+    prompt: str,
+    *,
+    min_val: int = 1,
+    hint: str = "",
+    help_text: str = "",
+) -> int:
+    """Prompt for an integer value.  Type '?' for inline help."""
+    display = f"{prompt} [{hint}]" if hint else prompt
     while True:
-        raw = console.input(f"[bold]{prompt}[/bold] ").strip()
+        raw = console.input(f"[bold]{display}[/bold] ").strip()
+        if raw == "?":
+            console.print(f"  [dim]{help_text or 'No additional help available.'}[/dim]")
+            continue
         try:
             value = int(raw)
         except ValueError:
-            err_console.print(f"  Invalid integer: '{raw}'")
+            err_console.print(f"  Invalid integer: '{raw}'. Type ? for help.")
             continue
         if value < min_val:
             err_console.print(f"  Value must be >= {min_val}.")
@@ -425,6 +513,7 @@ _UPDATABLE_FIELDS = {
     "max_loan_duration_months", "fixed_loan_duration_months",
     "monthly_net_income", "available_savings", "preferred_down_payment",
     "max_debt_ratio", "max_monthly_payment", "optimization_preference",
+    "opportunity_cost_rate",
 }
 
 
@@ -551,6 +640,16 @@ def _apply_update(field: str, inputs: UserInputs, store: SessionProfileStore) ->
             inputs.max_monthly_payment = _prompt_decimal("New max monthly payment:", positive=True)
         elif field == "optimization_preference":
             inputs.optimization_preference = _prompt_preference()
+        elif field == "opportunity_cost_rate":
+            inputs.opportunity_cost_rate = _prompt_decimal(
+                "New opportunity cost rate (e.g. 0.04 for 4%):",
+                positive=True,
+                help_text=(
+                    "Annual return you expect to earn if you invest the surplus savings "
+                    "instead of putting them into the down payment. "
+                    "Use your savings account rate, ETF expected return, etc."
+                ),
+            )
     except (KeyboardInterrupt, EOFError):
         console.print("\n  Update cancelled.")
 
@@ -580,6 +679,8 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
         inputs.max_monthly_payment = None
     elif field == "optimization_preference":
         inputs.optimization_preference = "balanced"
+    elif field == "opportunity_cost_rate":
+        inputs.opportunity_cost_rate = None
     else:
         err_console.print(f"  Field '{field}' cannot be reset (it is mandatory or derived).")
 
@@ -596,8 +697,9 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
 @click.option("--country", type=str, default=None, help=f"Country code (default: {DEFAULT_COUNTRY})")
 @click.option("--quality", type=click.Choice(["average", "best"]), default=None, help="Profile quality")
 @click.option("--preference", type=click.Choice(list(VALID_PREFERENCES)), default="balanced", show_default=True)
-@click.option("--down-payment", type=str, default=None, help="Intended down payment amount. Omit to let the optimizer find the best within your savings.")
+@click.option("--down-payment", type=str, default=None, help="Intended down payment. Omit to let the optimizer find the best.")
 @click.option("--duration", type=str, default=None, help="Loan duration: months (e.g. 240) or years (e.g. 20y). Default: 20y.")
+@click.option("--opp-rate", type=str, default=None, help="Opportunity-cost rate for sweet-spot analysis (e.g. 0.04 for 4%). Default: 3.5%.")
 def main(
     property_price: Optional[str],
     income: Optional[str],
@@ -608,6 +710,7 @@ def main(
     preference: str,
     down_payment: Optional[str],
     duration: Optional[str],
+    opp_rate: Optional[str],
 ) -> None:
     """Interactive credit / mortgage loan simulator."""
     console.print(Panel("[bold blue]Credit Simulator[/bold blue]", expand=False))
@@ -623,44 +726,52 @@ def main(
             err_console.print(f"Invalid value for --{name}: '{s}'")
             sys.exit(1)
 
-    # Collect mandatory fields (from CLI args or interactive prompt)
+    # --- Stage 1: mandatory inputs ---
     pp = _parse_opt(property_price, "property-price")
     if pp is None:
-        pp = _prompt_decimal("Property price?", positive=True)
+        pp = _prompt_decimal(
+            "Property price?",
+            positive=True,
+            help_text="The market value of the property (before taxes and fees).",
+        )
 
     inc = _parse_opt(income, "income")
     if inc is None:
-        inc = _prompt_decimal("Monthly net income?", positive=True)
+        inc = _prompt_decimal(
+            "Monthly net income?",
+            positive=True,
+            help_text="Your total take-home pay per month. Used to check the debt-to-income ratio.",
+        )
 
     sav = _parse_opt(savings, "savings")
     if sav is None:
-        sav = _prompt_decimal("Available savings (maximum you can use for down payment)?", allow_zero=True, positive=False)
+        sav = _prompt_decimal(
+            "Available savings?",
+            allow_zero=True,
+            positive=False,
+            help_text=(
+                "The maximum amount you can draw on for the down payment. "
+                "The optimizer will never exceed this ceiling."
+            ),
+        )
 
-    pt = _parse_opt(purchase_taxes, "purchase-taxes")
-    if pt is None:
-        raw_pt = console.input(
-            "[bold]Purchase taxes? (press Enter to estimate from country profile): [/bold]"
-        ).strip()
-        if raw_pt:
-            try:
-                pt = Decimal(raw_pt.replace(",", ".").replace(" ", ""))
-            except InvalidOperation:
-                err_console.print(f"  Invalid number: '{raw_pt}'. Will estimate from profile.")
+    # --- Profile summary + two-stage gate ---
+    country_code = (country or DEFAULT_COUNTRY).upper()
+    _display_profile_summary(store, country_code)
 
-    preferred_dp: Optional[Decimal] = _parse_opt(down_payment, "down-payment")
-    if preferred_dp is None and down_payment is None:
+    # If all optional inputs were already supplied via CLI flags, skip the interactive gate.
+    all_optional_set = (purchase_taxes is not None and down_payment is not None and duration is not None)
+    use_defaults = all_optional_set
+    if not all_optional_set:
         try:
-            raw_dp = console.input(
-                "[bold]Preferred down payment? (press Enter to let optimizer find the best): [/bold]"
-            ).strip()
+            gate_raw = console.input(
+                "[bold]Use all country defaults and run immediately? [Y/n]: [/bold]"
+            ).strip().lower()
         except (EOFError, KeyboardInterrupt):
-            raw_dp = ""
-        if raw_dp:
-            try:
-                preferred_dp = Decimal(raw_dp.replace(",", ".").replace(" ", ""))
-            except InvalidOperation:
-                err_console.print(f"  Invalid number: '{raw_dp}'. Will optimize automatically.")
+            gate_raw = "y"
+        use_defaults = gate_raw in ("", "y", "yes")
 
+    # --- Parse --duration (CLI flag) ---
     fixed_duration: Optional[int] = None
     if duration is not None:
         raw_dur = duration.strip().lower()
@@ -676,6 +787,86 @@ def main(
             err_console.print("--duration must be at least 12 months.")
             sys.exit(1)
 
+    # --- Stage 2: optional inputs (only asked in detailed mode) ---
+    pt = _parse_opt(purchase_taxes, "purchase-taxes")
+    preferred_dp: Optional[Decimal] = _parse_opt(down_payment, "down-payment")
+
+    if not use_defaults:
+        # Purchase taxes with inline estimate hint
+        if pt is None:
+            tax_rate_est = Decimal(str(store.get_field(country_code, "purchase_tax_rate")))
+            est_taxes = (pp * tax_rate_est).quantize(Decimal("0.01"), rounding=_ROUND_HALF_UP)
+            cur_sym = str(store.get_field(country_code, "currency"))
+            try:
+                raw_pt = console.input(
+                    f"[bold]Purchase taxes? "
+                    f"[Enter for ~{est_taxes:,.0f} {cur_sym} estimated, ? for help]: [/bold]"
+                ).strip()
+            except (EOFError, KeyboardInterrupt):
+                raw_pt = ""
+            if raw_pt == "?":
+                console.print(
+                    "  [dim]Total notary fees, registration taxes, and agency fees. "
+                    "Leave blank to estimate from the country profile.[/dim]"
+                )
+                raw_pt = ""
+            if raw_pt:
+                try:
+                    pt = Decimal(raw_pt.replace(",", ".").replace(" ", ""))
+                except InvalidOperation:
+                    err_console.print(f"  Invalid number: '{raw_pt}'. Will estimate from profile.")
+
+        # Preferred down payment with savings ceiling as hint
+        if preferred_dp is None:
+            try:
+                raw_dp = console.input(
+                    f"[bold]Preferred down payment? "
+                    f"[max {sav:,.0f}, Enter to optimise, ? for help]: [/bold]"
+                ).strip()
+            except (EOFError, KeyboardInterrupt):
+                raw_dp = ""
+            if raw_dp == "?":
+                console.print(
+                    "  [dim]Pin the optimizer to a specific down payment amount. "
+                    "Leave blank to let the optimizer find the best amount.[/dim]"
+                )
+                raw_dp = ""
+            if raw_dp:
+                try:
+                    preferred_dp = Decimal(raw_dp.replace(",", ".").replace(" ", ""))
+                except InvalidOperation:
+                    err_console.print(f"  Invalid number: '{raw_dp}'. Will optimize automatically.")
+
+        # Loan duration
+        if fixed_duration is None:
+            try:
+                raw_dur2 = console.input(
+                    f"[bold]Loan duration? "
+                    f"[Enter for {DEFAULT_LOAN_DURATION_MONTHS // 12}y ({DEFAULT_LOAN_DURATION_MONTHS} months), ? for help]: [/bold]"
+                ).strip()
+            except (EOFError, KeyboardInterrupt):
+                raw_dur2 = ""
+            if raw_dur2 == "?":
+                console.print(
+                    "  [dim]Loan duration in months (e.g. 240) or years (e.g. 20y). "
+                    f"Default: {DEFAULT_LOAN_DURATION_MONTHS // 12} years.[/dim]"
+                )
+                raw_dur2 = ""
+            if raw_dur2:
+                raw_dur2 = raw_dur2.strip().lower()
+                try:
+                    if raw_dur2.endswith("y"):
+                        fixed_duration = int(raw_dur2[:-1]) * 12
+                    else:
+                        fixed_duration = int(raw_dur2)
+                    if fixed_duration < 12:
+                        err_console.print("  Duration must be at least 12 months. Using default.")
+                        fixed_duration = None
+                except ValueError:
+                    err_console.print(f"  Invalid duration '{raw_dur2}'. Using default.")
+
+    opp_rate_decimal = _parse_opt(opp_rate, "opp-rate")
+
     inputs = UserInputs(
         property_price=pp,
         monthly_net_income=inc,
@@ -686,6 +877,7 @@ def main(
         optimization_preference=preference,
         preferred_down_payment=preferred_dp,
         fixed_loan_duration_months=fixed_duration,
+        opportunity_cost_rate=opp_rate_decimal,
     )
 
     try:

@@ -14,7 +14,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import Optional
 
 from .calculator import compute_emi, compute_monthly_insurance
-from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_LOAN_DURATION_MONTHS, DEFAULT_MAX_MONTHLY_PAYMENT, ProfileQuality, ZERO
+from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_LOAN_DURATION_MONTHS, DEFAULT_MAX_MONTHLY_PAYMENT, ProfileQuality, SWEET_SPOT_OPPORTUNITY_COST_RATE, ZERO
 from .profiles import LtvRateTier, SessionProfileStore, get_profile
 
 
@@ -41,6 +41,8 @@ class UserInputs:
     preferred_down_payment: Optional[Decimal] = None  # pin optimizer to exactly this amount
     # Optimization preference
     optimization_preference: str = "balanced"
+    # Sweet-spot analysis benchmark
+    opportunity_cost_rate: Optional[Decimal] = None  # None → use config default
 
 
 @dataclass(frozen=True)
@@ -72,6 +74,8 @@ class ResolvedParams:
     ltv_rate_tiers: tuple[LtvRateTier, ...]
     # Preference
     optimization_preference: str
+    # Sweet-spot opportunity cost (resolved from user input or config default)
+    opportunity_cost_rate: Decimal
     # Provenance — 'user' or 'profile' for each optional param
     sources: dict[str, str] = field(default_factory=dict)
 
@@ -198,6 +202,11 @@ def resolve(inputs: UserInputs, store: SessionProfileStore) -> ResolvedParams:
         max_monthly_payment=max_monthly_payment,
         min_down_payment=min_down_payment,
         optimization_preference=inputs.optimization_preference,
+        opportunity_cost_rate=(
+            inputs.opportunity_cost_rate
+            if inputs.opportunity_cost_rate is not None
+            else SWEET_SPOT_OPPORTUNITY_COST_RATE
+        ),
         sources=sources,
     )
 

@@ -201,3 +201,29 @@ class TestResolveEdgeCases:
         # BE ≤75% tier has delta -0.30% → effective = 4% - 0.30% = 3.70%
         rate = params.rate_for_ltv(Decimal("0.70"))
         assert rate == Decimal("0.04") + Decimal("-0.0030")
+
+
+class TestOpportunityCostRateResolution:
+    def test_default_opp_rate_from_config(self):
+        from credit_simulator.config import SWEET_SPOT_OPPORTUNITY_COST_RATE
+        params = resolve(_base_inputs(), _store())
+        assert params.opportunity_cost_rate == SWEET_SPOT_OPPORTUNITY_COST_RATE
+
+    def test_user_supplied_opp_rate_used(self):
+        params = resolve(
+            _base_inputs(opportunity_cost_rate=Decimal("0.06")),
+            _store(),
+        )
+        assert params.opportunity_cost_rate == Decimal("0.06")
+
+    def test_zero_opp_rate_accepted(self):
+        params = resolve(
+            _base_inputs(opportunity_cost_rate=Decimal("0")),
+            _store(),
+        )
+        assert params.opportunity_cost_rate == Decimal("0")
+
+    def test_opp_rate_none_falls_back_to_default(self):
+        from credit_simulator.config import SWEET_SPOT_OPPORTUNITY_COST_RATE
+        params = resolve(_base_inputs(opportunity_cost_rate=None), _store())
+        assert params.opportunity_cost_rate == SWEET_SPOT_OPPORTUNITY_COST_RATE

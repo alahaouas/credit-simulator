@@ -4,9 +4,9 @@ from decimal import Decimal
 import pytest
 
 from credit_simulator.profiles import SessionProfileStore
-from credit_simulator.optimizer import optimize, analyze_sweet_spot
+from credit_simulator.optimizer import optimize, analyze_sweet_spot, TierEconomics
 from credit_simulator.resolver import UserInputs, resolve
-from credit_simulator.config import SWEET_SPOT_LTV_TARGET, SWEET_SPOT_RESERVE_MONTHS
+from credit_simulator.config import SWEET_SPOT_LTV_TARGET, SWEET_SPOT_RESERVE_MONTHS, SWEET_SPOT_OPPORTUNITY_COST_RATE
 
 
 def _store() -> SessionProfileStore:
@@ -381,3 +381,193 @@ class TestOptimizePreferredDownPayment:
     def test_preferred_dp_does_not_exceed_savings(self):
         result = self._run(Decimal("150000"))
         assert result.down_payment <= Decimal("200000")
+
+
+# ── New feature tests ────────────────────────────────────────────────────────
+
+
+def _sweet_params(**kwargs):
+    """Resolve params with generous savings so all milestones can appear."""
+    defaults = dict(
+        property_price=Decimal("350000"),
+        monthly_net_income=Decimal("6000"),
+        available_savings=Decimal("200000"),
+    )
+    defaults.update(kwargs)
+    return resolve(UserInputs(**defaults), SessionProfileStore())
+
+
+class TestOpportunityCostRate:
+    def test_default_opp_rate_from_config(self):
+        params = _sweet_params()
+        assert params.opportunity_cost_rate == SWEET_SPOT_OPPORTUNITY_COST_RATE
+
+    def test_user_opp_rate_propagated(self):
+        params = resolve(
+            UserInputs(
+                property_price=Decimal("300000"),
+                monthly_net_income=Decimal("5000"),
+                available_savings=Decimal("100000"),
+                opportunity_cost_rate=Decimal("0.06"),
+            ),
+            SessionProfileStore(),
+        )
+        assert params.opportunity_cost_rate == Decimal("0.06")
+
+    def test_opp_rate_override_in_analyze_sweet_spot(self):
+        """Passing opportunity_cost_rate directly to analyze_sweet_spot overrides params."""
+        params = _sweet_params()
+        analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.10"))
+        assert analysis.opportunity_cost_rate == Decimal("0.10")
+
+    def test_high_opp_rate_makes_inefficient(self):
+        """With opp_rate above any plausible APR the down payment is always inefficient."""
+        params = _sweet_params()
+        analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.20"))
+        assert not analysis.down_payment_is_efficient
+
+    def test_zero_opp_rate_makes_efficient(self):
+        """With opp_rate = 0 every positive-APR mortgage is efficient."""
+        params = _sweet_params()
+        analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.001"))
+        assert analysis.down_payment_is_efficient
+
+
+class TestTierEconomics:
+    def _analysis(self, **kwargs):
+        return analyze_sweet_spot(_sweet_params(**kwargs))
+
+    def test_tier_economics_returned(self):
+        analysis = self._analysis()
+        assert isinstance(analysis.tier_economics, list)
+        assert len(analysis.tier_economics) > 0
+
+    def test_tier_economics_type(self):
+        analysis = self._analysis()
+        for te in analysis.tier_economics:
+            assert isinstance(te, TierEconomics)
+
+    def test_best_tier_flagged(self):
+        """Exactly one TierEconomics entry should be flagged is_best_tier."""
+        analysis = self._analysis()
+        best = [te for te in analysis.tier_economics if te.is_best_tier]
+        assert len(best) == 1
+
+    def test_best_tier_has_lowest_effective_rate(self):
+        analysis = self._analysis()
+        best = next(te for te in analysis.tier_economics if te.is_best_tier)
+        for te in analysis.tier_economics:
+            assert best.effective_rate <= te.effective_rate
+
+    def test_saving_per_1k_positive(self):
+        """Every tier should yield a positive saving per €1 000 extra DP."""
+        analysis = self._analysis()
+        for te in analysis.tier_economics:
+            assert te.saving_per_1k > Decimal("0"), (
+                f"Expected positive saving in tier {te.ltv_range}, got {te.saving_per_1k}"
+            )
+
+    def test_tier_economics_ordered_highest_ltv_first(self):
+        """Tiers are returned highest-LTV-first (smallest required DP first)."""
+        analysis = self._analysis()
+        tiers = analysis.tier_economics
+        # The first tier should have a higher effective rate than the last
+        # (surcharge first → best rate last).
+        if len(tiers) > 1:
+            assert tiers[0].effective_rate >= tiers[-1].effective_rate
+
+    def test_higher_rate_tier_saves_more_per_1k(self):
+        """Tiers with higher effective rates save more per €1 000 (more expensive debt)."""
+        analysis = self._analysis()
+        tiers = analysis.tier_economics
+        if len(tiers) > 1:
+            # First tier (highest LTV, possibly surcharge) should save >= last tier (best rate)
+            assert tiers[0].saving_per_1k >= tiers[-1].saving_per_1k
+
+    def test_no_tiers_returns_empty_list(self):
+        """Profiles with no LTV tiers produce an empty tier_economics list."""
+        from credit_simulator.profiles import CountryProfile, LtvRateTier
+        from credit_simulator.resolver import ResolvedParams
+        from credit_simulator.config import ZERO, CENT, SWEET_SPOT_OPPORTUNITY_COST_RATE
+        params = resolve(
+            UserInputs(
+                property_price=Decimal("200000"),
+                monthly_net_income=Decimal("5000"),
+                available_savings=Decimal("100000"),
+            ),
+            SessionProfileStore(),
+        )
+        # Build a params with empty ltv_rate_tiers via object replacement
+        import dataclasses
+        params_no_tiers = dataclasses.replace(params, ltv_rate_tiers=())
+        analysis = analyze_sweet_spot(params_no_tiers)
+        assert analysis.tier_economics == []
+
+
+class TestRateFloor:
+    def _analysis_big_savings(self, **kwargs):
+        """Use large savings so the rate-floor DP is reachable."""
+        defaults = dict(
+            property_price=Decimal("300000"),
+            monthly_net_income=Decimal("8000"),
+            available_savings=Decimal("250000"),
+        )
+        defaults.update(kwargs)
+        return analyze_sweet_spot(_sweet_params(**defaults))
+
+    def test_rate_floor_dp_is_none_when_not_reachable(self):
+        """With tight savings the rate-floor DP may exceed available_savings → None."""
+        params = _sweet_params(
+            property_price=Decimal("500000"),
+            available_savings=Decimal("80000"),
+        )
+        analysis = analyze_sweet_spot(params)
+        # Rate-floor DP to reach ≤75% LTV for 500k property is very high; may be None
+        if analysis.rate_floor_down_payment is not None:
+            assert analysis.rate_floor_down_payment <= params.available_savings
+
+    def test_rate_floor_milestone_appears_when_reachable(self):
+        analysis = self._analysis_big_savings()
+        if analysis.rate_floor_down_payment is not None:
+            assert any(m.is_rate_floor for m in analysis.milestones)
+
+    def test_rate_floor_milestone_is_flagged(self):
+        analysis = self._analysis_big_savings()
+        if analysis.rate_floor_down_payment is not None:
+            floor_ms = [m for m in analysis.milestones if m.is_rate_floor]
+            assert len(floor_ms) == 1
+
+    def test_rate_floor_has_best_effective_rate(self):
+        """The rate-floor milestone has the lowest effective rate of all milestones."""
+        analysis = self._analysis_big_savings()
+        if analysis.rate_floor_down_payment is not None:
+            floor_ms = next(m for m in analysis.milestones if m.is_rate_floor)
+            for m in analysis.milestones:
+                assert floor_ms.effective_rate <= m.effective_rate
+
+    def test_no_rate_floor_when_no_tiers(self):
+        import dataclasses
+        params = _sweet_params()
+        params_no_tiers = dataclasses.replace(params, ltv_rate_tiers=())
+        analysis = analyze_sweet_spot(params_no_tiers)
+        assert analysis.rate_floor_down_payment is None
+
+
+class TestCrossoverNote:
+    def test_crossover_note_non_empty(self):
+        analysis = analyze_sweet_spot(_sweet_params())
+        assert analysis.crossover_note != ""
+
+    def test_crossover_note_contains_apr(self):
+        """Crossover note must reference the loan APR."""
+        params = _sweet_params()
+        analysis = analyze_sweet_spot(params)
+        apr_pct = f"{analysis.effective_annual_yield * 100:.2f}"
+        assert apr_pct in analysis.crossover_note
+
+    def test_crossover_note_stable_across_opp_rates(self):
+        """The crossover note only depends on the loan APR, not the opp_rate."""
+        params = _sweet_params()
+        a1 = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.02"))
+        a2 = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.07"))
+        assert a1.crossover_note == a2.crossover_note

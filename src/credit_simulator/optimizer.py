@@ -189,6 +189,18 @@ class SweetSpotMilestone:
     savings_remaining: Decimal
     is_sweet_spot: bool
     effective_rate: Decimal   # LTV-adjusted annual interest rate for this milestone
+    is_rate_floor: bool = False  # True when this is the cheapest DP that hits the best rate
+
+
+@dataclass(frozen=True)
+class TierEconomics:
+    """Per-LTV-tier marginal economics of an extra €1 000 of down payment."""
+    ltv_range: str            # e.g. "80%–90%"
+    effective_rate: Decimal   # base_rate + tier.rate_delta
+    rate_delta_label: str     # "+0.35%", "base", "−0.20%", "−0.30%"
+    saving_per_1k: Decimal    # total credit-cost saved per €1 000 extra DP in this tier
+    annual_yield: Decimal     # APR at this tier (≈ saving rate)
+    is_best_tier: bool        # True for the tier with the lowest effective rate
 
 
 @dataclass(frozen=True)
@@ -197,11 +209,15 @@ class SweetSpotAnalysis:
     sweet_spot_reason: str        # human-readable explanation
     reserve_warning: str          # non-empty when min down payment already exceeds reserve
     duration_months: int
-    # Marginal economics (constant across all down-payment levels for a fixed-rate loan)
+    # Marginal economics (at the effective floor)
     marginal_saving_per_1k: Decimal   # total cost saved per extra €1 000 of down payment
     effective_annual_yield: Decimal   # IRR of the down payment ≈ loan APR
     opportunity_cost_rate: Decimal    # benchmark annual rate used for comparison
     down_payment_is_efficient: bool   # True when mortgage yield > opportunity cost
+    # New: rate floor and per-tier breakdown
+    rate_floor_down_payment: Optional[Decimal]   # cheapest DP reaching the lowest-rate tier
+    tier_economics: list[TierEconomics]          # per-tier breakdown (highest LTV first)
+    crossover_note: str           # "Flips at X%: above → pay down; below → invest"
 
 
 
@@ -232,14 +248,19 @@ def analyze_sweet_spot(
     params:
         Resolved simulation parameters.
     opportunity_cost_rate:
-        Override for testing; defaults to SWEET_SPOT_OPPORTUNITY_COST_RATE.
+        Override for testing; defaults to params.opportunity_cost_rate.
     """
-    opp_rate = opportunity_cost_rate if opportunity_cost_rate is not None else SWEET_SPOT_OPPORTUNITY_COST_RATE
+    opp_rate = opportunity_cost_rate if opportunity_cost_rate is not None else params.opportunity_cost_rate
 
     duration = params.fixed_loan_duration_months
     candidates = _build_dp_candidates(params)
 
-    def _milestone(dp: Decimal, label: str, is_sweet: bool = False) -> SweetSpotMilestone:
+    def _milestone(
+        dp: Decimal,
+        label: str,
+        is_sweet: bool = False,
+        is_rate_floor: bool = False,
+    ) -> SweetSpotMilestone:
         principal = params.total_acquisition_cost - dp
         ltv = (principal / params.property_price).quantize(
             Decimal("0.0001"), rounding=ROUND_HALF_UP
@@ -259,14 +280,10 @@ def analyze_sweet_spot(
             savings_remaining=params.available_savings - dp,
             is_sweet_spot=is_sweet,
             effective_rate=eff_rate,
+            is_rate_floor=is_rate_floor,
         )
 
     # --- Determine effective floor for sweet-spot decision ---
-    # If the minimum down payment falls in a surcharge LTV tier (rate_delta > 0),
-    # anchoring the sweet spot there is irrational: a small extra amount exits the
-    # penalty zone and delivers a return that dwarfs any opportunity-cost argument.
-    # The effective floor is the cheapest down payment that puts the buyer in a
-    # non-surcharge tier (rate_delta ≤ 0).
     min_dp = candidates[0]
     _min_principal = params.total_acquisition_cost - min_dp
     _min_ltv = _min_principal / params.property_price
@@ -277,7 +294,6 @@ def analyze_sweet_spot(
             break
     effective_floor_dp = min_dp
     if _min_rate_delta > ZERO:
-        # Find highest-LTV non-surcharge tier (cheapest to reach from above).
         _non_surcharge = [t for t in params.ltv_rate_tiers if t.rate_delta <= ZERO]
         if _non_surcharge:
             _nearest = max(_non_surcharge, key=lambda t: t.ltv_max)
@@ -288,9 +304,20 @@ def analyze_sweet_spot(
             if _floor_cand <= params.available_savings:
                 effective_floor_dp = _floor_cand
 
+    # --- Rate floor: cheapest DP that reaches the lowest-rate LTV tier ---
+    # Beyond this amount more DP reduces principal but not the interest rate.
+    rate_floor_dp: Optional[Decimal] = None
+    if params.ltv_rate_tiers:
+        _best_tier = min(params.ltv_rate_tiers, key=lambda t: t.rate_delta)
+        _rf_exact = params.total_acquisition_cost - params.property_price * _best_tier.ltv_max
+        if _rf_exact > params.min_down_payment:
+            _rf_cand = (
+                _rf_exact / STEP_DOWN_PAYMENT
+            ).to_integral_value(rounding=ROUND_CEILING) * STEP_DOWN_PAYMENT
+            if params.min_down_payment < _rf_cand <= params.available_savings:
+                rate_floor_dp = _rf_cand
+
     # --- Marginal economics (computed at the effective floor) ---
-    # Uses LTV-adjusted rates: the marginal saving is constant within a tier
-    # but jumps at LTV tier crossings (where the rate itself drops).
     ref_principal = params.total_acquisition_cost - effective_floor_dp
     ref_ltv = ref_principal / params.property_price
     ref_rate = params.rate_for_ltv(ref_ltv)
@@ -302,7 +329,43 @@ def analyze_sweet_spot(
     marginal_saving_per_1k = (
         plan_ref.total_cost_of_credit - plan_ref_minus1k.total_cost_of_credit
     )
-    effective_annual_yield = plan_ref.effective_annual_rate   # APR at effective floor LTV
+    effective_annual_yield = plan_ref.effective_annual_rate
+
+    # --- Per-tier economics ---
+    # For each LTV tier compute the saving per €1 000 extra DP and its yield.
+    # Tiers are sorted ascending by ltv_max; reversed here so highest-LTV
+    # (smallest required DP) appears first in the output.
+    tier_economics: list[TierEconomics] = []
+    tiers_sorted = sorted(params.ltv_rate_tiers, key=lambda t: t.ltv_max)
+    if tiers_sorted:
+        min_delta = min(t.rate_delta for t in tiers_sorted)
+        for i, tier in enumerate(tiers_sorted):
+            lower_ltv = tiers_sorted[i - 1].ltv_max if i > 0 else ZERO
+            upper_ltv = tier.ltv_max
+            mid_ltv = (lower_ltv + upper_ltv) / 2
+            p_mid = max(params.property_price * mid_ltv, Decimal("2000"))
+            eff = params.annual_interest_rate + tier.rate_delta
+            plan_mid = compute_loan_plan(p_mid, eff, params.insurance_rate, duration)
+            plan_mid_m1 = compute_loan_plan(p_mid - Decimal("1000"), eff, params.insurance_rate, duration)
+            tier_save = plan_mid.total_cost_of_credit - plan_mid_m1.total_cost_of_credit
+            if tier.rate_delta == ZERO:
+                delta_label = "base"
+            elif tier.rate_delta > ZERO:
+                delta_label = f"+{tier.rate_delta * 100:.2f}%"
+            else:
+                delta_label = f"−{abs(tier.rate_delta) * 100:.2f}%"
+            lower_pct = int(lower_ltv * 100)
+            upper_pct = int(upper_ltv * 100)
+            ltv_range = f"≤{upper_pct}%" if lower_pct == 0 else f"{lower_pct}%–{upper_pct}%"
+            tier_economics.append(TierEconomics(
+                ltv_range=ltv_range,
+                effective_rate=eff,
+                rate_delta_label=delta_label,
+                saving_per_1k=tier_save,
+                annual_yield=plan_mid.effective_annual_rate,
+                is_best_tier=(tier.rate_delta == min_delta),
+            ))
+        tier_economics.reverse()  # highest LTV first for display
 
     # --- Opportunity-cost decision ---
     down_payment_is_efficient = effective_annual_yield > opp_rate
@@ -350,6 +413,12 @@ def analyze_sweet_spot(
                 f"you ({opp_pct}% − {yield_pct}%) in forgone returns."
             )
 
+    # --- Crossover note ---
+    crossover_note = (
+        f"Crossover at {yield_pct}: above this your investments beat the mortgage; "
+        f"below this paying down the mortgage beats investing."
+    )
+
     # --- Reserve warning ---
     reserve_warning = ""
     if candidates[0] > reserve_ceiling_exact:
@@ -368,51 +437,60 @@ def analyze_sweet_spot(
             break
 
     # --- Build deduplicated, ordered milestone list ---
-    spec: dict = {}   # Decimal -> (label, is_sweet)
+    # spec maps down_payment → (label, is_sweet, is_rate_floor)
+    spec: dict[Decimal, tuple[str, bool, bool]] = {}
 
-    def _add(dp_val: Decimal, label: str, is_sweet: bool = False) -> None:
+    def _add(
+        dp_val: Decimal,
+        label: str,
+        is_sweet: bool = False,
+        is_rf: bool = False,
+    ) -> None:
         if dp_val not in spec:
-            spec[dp_val] = (label, is_sweet)
-        elif is_sweet:
-            spec[dp_val] = (label, True)
+            spec[dp_val] = (label, is_sweet, is_rf)
+        else:
+            old_label, old_sweet, old_rf = spec[dp_val]
+            spec[dp_val] = (
+                label if is_sweet else old_label,
+                old_sweet or is_sweet,
+                old_rf or is_rf,
+            )
 
     _add(candidates[0], "Minimum")
 
-    # Add milestones at every LTV tier crossing that improves the rate.
-    # Tiers are sorted ascending by ltv_max; crossing tier[i].ltv_max downward
-    # switches from tier[i+1] to tier[i], which is a rate improvement when
-    # tier[i].rate_delta < tier[i+1].rate_delta.
-    tiers = params.ltv_rate_tiers
-    for i in range(len(tiers) - 1):
-        tier, next_tier = tiers[i], tiers[i + 1]
+    for i in range(len(tiers_sorted) - 1):
+        tier, next_tier = tiers_sorted[i], tiers_sorted[i + 1]
         if tier.rate_delta >= next_tier.rate_delta:
-            continue  # crossing this threshold does not improve the rate
+            continue
         exact_dp = params.total_acquisition_cost - params.property_price * tier.ltv_max
         tier_dp = (exact_dp / STEP_DOWN_PAYMENT).to_integral_value(
-            rounding="ROUND_CEILING"
+            rounding=ROUND_CEILING
         ) * STEP_DOWN_PAYMENT
         if params.min_down_payment < tier_dp < params.available_savings:
             _add(tier_dp, f"LTV≤{int(tier.ltv_max * 100)}% rate↓")
 
     if ltv_dp is not None and ltv_dp != candidates[0] and ltv_dp != candidates[-1]:
         _add(ltv_dp, f"LTV {ltv_pct}% (ref)")
+
+    if rate_floor_dp is not None:
+        _add(rate_floor_dp, "Rate floor ─ no gain beyond", is_rf=True)
+
     _add(sweet_dp, "★  Sweet spot", is_sweet=True)
     if reserve_dp != sweet_dp and reserve_dp != candidates[0] and reserve_dp != candidates[-1]:
         _add(reserve_dp, f"{SWEET_SPOT_RESERVE_MONTHS}m reserve cap")
     _add(candidates[-1], "Maximum")
 
-    # Mark the user's preferred down payment so they can compare it to the sweet spot.
     if params.preferred_down_payment is not None:
         pref = params.preferred_down_payment
         if pref in spec:
-            existing_label, existing_sweet = spec[pref]
-            spec[pref] = (existing_label + "  ← Your choice", existing_sweet)
+            old_label, old_sweet, old_rf = spec[pref]
+            spec[pref] = (old_label + "  ← Your choice", old_sweet, old_rf)
         else:
-            spec[pref] = ("Your choice", False)
+            spec[pref] = ("Your choice", False, False)
 
     milestones = [
-        _milestone(dp, label, is_sweet)
-        for dp, (label, is_sweet) in sorted(spec.items())
+        _milestone(dp, label, is_sweet, is_rf)
+        for dp, (label, is_sweet, is_rf) in sorted(spec.items())
     ]
 
     return SweetSpotAnalysis(
@@ -424,4 +502,7 @@ def analyze_sweet_spot(
         effective_annual_yield=effective_annual_yield,
         opportunity_cost_rate=opp_rate,
         down_payment_is_efficient=down_payment_is_efficient,
+        rate_floor_down_payment=rate_floor_dp,
+        tier_economics=tier_economics,
+        crossover_note=crossover_note,
     )
