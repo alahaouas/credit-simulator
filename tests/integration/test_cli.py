@@ -9,7 +9,6 @@ from credit_simulator.optimizer import optimize
 from credit_simulator.profiles import SessionProfileStore
 from credit_simulator.resolver import UserInputs, resolve
 
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Full pipeline tests (no CLI runner — direct function call)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -227,6 +226,7 @@ class TestUpdatableFieldsConsistency:
         silently offer to update a field that does nothing.
         """
         import inspect
+
         from credit_simulator.cli import _UPDATABLE_FIELDS, _apply_update
 
         source = inspect.getsource(_apply_update)

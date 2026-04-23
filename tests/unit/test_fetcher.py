@@ -6,7 +6,6 @@ import pytest
 
 from credit_simulator.fetcher import FetchError, fetch_rate
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _mock_response(json_data=None, text=None, status_code=200):

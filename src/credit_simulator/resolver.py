@@ -11,10 +11,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Optional
 
 from .calculator import compute_emi, compute_monthly_insurance
-from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_LOAN_DURATION_MONTHS, DEFAULT_MAX_MONTHLY_PAYMENT, ProfileQuality, SWEET_SPOT_OPPORTUNITY_COST_RATE, ZERO
+from .config import (
+    DEFAULT_COUNTRY,
+    DEFAULT_LOAN_DURATION_MONTHS,
+    DEFAULT_MAX_MONTHLY_PAYMENT,
+    DEFAULT_QUALITY,
+    SWEET_SPOT_OPPORTUNITY_COST_RATE,
+    ZERO,
+    ProfileQuality,
+)
 from .profiles import LtvRateTier, SessionProfileStore, get_profile
 
 
@@ -26,23 +33,23 @@ class UserInputs:
     monthly_net_income: Decimal
     available_savings: Decimal
     # Optional property
-    country: Optional[str] = None
-    profile_quality: Optional[ProfileQuality] = None
-    purchase_taxes: Optional[Decimal] = None
+    country: str | None = None
+    profile_quality: ProfileQuality | None = None
+    purchase_taxes: Decimal | None = None
     # Optional loan parameters
-    annual_interest_rate: Optional[Decimal] = None
-    insurance_rate: Optional[Decimal] = None
-    min_down_payment_ratio: Optional[Decimal] = None
-    max_loan_duration_months: Optional[int] = None
-    fixed_loan_duration_months: Optional[int] = None  # pin optimizer to exactly this duration
+    annual_interest_rate: Decimal | None = None
+    insurance_rate: Decimal | None = None
+    min_down_payment_ratio: Decimal | None = None
+    max_loan_duration_months: int | None = None
+    fixed_loan_duration_months: int | None = None  # pin optimizer to exactly this duration
     # Optional buyer constraints
-    max_debt_ratio: Optional[Decimal] = None
-    max_monthly_payment: Optional[Decimal] = None
-    preferred_down_payment: Optional[Decimal] = None  # pin optimizer to exactly this amount
+    max_debt_ratio: Decimal | None = None
+    max_monthly_payment: Decimal | None = None
+    preferred_down_payment: Decimal | None = None  # pin optimizer to exactly this amount
     # Optimization preference
     optimization_preference: str = "balanced"
     # Sweet-spot analysis benchmark
-    opportunity_cost_rate: Optional[Decimal] = None  # None → use config default
+    opportunity_cost_rate: Decimal | None = None  # None → use config default
 
 
 @dataclass(frozen=True)
@@ -63,7 +70,7 @@ class ResolvedParams:
     min_down_payment_ratio: Decimal
     max_loan_duration_months: int
     fixed_loan_duration_months: int  # defaults to DEFAULT_LOAN_DURATION_MONTHS
-    preferred_down_payment: Optional[Decimal]  # None means free grid search
+    preferred_down_payment: Decimal | None  # None means free grid search
     # Buyer constraints (resolved)
     monthly_net_income: Decimal
     available_savings: Decimal

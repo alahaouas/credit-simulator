@@ -3,10 +3,13 @@ from decimal import Decimal
 
 import pytest
 
+from credit_simulator.config import (
+    SWEET_SPOT_OPPORTUNITY_COST_RATE,
+    SWEET_SPOT_RESERVE_MONTHS,
+)
+from credit_simulator.optimizer import TierEconomics, analyze_sweet_spot, optimize
 from credit_simulator.profiles import SessionProfileStore
-from credit_simulator.optimizer import optimize, analyze_sweet_spot, TierEconomics
 from credit_simulator.resolver import UserInputs, resolve
-from credit_simulator.config import SWEET_SPOT_LTV_TARGET, SWEET_SPOT_RESERVE_MONTHS, SWEET_SPOT_OPPORTUNITY_COST_RATE
 
 
 def _store() -> SessionProfileStore:
@@ -486,9 +489,6 @@ class TestTierEconomics:
 
     def test_no_tiers_returns_empty_list(self):
         """Profiles with no LTV tiers produce an empty tier_economics list."""
-        from credit_simulator.profiles import CountryProfile, LtvRateTier
-        from credit_simulator.resolver import ResolvedParams
-        from credit_simulator.config import ZERO, CENT, SWEET_SPOT_OPPORTUNITY_COST_RATE
         params = resolve(
             UserInputs(
                 property_price=Decimal("200000"),

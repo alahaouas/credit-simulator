@@ -12,10 +12,10 @@ whose ltv_max >= the loan's LTV applies.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 
-from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, ProfileQuality
+from .config import ProfileQuality
 
 
 @dataclass(frozen=True)
