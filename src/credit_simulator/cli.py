@@ -13,25 +13,31 @@ Update loop:
 from __future__ import annotations
 
 import sys
+from decimal import ROUND_HALF_UP as _ROUND_HALF_UP
 from decimal import Decimal, InvalidOperation
-from typing import Optional
 
 import click
+from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich import box
-
-from decimal import ROUND_HALF_UP as _ROUND_HALF_UP
 
 from .calculator import build_amortization_schedule
+from .config import (
+    DEFAULT_COUNTRY,
+    DEFAULT_LOAN_DURATION_MONTHS,
+    VALID_PREFERENCES,
+)
 from .fetcher import FetchError, fetch_rate
-from .config import DEFAULT_COUNTRY, DEFAULT_QUALITY, DEFAULT_LOAN_DURATION_MONTHS, VALID_PREFERENCES
-from .optimizer import OptimizedResult, SweetSpotAnalysis, TierEconomics, optimize, analyze_sweet_spot
+from .optimizer import (
+    OptimizedResult,
+    SweetSpotAnalysis,
+    analyze_sweet_spot,
+    optimize,
+)
 from .profiles import (
     SUPPORTED_COUNTRIES,
     SessionProfileStore,
-    get_profile,
 )
 from .resolver import InfeasibleError, ResolvedParams, UserInputs, check_feasibility, resolve
 
@@ -195,7 +201,7 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
         te.add_column("LTV tier", style="dim", min_width=10)
         te.add_column("Rate", justify="right", min_width=8)
         te.add_column("Delta", justify="right", min_width=7)
-        te.add_column(f"Saves (total)", justify="right", min_width=12)
+        te.add_column("Saves (total)", justify="right", min_width=12)
         te.add_column("Yield", justify="right", min_width=6)
         for tier in analysis.tier_economics:
             rate_str = f"{tier.effective_rate * Decimal('100'):.2f}%"
@@ -213,8 +219,8 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
                 te.add_row(tier.ltv_range, rate_str, tier.rate_delta_label, save_str, yield_str)
         console.print(te)
         console.print(
-            f"  [dim magenta]Magenta row = rate floor: paying beyond this LTV tier "
-            f"reduces principal but not the interest rate.[/dim magenta]"
+            "  [dim magenta]Magenta row = rate floor: paying beyond this LTV tier "
+            "reduces principal but not the interest rate.[/dim magenta]"
         )
 
     console.print()
@@ -369,7 +375,7 @@ def _prompt_preference() -> str:
 # Simulation runner
 # ──────────────────────────────────────────────────────────────────────────────
 
-def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> Optional[tuple]:
+def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> tuple | None:
     """Resolve, check feasibility, optimize, and show sweet-spot analysis.
 
     Returns (params, result, analysis) on success, or None on any failure.
@@ -395,7 +401,7 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> Optional[t
 
     display_result(result)
 
-    analysis: Optional[SweetSpotAnalysis] = None
+    analysis: SweetSpotAnalysis | None = None
     try:
         analysis = analyze_sweet_spot(params)
         display_sweet_spot(analysis, params.currency)
@@ -472,9 +478,9 @@ def _update_profile_manual(store: SessionProfileStore) -> None:
 
 def _update_profile_online(store: SessionProfileStore, inputs: UserInputs) -> None:
     country = _prompt_country()
-    console.print(f"  Fetching latest average annual rate for {country}…")
     try:
-        fetched = fetch_rate(country)
+        with console.status(f"  Fetching latest average annual rate for {country}…"):
+            fetched = fetch_rate(country)
     except FetchError as exc:
         err_console.print(f"  Fetch failed: {exc}")
         raw = console.input("[bold]Fall back to manual entry? (y/n): [/bold]").strip().lower()
@@ -518,9 +524,9 @@ _UPDATABLE_FIELDS = {
 
 
 def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
-    last_params: Optional[ResolvedParams] = None
-    last_result: Optional[OptimizedResult] = None
-    last_analysis: Optional[SweetSpotAnalysis] = None
+    last_params: ResolvedParams | None = None
+    last_result: OptimizedResult | None = None
+    last_analysis: SweetSpotAnalysis | None = None
 
     run_result = run_simulation(inputs, store)
     if run_result:
@@ -701,23 +707,23 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
 @click.option("--duration", type=str, default=None, help="Loan duration: months (e.g. 240) or years (e.g. 20y). Default: 20y.")
 @click.option("--opp-rate", type=str, default=None, help="Opportunity-cost rate for sweet-spot analysis (e.g. 0.04 for 4%). Default: 3.5%.")
 def main(
-    property_price: Optional[str],
-    income: Optional[str],
-    savings: Optional[str],
-    purchase_taxes: Optional[str],
-    country: Optional[str],
-    quality: Optional[str],
+    property_price: str | None,
+    income: str | None,
+    savings: str | None,
+    purchase_taxes: str | None,
+    country: str | None,
+    quality: str | None,
     preference: str,
-    down_payment: Optional[str],
-    duration: Optional[str],
-    opp_rate: Optional[str],
+    down_payment: str | None,
+    duration: str | None,
+    opp_rate: str | None,
 ) -> None:
     """Interactive credit / mortgage loan simulator."""
     console.print(Panel("[bold blue]Credit Simulator[/bold blue]", expand=False))
 
     store = SessionProfileStore()
 
-    def _parse_opt(s: Optional[str], name: str) -> Optional[Decimal]:
+    def _parse_opt(s: str | None, name: str) -> Decimal | None:
         if s is None:
             return None
         try:
@@ -772,7 +778,7 @@ def main(
         use_defaults = gate_raw in ("", "y", "yes")
 
     # --- Parse --duration (CLI flag) ---
-    fixed_duration: Optional[int] = None
+    fixed_duration: int | None = None
     if duration is not None:
         raw_dur = duration.strip().lower()
         try:
@@ -789,7 +795,7 @@ def main(
 
     # --- Stage 2: optional inputs (only asked in detailed mode) ---
     pt = _parse_opt(purchase_taxes, "purchase-taxes")
-    preferred_dp: Optional[Decimal] = _parse_opt(down_payment, "down-payment")
+    preferred_dp: Decimal | None = _parse_opt(down_payment, "down-payment")
 
     if not use_defaults:
         # Purchase taxes with inline estimate hint

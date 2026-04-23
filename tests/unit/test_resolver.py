@@ -4,7 +4,13 @@ from decimal import Decimal
 import pytest
 
 from credit_simulator.profiles import SessionProfileStore
-from credit_simulator.resolver import InfeasibleError, ResolvedParams, UserInputs, check_feasibility, resolve
+from credit_simulator.resolver import (
+    InfeasibleError,
+    ResolvedParams,
+    UserInputs,
+    check_feasibility,
+    resolve,
+)
 
 ZERO = Decimal("0")
 

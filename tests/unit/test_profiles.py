@@ -5,7 +5,6 @@ import pytest
 
 from credit_simulator.profiles import (
     CountryProfile,
-    LtvRateTier,
     SessionProfileStore,
     get_profile,
 )

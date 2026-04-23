@@ -12,12 +12,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
-from typing import Optional
 
 from .calculator import LoanPlan, compute_loan_plan
 from .config import (
-    STEP_DOWN_PAYMENT, VALID_PREFERENCES, ZERO,
-    SWEET_SPOT_LTV_TARGET, SWEET_SPOT_RESERVE_MONTHS, SWEET_SPOT_OPPORTUNITY_COST_RATE,
+    STEP_DOWN_PAYMENT,
+    SWEET_SPOT_LTV_TARGET,
+    SWEET_SPOT_RESERVE_MONTHS,
+    VALID_PREFERENCES,
+    ZERO,
 )
 from .resolver import ResolvedParams
 
@@ -106,10 +108,10 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         params.max_monthly_payment,
     )
 
-    best_plan: Optional[LoanPlan] = None
+    best_plan: LoanPlan | None = None
     best_down_payment = ZERO
     best_duration = 0
-    best_score: Optional[tuple] = None
+    best_score: tuple | None = None
 
     # If the user pinned a down payment, evaluate only that; otherwise grid-search.
     if params.preferred_down_payment is not None:
@@ -215,7 +217,7 @@ class SweetSpotAnalysis:
     opportunity_cost_rate: Decimal    # benchmark annual rate used for comparison
     down_payment_is_efficient: bool   # True when mortgage yield > opportunity cost
     # New: rate floor and per-tier breakdown
-    rate_floor_down_payment: Optional[Decimal]   # cheapest DP reaching the lowest-rate tier
+    rate_floor_down_payment: Decimal | None   # cheapest DP reaching the lowest-rate tier
     tier_economics: list[TierEconomics]          # per-tier breakdown (highest LTV first)
     crossover_note: str           # "Flips at X%: above → pay down; below → invest"
 
@@ -223,7 +225,7 @@ class SweetSpotAnalysis:
 
 def analyze_sweet_spot(
     params: ResolvedParams,
-    opportunity_cost_rate: Optional[Decimal] = None,
+    opportunity_cost_rate: Decimal | None = None,
 ) -> SweetSpotAnalysis:
     """Compute down-payment milestones and identify the objective sweet spot.
 
@@ -306,7 +308,7 @@ def analyze_sweet_spot(
 
     # --- Rate floor: cheapest DP that reaches the lowest-rate LTV tier ---
     # Beyond this amount more DP reduces principal but not the interest rate.
-    rate_floor_dp: Optional[Decimal] = None
+    rate_floor_dp: Decimal | None = None
     if params.ltv_rate_tiers:
         _best_tier = min(params.ltv_rate_tiers, key=lambda t: t.rate_delta)
         _rf_exact = params.total_acquisition_cost - params.property_price * _best_tier.ltv_max
@@ -429,7 +431,7 @@ def analyze_sweet_spot(
         )
 
     # --- LTV 80 % reference milestone ---
-    ltv_dp: Optional[Decimal] = None
+    ltv_dp: Decimal | None = None
     for c in candidates:
         principal = params.total_acquisition_cost - c
         if principal / params.property_price <= SWEET_SPOT_LTV_TARGET:
