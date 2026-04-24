@@ -122,6 +122,14 @@ class TestFetchBoE:
             with pytest.raises(FetchError, match="Bank of England API request failed"):
                 fetch_rate("GB")
 
+    def test_boe_parsing_error_raises(self):
+        """Malformed numeric value in BoE response should trigger FetchError (via ValueError)."""
+        bad_csv = "DATE,IUMTLMV\n01/Jan/2024,INVALID\n"
+        with patch("credit_simulator.fetcher.requests.get") as mock_get:
+            mock_get.return_value = _mock_response(text=bad_csv)
+            with pytest.raises(FetchError, match="Failed to parse Bank of England response"):
+                fetch_rate("GB")
+
 
 # ── FRED tests ────────────────────────────────────────────────────────────────
 

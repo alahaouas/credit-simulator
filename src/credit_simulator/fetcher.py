@@ -6,7 +6,7 @@ All fetches are user-triggered (no background polling).
 from __future__ import annotations
 
 import os
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 import requests
 
@@ -129,7 +129,7 @@ def _fetch_boe() -> Decimal:
         return rate
     except FetchError:
         raise
-    except (IndexError, ValueError) as exc:
+    except (IndexError, ValueError, InvalidOperation) as exc:
         raise FetchError(f"Failed to parse Bank of England response: {exc}") from exc
 
 
@@ -164,5 +164,5 @@ def _fetch_fred() -> Decimal:
             raise FetchError("FRED returned missing value ('.').")
         rate = Decimal(value_str) / Decimal("100")
         return rate
-    except (KeyError, IndexError, ValueError) as exc:
+    except (KeyError, IndexError, ValueError, InvalidOperation) as exc:
         raise FetchError(f"Failed to parse FRED response: {exc}") from exc
