@@ -201,19 +201,17 @@ def compute_apr(
 
     for _ in range(APR_MAX_ITERATIONS):
         try:
-            one_plus_r_n = (1 + r) ** n           # (1+r)^n  — Decimal integer power
-            one_plus_r_n1 = (1 + r) ** (n - 1)   # (1+r)^(n-1)
-            r_factor = r * one_plus_r_n            # r * (1+r)^n  — denominator
+            one_plus_r = 1 + r
+            one_plus_r_n = one_plus_r ** n
+            one_plus_r_n1 = one_plus_r_n / one_plus_r
+            r_factor = r * one_plus_r_n
 
             # f(r) = C * ((1+r)^n - 1) / (r * (1+r)^n) - P
             f = C * (one_plus_r_n - 1) / r_factor - P
 
-            # f'(r) via quotient rule: d/dr [ (factor-1)/(r*factor) ]
-            # = [ n*(1+r)^(n-1)*r*factor - (factor-1)*(factor + r*n*(1+r)^(n-1)) ] / (r*factor)^2
-            numerator = (
-                _n * one_plus_r_n1 * r_factor
-                - (one_plus_r_n - 1) * (one_plus_r_n + r * _n * one_plus_r_n1)
-            )
+            # f'(r) via quotient rule, simplified for performance:
+            # df = C * [ (1+r)^n * (1 - (1+r)^n) + r*n*(1+r)^(n-1) ] / (r * (1+r)^n)^2
+            numerator = one_plus_r_n * (1 - one_plus_r_n) + r * _n * one_plus_r_n1
             df = C * numerator / (r_factor ** 2)
 
             if df == ZERO:
