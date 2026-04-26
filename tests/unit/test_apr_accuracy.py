@@ -1,6 +1,7 @@
 from decimal import Decimal
-import pytest
+
 from credit_simulator.calculator import compute_apr
+
 
 def test_apr_consistency():
     """
