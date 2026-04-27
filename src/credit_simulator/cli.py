@@ -381,32 +381,35 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> tuple | No
     Returns (params, result, analysis) on success, or None on any failure.
     analysis may be None if the sweet-spot computation itself fails.
     """
-    try:
-        params = resolve(inputs, store)
-    except ValueError as exc:
-        err_console.print(f"Parameter error: {exc}")
-        return None
+    with console.status("Running simulation…"):
+        try:
+            params = resolve(inputs, store)
+        except ValueError as exc:
+            err_console.print(f"Parameter error: {exc}")
+            return None
 
-    try:
-        check_feasibility(params)
-    except InfeasibleError as exc:
-        console.print(Panel(f"[bold red]Ineligible[/bold red]\n{exc}", expand=False))
-        return None
+        try:
+            check_feasibility(params)
+        except InfeasibleError as exc:
+            console.print(Panel(f"[bold red]Ineligible[/bold red]\n{exc}", expand=False))
+            return None
 
-    try:
-        result = optimize(params)
-    except ValueError as exc:
-        console.print(Panel(f"[bold red]No feasible plan found[/bold red]\n{exc}", expand=False))
-        return None
+        try:
+            result = optimize(params)
+        except ValueError as exc:
+            console.print(Panel(f"[bold red]No feasible plan found[/bold red]\n{exc}", expand=False))
+            return None
+
+        analysis: SweetSpotAnalysis | None = None
+        try:
+            analysis = analyze_sweet_spot(params)
+        except Exception as exc:
+            err_console.print(f"Sweet-spot analysis failed: {exc}")
 
     display_result(result)
 
-    analysis: SweetSpotAnalysis | None = None
-    try:
-        analysis = analyze_sweet_spot(params)
+    if analysis is not None:
         display_sweet_spot(analysis, params.currency)
-    except Exception as exc:
-        err_console.print(f"Sweet-spot analysis failed: {exc}")
 
     return params, result, analysis
 
