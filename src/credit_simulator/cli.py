@@ -381,32 +381,36 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> tuple | No
     Returns (params, result, analysis) on success, or None on any failure.
     analysis may be None if the sweet-spot computation itself fails.
     """
-    try:
-        params = resolve(inputs, store)
-    except ValueError as exc:
-        err_console.print(f"Parameter error: {exc}")
-        return None
+    with console.status("  Optimizing loan parameters…"):
+        try:
+            params = resolve(inputs, store)
+        except ValueError as exc:
+            err_console.print(f"Parameter error: {exc}")
+            return None
 
-    try:
-        check_feasibility(params)
-    except InfeasibleError as exc:
-        console.print(Panel(f"[bold red]Ineligible[/bold red]\n{exc}", expand=False))
-        return None
+        try:
+            check_feasibility(params)
+        except InfeasibleError as exc:
+            console.print(Panel(f"[bold red]Ineligible[/bold red]\n{exc}", expand=False))
+            return None
 
-    try:
-        result = optimize(params)
-    except ValueError as exc:
-        console.print(Panel(f"[bold red]No feasible plan found[/bold red]\n{exc}", expand=False))
-        return None
+        try:
+            result = optimize(params)
+        except ValueError as exc:
+            console.print(Panel(f"[bold red]No feasible plan found[/bold red]\n{exc}", expand=False))
+            return None
 
     display_result(result)
 
     analysis: SweetSpotAnalysis | None = None
-    try:
-        analysis = analyze_sweet_spot(params)
+    with console.status("  Running sweet-spot analysis…"):
+        try:
+            analysis = analyze_sweet_spot(params)
+        except Exception as exc:
+            err_console.print(f"Sweet-spot analysis failed: {exc}")
+
+    if analysis:
         display_sweet_spot(analysis, params.currency)
-    except Exception as exc:
-        err_console.print(f"Sweet-spot analysis failed: {exc}")
 
     return params, result, analysis
 
@@ -562,7 +566,8 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
                 display_sweet_spot(last_analysis, last_params.currency)
             elif last_params is not None:
                 try:
-                    last_analysis = analyze_sweet_spot(last_params)
+                    with console.status("  Running sweet-spot analysis…"):
+                        last_analysis = analyze_sweet_spot(last_params)
                     display_sweet_spot(last_analysis, last_params.currency)
                 except Exception as exc:
                     err_console.print(f"Sweet-spot analysis failed: {exc}")
