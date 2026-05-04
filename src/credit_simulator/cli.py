@@ -394,7 +394,8 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> tuple | No
         return None
 
     try:
-        result = optimize(params)
+        with console.status("  [dim]Optimizing loan parameters...[/dim]"):
+            result = optimize(params)
     except ValueError as exc:
         console.print(Panel(f"[bold red]No feasible plan found[/bold red]\n{exc}", expand=False))
         return None
@@ -403,7 +404,8 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> tuple | No
 
     analysis: SweetSpotAnalysis | None = None
     try:
-        analysis = analyze_sweet_spot(params)
+        with console.status("  [dim]Analyzing down payment sweet-spots...[/dim]"):
+            analysis = analyze_sweet_spot(params)
         display_sweet_spot(analysis, params.currency)
     except Exception as exc:
         err_console.print(f"Sweet-spot analysis failed: {exc}")
@@ -562,7 +564,8 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
                 display_sweet_spot(last_analysis, last_params.currency)
             elif last_params is not None:
                 try:
-                    last_analysis = analyze_sweet_spot(last_params)
+                    with console.status("  [dim]Analyzing down payment sweet-spots...[/dim]"):
+                        last_analysis = analyze_sweet_spot(last_params)
                     display_sweet_spot(last_analysis, last_params.currency)
                 except Exception as exc:
                     err_console.print(f"Sweet-spot analysis failed: {exc}")
