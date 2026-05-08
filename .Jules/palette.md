@@ -1,3 +1,3 @@
-## 2024-05-19 - Added Spinner for Network Fetch
-**Learning:** For terminal applications using `rich`, network requests (like fetching APIs) can cause the UI to hang. Replacing a static `console.print` with `console.status` provides immediate UX improvement with minimal code changes.
-**Action:** Always look for long-running synchronous calls (like API or DB requests) and wrap them in a spinner or progress bar to reassure the user that the system hasn't frozen.
+## 2024-05-18 - Visual Indicators for Fast CLI Tasks
+**Learning:** Even when CLI computations (like optimizing or sweet-spot analysis) are fast (e.g. taking less than a second), users perceive the slight pause as the application hanging. Wrapping these steps in a visual status indicator immediately calms this perception.
+**Action:** Always wrap non-instantaneous compute tasks in a visual indicator like `rich.console.status` to manage user expectations and prevent the application from feeling frozen.
