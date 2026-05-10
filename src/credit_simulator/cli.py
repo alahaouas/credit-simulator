@@ -13,8 +13,9 @@ Update loop:
 from __future__ import annotations
 
 import sys
+from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import Optional
+from typing import Optional, Any
 
 import click
 from rich.console import Console
@@ -37,6 +38,23 @@ from .resolver import InfeasibleError, ResolvedParams, UserInputs, check_feasibi
 
 console = Console()
 err_console = Console(stderr=True, style="bold red")
+
+
+@dataclass
+class CliInputs:
+    """Raw string values from CLI options."""
+    property_price: Optional[str] = None
+    income: Optional[str] = None
+    savings: Optional[str] = None
+    purchase_taxes: Optional[str] = None
+    country: Optional[str] = None
+    quality: Optional[str] = None
+    preference: str = "balanced"
+    down_payment: Optional[str] = None
+    duration: Optional[str] = None
+    opp_rate: Optional[str] = None
+
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Formatting helpers
@@ -283,6 +301,17 @@ def display_params(inputs: UserInputs, params: ResolvedParams) -> None:
 # Input helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
+def _parse_opt(s: Optional[str], name: str) -> Optional[Decimal]:
+    """Parse a numeric CLI option into a Decimal."""
+    if s is None:
+        return None
+    try:
+        return Decimal(s.replace(",", ".").replace(" ", ""))
+    except InvalidOperation:
+        err_console.print(f"Invalid value for --{name}: '{s}'")
+        sys.exit(1)
+
+
 def _prompt_decimal(
     prompt: str,
     *,
@@ -363,6 +392,171 @@ def _prompt_preference() -> str:
         if raw in VALID_PREFERENCES:
             return raw
         err_console.print(f"  Unknown preference '{raw}'.")
+
+
+def _build_user_inputs(cli: CliInputs, store: SessionProfileStore) -> UserInputs:
+    """Parse CLI options and prompt for missing values to build a UserInputs object."""
+    # --- Stage 1: mandatory inputs ---
+    pp = _parse_opt(cli.property_price, "property-price")
+    if pp is None:
+        pp = _prompt_decimal(
+            "Property price?",
+            positive=True,
+            help_text="The market value of the property (before taxes and fees).",
+        )
+
+    inc = _parse_opt(cli.income, "income")
+    if inc is None:
+        inc = _prompt_decimal(
+            "Monthly net income?",
+            positive=True,
+            help_text="Your total take-home pay per month. Used to check the debt-to-income ratio.",
+        )
+
+    sav = _parse_opt(cli.savings, "savings")
+    if sav is None:
+        sav = _prompt_decimal(
+            "Available savings?",
+            allow_zero=True,
+            positive=False,
+            help_text=(
+                "The maximum amount you can draw on for the down payment. "
+                "The optimizer will never exceed this ceiling."
+            ),
+        )
+
+    # --- Profile summary + two-stage gate ---
+    country_code = (cli.country or DEFAULT_COUNTRY).upper()
+    _display_profile_summary(store, country_code)
+
+    # If all optional inputs were already supplied via CLI flags, skip the interactive gate.
+    all_optional_set = (
+        cli.purchase_taxes is not None and cli.down_payment is not None and cli.duration is not None
+    )
+    use_defaults = all_optional_set
+    if not all_optional_set:
+        try:
+            gate_raw = (
+                console.input("[bold]Use all country defaults and run immediately? [Y/n]: [/bold]")
+                .strip()
+                .lower()
+            )
+        except (EOFError, KeyboardInterrupt):
+            gate_raw = "y"
+        use_defaults = gate_raw in ("", "y", "yes")
+
+    # --- Parse --duration (CLI flag) ---
+    fixed_duration: Optional[int] = None
+    if cli.duration is not None:
+        raw_dur = cli.duration.strip().lower()
+        try:
+            if raw_dur.endswith("y"):
+                fixed_duration = int(raw_dur[:-1]) * 12
+            else:
+                fixed_duration = int(raw_dur)
+        except ValueError:
+            err_console.print(
+                f"Invalid --duration value '{cli.duration}'. "
+                "Use months (e.g. 240) or years (e.g. 20y)."
+            )
+            sys.exit(1)
+        if fixed_duration < 12:
+            err_console.print("--duration must be at least 12 months.")
+            sys.exit(1)
+
+    # --- Stage 2: optional inputs (only asked in detailed mode) ---
+    pt = _parse_opt(cli.purchase_taxes, "purchase-taxes")
+    preferred_dp: Optional[Decimal] = _parse_opt(cli.down_payment, "down-payment")
+
+    if not use_defaults:
+        # Purchase taxes with inline estimate hint
+        if pt is None:
+            tax_rate_est = Decimal(str(store.get_field(country_code, "purchase_tax_rate")))
+            est_taxes = (pp * tax_rate_est).quantize(Decimal("0.01"), rounding=_ROUND_HALF_UP)
+            cur_sym = str(store.get_field(country_code, "currency"))
+            try:
+                raw_pt = console.input(
+                    f"[bold]Purchase taxes? "
+                    f"[Enter for ~{est_taxes:,.0f} {cur_sym} estimated, ? for help]: [/bold]"
+                ).strip()
+            except (EOFError, KeyboardInterrupt):
+                raw_pt = ""
+            if raw_pt == "?":
+                console.print(
+                    "  [dim]Total notary fees, registration taxes, and agency fees. "
+                    "Leave blank to estimate from the country profile.[/dim]"
+                )
+                raw_pt = ""
+            if raw_pt:
+                try:
+                    pt = Decimal(raw_pt.replace(",", ".").replace(" ", ""))
+                except InvalidOperation:
+                    err_console.print(f"  Invalid number: '{raw_pt}'. Will estimate from profile.")
+
+        # Preferred down payment with savings ceiling as hint
+        if preferred_dp is None:
+            try:
+                raw_dp = console.input(
+                    f"[bold]Preferred down payment? "
+                    f"[max {sav:,.0f}, Enter to optimise, ? for help]: [/bold]"
+                ).strip()
+            except (EOFError, KeyboardInterrupt):
+                raw_dp = ""
+            if raw_dp == "?":
+                console.print(
+                    "  [dim]Pin the optimizer to a specific down payment amount. "
+                    "Leave blank to let the optimizer find the best amount.[/dim]"
+                )
+                raw_dp = ""
+            if raw_dp:
+                try:
+                    preferred_dp = Decimal(raw_dp.replace(",", ".").replace(" ", ""))
+                except InvalidOperation:
+                    err_console.print(f"  Invalid number: '{raw_dp}'. Will optimize automatically.")
+
+        # Loan duration
+        if fixed_duration is None:
+            try:
+                raw_dur2 = console.input(
+                    f"[bold]Loan duration? "
+                    f"[Enter for {DEFAULT_LOAN_DURATION_MONTHS // 12}y "
+                    f"({DEFAULT_LOAN_DURATION_MONTHS} months), ? for help]: [/bold]"
+                ).strip()
+            except (EOFError, KeyboardInterrupt):
+                raw_dur2 = ""
+            if raw_dur2 == "?":
+                console.print(
+                    "  [dim]Loan duration in months (e.g. 240) or years (e.g. 20y). "
+                    f"Default: {DEFAULT_LOAN_DURATION_MONTHS // 12} years.[/dim]"
+                )
+                raw_dur2 = ""
+            if raw_dur2:
+                raw_dur2 = raw_dur2.strip().lower()
+                try:
+                    if raw_dur2.endswith("y"):
+                        fixed_duration = int(raw_dur2[:-1]) * 12
+                    else:
+                        fixed_duration = int(raw_dur2)
+                    if fixed_duration < 12:
+                        err_console.print("  Duration must be at least 12 months. Using default.")
+                        fixed_duration = None
+                except ValueError:
+                    err_console.print(f"  Invalid duration '{raw_dur2}'. Using default.")
+
+    opp_rate_decimal = _parse_opt(cli.opp_rate, "opp-rate")
+
+    return UserInputs(
+        property_price=pp,
+        monthly_net_income=inc,
+        available_savings=sav,
+        purchase_taxes=pt,
+        country=cli.country,
+        profile_quality=cli.quality,  # type: ignore[arg-type]
+        optimization_preference=cli.preference,
+        preferred_down_payment=preferred_dp,
+        fixed_loan_duration_months=fixed_duration,
+        opportunity_cost_rate=opp_rate_decimal,
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -700,185 +894,25 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
 @click.option("--down-payment", type=str, default=None, help="Intended down payment. Omit to let the optimizer find the best.")
 @click.option("--duration", type=str, default=None, help="Loan duration: months (e.g. 240) or years (e.g. 20y). Default: 20y.")
 @click.option("--opp-rate", type=str, default=None, help="Opportunity-cost rate for sweet-spot analysis (e.g. 0.04 for 4%). Default: 3.5%.")
-def main(
-    property_price: Optional[str],
-    income: Optional[str],
-    savings: Optional[str],
-    purchase_taxes: Optional[str],
-    country: Optional[str],
-    quality: Optional[str],
-    preference: str,
-    down_payment: Optional[str],
-    duration: Optional[str],
-    opp_rate: Optional[str],
-) -> None:
+def main(**kwargs: Any) -> None:
     """Interactive credit / mortgage loan simulator."""
     console.print(Panel("[bold blue]Credit Simulator[/bold blue]", expand=False))
 
-    store = SessionProfileStore()
-
-    def _parse_opt(s: Optional[str], name: str) -> Optional[Decimal]:
-        if s is None:
-            return None
-        try:
-            return Decimal(s.replace(",", ".").replace(" ", ""))
-        except InvalidOperation:
-            err_console.print(f"Invalid value for --{name}: '{s}'")
-            sys.exit(1)
-
-    # --- Stage 1: mandatory inputs ---
-    pp = _parse_opt(property_price, "property-price")
-    if pp is None:
-        pp = _prompt_decimal(
-            "Property price?",
-            positive=True,
-            help_text="The market value of the property (before taxes and fees).",
-        )
-
-    inc = _parse_opt(income, "income")
-    if inc is None:
-        inc = _prompt_decimal(
-            "Monthly net income?",
-            positive=True,
-            help_text="Your total take-home pay per month. Used to check the debt-to-income ratio.",
-        )
-
-    sav = _parse_opt(savings, "savings")
-    if sav is None:
-        sav = _prompt_decimal(
-            "Available savings?",
-            allow_zero=True,
-            positive=False,
-            help_text=(
-                "The maximum amount you can draw on for the down payment. "
-                "The optimizer will never exceed this ceiling."
-            ),
-        )
-
-    # --- Profile summary + two-stage gate ---
-    country_code = (country or DEFAULT_COUNTRY).upper()
-    _display_profile_summary(store, country_code)
-
-    # If all optional inputs were already supplied via CLI flags, skip the interactive gate.
-    all_optional_set = (purchase_taxes is not None and down_payment is not None and duration is not None)
-    use_defaults = all_optional_set
-    if not all_optional_set:
-        try:
-            gate_raw = console.input(
-                "[bold]Use all country defaults and run immediately? [Y/n]: [/bold]"
-            ).strip().lower()
-        except (EOFError, KeyboardInterrupt):
-            gate_raw = "y"
-        use_defaults = gate_raw in ("", "y", "yes")
-
-    # --- Parse --duration (CLI flag) ---
-    fixed_duration: Optional[int] = None
-    if duration is not None:
-        raw_dur = duration.strip().lower()
-        try:
-            if raw_dur.endswith("y"):
-                fixed_duration = int(raw_dur[:-1]) * 12
-            else:
-                fixed_duration = int(raw_dur)
-        except ValueError:
-            err_console.print(f"Invalid --duration value '{duration}'. Use months (e.g. 240) or years (e.g. 20y).")
-            sys.exit(1)
-        if fixed_duration < 12:
-            err_console.print("--duration must be at least 12 months.")
-            sys.exit(1)
-
-    # --- Stage 2: optional inputs (only asked in detailed mode) ---
-    pt = _parse_opt(purchase_taxes, "purchase-taxes")
-    preferred_dp: Optional[Decimal] = _parse_opt(down_payment, "down-payment")
-
-    if not use_defaults:
-        # Purchase taxes with inline estimate hint
-        if pt is None:
-            tax_rate_est = Decimal(str(store.get_field(country_code, "purchase_tax_rate")))
-            est_taxes = (pp * tax_rate_est).quantize(Decimal("0.01"), rounding=_ROUND_HALF_UP)
-            cur_sym = str(store.get_field(country_code, "currency"))
-            try:
-                raw_pt = console.input(
-                    f"[bold]Purchase taxes? "
-                    f"[Enter for ~{est_taxes:,.0f} {cur_sym} estimated, ? for help]: [/bold]"
-                ).strip()
-            except (EOFError, KeyboardInterrupt):
-                raw_pt = ""
-            if raw_pt == "?":
-                console.print(
-                    "  [dim]Total notary fees, registration taxes, and agency fees. "
-                    "Leave blank to estimate from the country profile.[/dim]"
-                )
-                raw_pt = ""
-            if raw_pt:
-                try:
-                    pt = Decimal(raw_pt.replace(",", ".").replace(" ", ""))
-                except InvalidOperation:
-                    err_console.print(f"  Invalid number: '{raw_pt}'. Will estimate from profile.")
-
-        # Preferred down payment with savings ceiling as hint
-        if preferred_dp is None:
-            try:
-                raw_dp = console.input(
-                    f"[bold]Preferred down payment? "
-                    f"[max {sav:,.0f}, Enter to optimise, ? for help]: [/bold]"
-                ).strip()
-            except (EOFError, KeyboardInterrupt):
-                raw_dp = ""
-            if raw_dp == "?":
-                console.print(
-                    "  [dim]Pin the optimizer to a specific down payment amount. "
-                    "Leave blank to let the optimizer find the best amount.[/dim]"
-                )
-                raw_dp = ""
-            if raw_dp:
-                try:
-                    preferred_dp = Decimal(raw_dp.replace(",", ".").replace(" ", ""))
-                except InvalidOperation:
-                    err_console.print(f"  Invalid number: '{raw_dp}'. Will optimize automatically.")
-
-        # Loan duration
-        if fixed_duration is None:
-            try:
-                raw_dur2 = console.input(
-                    f"[bold]Loan duration? "
-                    f"[Enter for {DEFAULT_LOAN_DURATION_MONTHS // 12}y ({DEFAULT_LOAN_DURATION_MONTHS} months), ? for help]: [/bold]"
-                ).strip()
-            except (EOFError, KeyboardInterrupt):
-                raw_dur2 = ""
-            if raw_dur2 == "?":
-                console.print(
-                    "  [dim]Loan duration in months (e.g. 240) or years (e.g. 20y). "
-                    f"Default: {DEFAULT_LOAN_DURATION_MONTHS // 12} years.[/dim]"
-                )
-                raw_dur2 = ""
-            if raw_dur2:
-                raw_dur2 = raw_dur2.strip().lower()
-                try:
-                    if raw_dur2.endswith("y"):
-                        fixed_duration = int(raw_dur2[:-1]) * 12
-                    else:
-                        fixed_duration = int(raw_dur2)
-                    if fixed_duration < 12:
-                        err_console.print("  Duration must be at least 12 months. Using default.")
-                        fixed_duration = None
-                except ValueError:
-                    err_console.print(f"  Invalid duration '{raw_dur2}'. Using default.")
-
-    opp_rate_decimal = _parse_opt(opp_rate, "opp-rate")
-
-    inputs = UserInputs(
-        property_price=pp,
-        monthly_net_income=inc,
-        available_savings=sav,
-        purchase_taxes=pt,
-        country=country,
-        profile_quality=quality,  # type: ignore[arg-type]
-        optimization_preference=preference,
-        preferred_down_payment=preferred_dp,
-        fixed_loan_duration_months=fixed_duration,
-        opportunity_cost_rate=opp_rate_decimal,
+    cli_inputs = CliInputs(
+        property_price=kwargs.get("property_price"),
+        income=kwargs.get("income"),
+        savings=kwargs.get("savings"),
+        purchase_taxes=kwargs.get("purchase_taxes"),
+        country=kwargs.get("country"),
+        quality=kwargs.get("quality"),
+        preference=kwargs.get("preference", "balanced"),
+        down_payment=kwargs.get("down_payment"),
+        duration=kwargs.get("duration"),
+        opp_rate=kwargs.get("opp_rate"),
     )
+
+    store = SessionProfileStore()
+    inputs = _build_user_inputs(cli_inputs, store)
 
     try:
         interactive_loop(inputs, store)
