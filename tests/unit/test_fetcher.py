@@ -8,6 +8,12 @@ from credit_simulator.fetcher import FetchError, fetch_rate
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+@pytest.fixture(autouse=True)
+def clear_fetch_rate_cache():
+    """Clear the LRU cache on fetch_rate before each test to ensure mocked requests are made."""
+    fetch_rate.cache_clear()
+
+
 def _mock_response(json_data=None, text=None, status_code=200):
     resp = MagicMock()
     resp.status_code = status_code
@@ -81,6 +87,38 @@ class TestFetchECB:
             with pytest.raises(FetchError, match="ECB API request failed"):
                 fetch_rate("FR")
 
+    def test_ecb_empty_series_raises(self):
+        """Empty series dict causes StopIteration when next(iter(series)) is called."""
+        bad_json = {
+            "dataSets": [
+                {
+                    "series": {}
+                }
+            ]
+        }
+        with patch("credit_simulator.fetcher.requests.get") as mock_get:
+            mock_get.return_value = _mock_response(json_data=bad_json)
+            with pytest.raises(FetchError, match="Failed to parse ECB response"):
+                fetch_rate("FR")
+
+    def test_ecb_type_error_raises(self):
+        """Invalid type for observations causes TypeError when next(iter(observations)) is called."""
+        bad_json = {
+            "dataSets": [
+                {
+                    "series": {
+                        "0:0:0:0:0:0:0:0:0:0:0": {
+                            "observations": None
+                        }
+                    }
+                }
+            ]
+        }
+        with patch("credit_simulator.fetcher.requests.get") as mock_get:
+            mock_get.return_value = _mock_response(json_data=bad_json)
+            with pytest.raises(FetchError, match="Failed to parse ECB response"):
+                fetch_rate("FR")
+
 
 # ── BoE tests ─────────────────────────────────────────────────────────────────
 
@@ -128,6 +166,16 @@ class TestFetchBoE:
         with patch("credit_simulator.fetcher.requests.get") as mock_get:
             mock_get.return_value = _mock_response(text=bad_csv)
             with pytest.raises(FetchError, match="Failed to parse Bank of England response"):
+                fetch_rate("GB")
+
+    def test_boe_value_error_raises(self):
+        """A ValueError raised during BoE response text processing should trigger FetchError."""
+        from unittest.mock import PropertyMock
+        with patch("credit_simulator.fetcher.requests.get") as mock_get:
+            mock_resp = MagicMock()
+            type(mock_resp).text = PropertyMock(side_effect=ValueError("Bad CSV format"))
+            mock_get.return_value = mock_resp
+            with pytest.raises(FetchError, match="Failed to parse Bank of England response: Bad CSV format"):
                 fetch_rate("GB")
 
 

@@ -5,6 +5,7 @@ All fetches are user-triggered (no background polling).
 """
 from __future__ import annotations
 
+import functools
 import os
 from decimal import Decimal, InvalidOperation
 
@@ -43,6 +44,7 @@ class FetchError(Exception):
     """Raised when an online rate fetch fails for any reason."""
 
 
+@functools.cache
 def fetch_rate(country: str) -> Decimal:
     """Fetch the latest average annual mortgage rate for *country*.
 
@@ -151,8 +153,12 @@ def _fetch_fred() -> Decimal:
     try:
         resp = requests.get(_FRED_URL, params=params, timeout=_TIMEOUT)
         resp.raise_for_status()
-    except requests.RequestException as exc:
-        raise FetchError(f"FRED API request failed: {exc}") from exc
+    except requests.RequestException:
+        # Use a generic error message and suppress the exception chain to avoid leaking the API key
+        # which might be present in the original exception's URL.
+        raise FetchError(
+            "FRED API request failed. Please check your network connection and API key."
+        ) from None
 
     try:
         data = resp.json()
