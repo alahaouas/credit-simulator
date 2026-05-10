@@ -20,18 +20,19 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
 
 ---
 
-## Repository State (as of 2026-04-19)
+## Repository State (as of 2026-05-10)
 
 | Item | Status |
 |---|---|
 | Source code | **Complete** — all modules implemented and tested |
 | Framework / language | **Python 3.11+** |
 | Build system | `pyproject.toml` (PEP 517/518, `hatchling`) |
-| Tests | 186 unit + integration tests; branch coverage gate ≥ 90% on core modules (actual: ~94%) |
+| Tests | ~200 unit + integration tests; branch coverage gate ≥ 90% on core modules (actual: ~94%) |
 | CI/CD | Local coverage gate via `pytest-cov`; no remote CI pipeline yet |
 | Linting | `ruff` configured (rules E/F/W/I/UP/B/SIM, py311, 100-char line length) |
 | Documentation | Requirements doc complete (`docs/requirements.md`) |
 | BE mortgage rates | Manually maintained in `profiles.py` (Feb 2026 data; ECB MIR endpoint excluded — see `fetcher.py`) |
+| Localisation | EN/FR via `i18n.py`; locale auto-detected from env/system; override with `--locale` flag |
 
 ---
 
@@ -44,7 +45,7 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
   Example: `claude/claude-md-mluynvuq4laldf9u-B8TAO`
 - Human feature branches should follow: `feature/<short-description>`
 - Bug fixes: `fix/<short-description>`
-- The default integration branch is `master`.
+- The default integration branch is `main`.
 
 ### Commit Conventions
 
@@ -67,7 +68,7 @@ Never commit:
   ```bash
   git push -u origin <branch-name>
   ```
-- Never force-push to `master`.
+- Never force-push to `main`.
 - Branches prefixed with `claude/` are managed by Claude Code sessions.
 
 ---
@@ -92,7 +93,14 @@ Never commit:
 
 ### Environment Variables
 
-No `.env` required for v1. The FRED API key (needed for US rate fetch) will be read from the environment variable `FRED_API_KEY` when that feature is implemented. Never commit API keys.
+No `.env` required for v1.
+
+| Variable | Purpose |
+|---|---|
+| `FRED_API_KEY` | Required for US rate fetch via FRED API |
+| `CREDIT_SIMULATOR_LOCALE` | Override interface language (`en` or `fr`); checked before `LANG` and system locale |
+
+Never commit API keys.
 
 ---
 
@@ -111,6 +119,7 @@ credit-simulator/
 │       ├── __main__.py         # Entry point: `python -m credit_simulator`
 │       ├── cli.py              # click CLI definition and interactive loop
 │       ├── config.py           # Application-wide constants and tuneable defaults
+│       ├── i18n.py             # Translation registry (EN/FR), locale detection, _() helper
 │       ├── profiles.py         # Static country profiles + SessionProfileStore
 │       ├── resolver.py         # Parameter resolution (§4.1) and feasibility check (§4.2)
 │       ├── calculator.py       # EMI, amortization schedule, APR (§4.4)
