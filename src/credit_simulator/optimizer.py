@@ -10,7 +10,7 @@ Search space:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field as _field
 from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
 from .calculator import LoanPlan, compute_loan_plan
@@ -21,6 +21,7 @@ from .config import (
     VALID_PREFERENCES,
     ZERO,
 )
+from .i18n import _
 from .resolver import ResolvedParams
 
 
@@ -49,7 +50,11 @@ def _score(
     down_payment: Decimal,
     duration: int,
 ) -> tuple:
-    """Return a sort key (lower is better) for the given plan."""
+    """Return a sort key (lower is better) for the given plan.
+
+    Note: 'minimize_duration' degrades to minimize_total_cost when the
+    duration grid-search is disabled (single fixed duration).
+    """
     tc = plan.total_cost_of_credit
     mp = plan.monthly_installment
     dp = down_payment
@@ -59,13 +64,12 @@ def _score(
     elif preference == "minimize_monthly_payment":
         return (mp, tc, -dp)
     elif preference == "minimize_duration":
+        # Duration is constant across all candidates (grid-search not yet enabled).
+        # Falls back to minimize_total_cost ordering.
         return (duration, tc, mp)
     elif preference == "minimize_down_payment":
         return (dp, tc, mp)
     else:  # balanced
-        # Composite score: penalises both total cost and monthly burden.
-        # tc + mp * duration ≈ total_interest + total_repaid, so for a fixed
-        # duration this simply weights total cost twice vs a pure cost sort.
         return (tc + mp * Decimal(duration), mp, dp)
 
 
@@ -122,7 +126,6 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
     for down_payment in candidates_dp:
         principal = params.total_acquisition_cost - down_payment
         if principal <= ZERO:
-            # Buyer pays cash — trivially feasible but unusual; skip (loan = 0)
             continue
 
         ltv = principal / params.property_price
@@ -137,7 +140,6 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
                 duration,
             )
 
-            # Constraint checks
             if plan.monthly_installment > effective_cap:
                 continue
 
@@ -191,7 +193,8 @@ class SweetSpotMilestone:
     savings_remaining: Decimal
     is_sweet_spot: bool
     effective_rate: Decimal   # LTV-adjusted annual interest rate for this milestone
-    is_rate_floor: bool = False  # True when this is the cheapest DP that hits the best rate
+    is_rate_floor: bool = False    # True when this is the cheapest DP that hits the best rate
+    is_user_choice: bool = False   # True when this matches the user's preferred_down_payment
 
 
 @dataclass(frozen=True)
@@ -216,11 +219,10 @@ class SweetSpotAnalysis:
     effective_annual_yield: Decimal   # IRR of the down payment ≈ loan APR
     opportunity_cost_rate: Decimal    # benchmark annual rate used for comparison
     down_payment_is_efficient: bool   # True when mortgage yield > opportunity cost
-    # New: rate floor and per-tier breakdown
+    # Rate floor and per-tier breakdown
     rate_floor_down_payment: Decimal | None   # cheapest DP reaching the lowest-rate tier
-    tier_economics: list[TierEconomics]          # per-tier breakdown (highest LTV first)
-    crossover_note: str           # "Flips at X%: above → pay down; below → invest"
-
+    tier_economics: list[TierEconomics]       # per-tier breakdown (highest LTV first)
+    crossover_note: str           # threshold explanation
 
 
 def analyze_sweet_spot(
@@ -230,20 +232,16 @@ def analyze_sweet_spot(
     """Compute down-payment milestones and identify the objective sweet spot.
 
     For a fixed-rate mortgage the marginal interest saving per extra €1 000 of
-    down payment is **constant** (= loan APR × annuity factor).  There is no
-    mathematical diminishing-return curve — the sweet spot is therefore defined
-    by opportunity cost:
+    down payment is constant within each LTV tier (= loan APR × annuity factor).
+    The sweet spot is therefore defined by comparing the loan APR to the
+    opportunity cost rate:
 
       • If loan APR > opportunity cost rate → maximise down payment (up to the
-        6-month income reserve ceiling).  The mortgage "pays" more than you can
-        earn elsewhere.
+        6-month income reserve ceiling, capped at the rate floor if the best-tier
+        APR falls back below the opportunity cost).
 
       • If loan APR ≤ opportunity cost rate → use the minimum required down
-        payment and invest the surplus.  You can beat the mortgage cost in the
-        market.
-
-    The LTV 80 % threshold is shown as a regulatory reference point (banks
-    sometimes offer slightly better terms below it).
+        payment and invest the surplus (but still exit LTV surcharge zones).
 
     Parameters
     ----------
@@ -261,7 +259,8 @@ def analyze_sweet_spot(
         dp: Decimal,
         label: str,
         is_sweet: bool = False,
-        is_rate_floor: bool = False,
+        is_rf: bool = False,
+        is_uc: bool = False,
     ) -> SweetSpotMilestone:
         principal = params.total_acquisition_cost - dp
         ltv = (principal / params.property_price).quantize(
@@ -282,7 +281,8 @@ def analyze_sweet_spot(
             savings_remaining=params.available_savings - dp,
             is_sweet_spot=is_sweet,
             effective_rate=eff_rate,
-            is_rate_floor=is_rate_floor,
+            is_rate_floor=is_rf,
+            is_user_choice=is_uc,
         )
 
     # --- Determine effective floor for sweet-spot decision ---
@@ -307,7 +307,6 @@ def analyze_sweet_spot(
                 effective_floor_dp = _floor_cand
 
     # --- Rate floor: cheapest DP that reaches the lowest-rate LTV tier ---
-    # Beyond this amount more DP reduces principal but not the interest rate.
     rate_floor_dp: Decimal | None = None
     if params.ltv_rate_tiers:
         _best_tier = min(params.ltv_rate_tiers, key=lambda t: t.rate_delta)
@@ -334,9 +333,6 @@ def analyze_sweet_spot(
     effective_annual_yield = plan_ref.effective_annual_rate
 
     # --- Per-tier economics ---
-    # For each LTV tier compute the saving per €1 000 extra DP and its yield.
-    # Tiers are sorted ascending by ltv_max; reversed here so highest-LTV
-    # (smallest required DP) appears first in the output.
     tier_economics: list[TierEconomics] = []
     tiers_sorted = sorted(params.ltv_rate_tiers, key=lambda t: t.ltv_max)
     if tiers_sorted:
@@ -351,11 +347,15 @@ def analyze_sweet_spot(
             plan_mid_m1 = compute_loan_plan(p_mid - Decimal("1000"), eff, params.insurance_rate, duration)
             tier_save = plan_mid.total_cost_of_credit - plan_mid_m1.total_cost_of_credit
             if tier.rate_delta == ZERO:
-                delta_label = "base"
+                delta_label = _("tier.base")
             elif tier.rate_delta > ZERO:
-                delta_label = f"+{tier.rate_delta * 100:.2f}%"
+                delta_label = _(
+                    "tier.surcharge", pct=f"{tier.rate_delta * 100:.2f}"
+                )
             else:
-                delta_label = f"−{abs(tier.rate_delta) * 100:.2f}%"
+                delta_label = _(
+                    "tier.discount", pct=f"{abs(tier.rate_delta) * 100:.2f}"
+                )
             lower_pct = int(lower_ltv * 100)
             upper_pct = int(upper_ltv * 100)
             ltv_range = f"≤{upper_pct}%" if lower_pct == 0 else f"{lower_pct}%–{upper_pct}%"
@@ -372,6 +372,20 @@ def analyze_sweet_spot(
     # --- Opportunity-cost decision ---
     down_payment_is_efficient = effective_annual_yield > opp_rate
 
+    # When efficient at the floor, check whether efficiency reverses at the rate floor.
+    # The best-tier APR may drop below the opportunity cost, making further increases
+    # unprofitable. In that case cap the sweet spot at the rate floor, not the reserve.
+    rate_floor_apr: Decimal | None = None
+    rate_floor_efficient_boundary = False
+    if down_payment_is_efficient and rate_floor_dp is not None:
+        _rf_principal = params.total_acquisition_cost - rate_floor_dp
+        _rf_ltv = _rf_principal / params.property_price
+        _rf_rate = params.rate_for_ltv(_rf_ltv)
+        _plan_rf = compute_loan_plan(_rf_principal, _rf_rate, params.insurance_rate, duration)
+        rate_floor_apr = _plan_rf.effective_annual_rate
+        if rate_floor_apr <= opp_rate:
+            rate_floor_efficient_boundary = True
+
     # --- 6-month reserve ceiling ---
     reserve_target = SWEET_SPOT_RESERVE_MONTHS * params.monthly_net_income
     reserve_ceiling_exact = params.available_savings - reserve_target
@@ -387,47 +401,57 @@ def analyze_sweet_spot(
     yield_pct = f"{effective_annual_yield * Decimal('100'):.2f}"
 
     if down_payment_is_efficient:
-        sweet_dp = reserve_dp
-        reason = (
-            f"Loan APR ({yield_pct}%) exceeds the reference rate ({opp_pct}%): "
-            f"paying down the mortgage gives a better return than investing the "
-            f"surplus. Maximise the down payment up to the {SWEET_SPOT_RESERVE_MONTHS}-month "
-            f"income reserve ceiling — do not go further."
-        )
+        if rate_floor_efficient_boundary:
+            # Efficient up to rate floor but best-tier APR dips below opp_rate.
+            sweet_dp = rate_floor_dp  # type: ignore[assignment]
+            rf_yield_pct = f"{rate_floor_apr * Decimal('100'):.2f}"  # type: ignore[operator]
+            reason = _(
+                "reason.efficient_capped_at_rate_floor",
+                yield_pct=yield_pct,
+                opp_pct=opp_pct,
+                rf_yield_pct=rf_yield_pct,
+            )
+            sweet_label = _("milestone.sweet_spot_rate_floor")
+        else:
+            sweet_dp = reserve_dp
+            reason = _(
+                "reason.efficient",
+                yield_pct=yield_pct,
+                opp_pct=opp_pct,
+                n=SWEET_SPOT_RESERVE_MONTHS,
+            )
+            sweet_label = _("milestone.sweet_spot")
     else:
         sweet_dp = effective_floor_dp
+        sweet_label = _("milestone.sweet_spot")
         if effective_floor_dp > candidates[0]:
             extra = effective_floor_dp - candidates[0]
-            reason = (
-                f"Loan APR ({yield_pct}%) is at or below the reference rate ({opp_pct}%): "
-                f"investing the surplus could earn more than the mortgage interest saved. "
-                f"However, the minimum down payment ({candidates[0]:,.0f} {params.currency}) "
-                f"falls in an LTV surcharge tier — committing an extra "
-                f"{extra:,.0f} {params.currency} immediately exits the penalty zone "
-                f"and is almost always worth it regardless of opportunity cost. "
-                f"Beyond this floor, invest any further surplus."
+            reason = _(
+                "reason.inefficient_exits_surcharge",
+                yield_pct=yield_pct,
+                opp_pct=opp_pct,
+                min_dp=f"{candidates[0]:,.0f}",
+                currency=params.currency,
+                extra=f"{extra:,.0f}",
             )
         else:
-            reason = (
-                f"Loan APR ({yield_pct}%) is at or below the reference rate ({opp_pct}%): "
-                f"investing the surplus earns more than it saves in mortgage interest. "
-                f"Put only the minimum required down payment; every extra euro costs "
-                f"you ({opp_pct}% − {yield_pct}%) in forgone returns."
+            reason = _(
+                "reason.inefficient_minimum",
+                yield_pct=yield_pct,
+                opp_pct=opp_pct,
             )
 
     # --- Crossover note ---
-    crossover_note = (
-        f"Crossover at {yield_pct}: above this your investments beat the mortgage; "
-        f"below this paying down the mortgage beats investing."
-    )
+    crossover_note = _("crossover_note", yield_pct=yield_pct)
 
     # --- Reserve warning ---
     reserve_warning = ""
     if candidates[0] > reserve_ceiling_exact:
-        reserve_warning = (
-            f"Note: even the minimum down payment exceeds the {SWEET_SPOT_RESERVE_MONTHS}-month "
-            f"income reserve ({reserve_target:,.0f} {params.currency}). "
-            f"Ensure you have sufficient emergency funds before proceeding."
+        reserve_warning = _(
+            "reserve_warning",
+            n=SWEET_SPOT_RESERVE_MONTHS,
+            reserve=f"{reserve_target:,.0f}",
+            currency=params.currency,
         )
 
     # --- LTV 80 % reference milestone ---
@@ -439,26 +463,28 @@ def analyze_sweet_spot(
             break
 
     # --- Build deduplicated, ordered milestone list ---
-    # spec maps down_payment → (label, is_sweet, is_rate_floor)
-    spec: dict[Decimal, tuple[str, bool, bool]] = {}
+    # spec maps down_payment → (label, is_sweet, is_rf, is_user_choice)
+    spec: dict[Decimal, tuple[str, bool, bool, bool]] = {}
 
     def _add(
         dp_val: Decimal,
         label: str,
         is_sweet: bool = False,
         is_rf: bool = False,
+        is_uc: bool = False,
     ) -> None:
         if dp_val not in spec:
-            spec[dp_val] = (label, is_sweet, is_rf)
+            spec[dp_val] = (label, is_sweet, is_rf, is_uc)
         else:
-            old_label, old_sweet, old_rf = spec[dp_val]
+            old_label, old_sweet, old_rf, old_uc = spec[dp_val]
             spec[dp_val] = (
                 label if is_sweet else old_label,
                 old_sweet or is_sweet,
                 old_rf or is_rf,
+                old_uc or is_uc,
             )
 
-    _add(candidates[0], "Minimum")
+    _add(candidates[0], _("milestone.minimum"))
 
     for i in range(len(tiers_sorted) - 1):
         tier, next_tier = tiers_sorted[i], tiers_sorted[i + 1]
@@ -469,30 +495,30 @@ def analyze_sweet_spot(
             rounding=ROUND_CEILING
         ) * STEP_DOWN_PAYMENT
         if params.min_down_payment < tier_dp < params.available_savings:
-            _add(tier_dp, f"LTV≤{int(tier.ltv_max * 100)}% rate↓")
+            _add(tier_dp, _("milestone.ltv_rate_cross", pct=int(tier.ltv_max * 100)))
 
     if ltv_dp is not None and ltv_dp != candidates[0] and ltv_dp != candidates[-1]:
-        _add(ltv_dp, f"LTV {ltv_pct}% (ref)")
+        _add(ltv_dp, _("milestone.ltv_ref", pct=ltv_pct))
 
     if rate_floor_dp is not None:
-        _add(rate_floor_dp, "Rate floor ─ no gain beyond", is_rf=True)
+        _add(rate_floor_dp, _("milestone.rate_floor"), is_rf=True)
 
-    _add(sweet_dp, "★  Sweet spot", is_sweet=True)
+    _add(sweet_dp, sweet_label, is_sweet=True)
     if reserve_dp != sweet_dp and reserve_dp != candidates[0] and reserve_dp != candidates[-1]:
-        _add(reserve_dp, f"{SWEET_SPOT_RESERVE_MONTHS}m reserve cap")
-    _add(candidates[-1], "Maximum")
+        _add(reserve_dp, _("milestone.reserve_cap", n=SWEET_SPOT_RESERVE_MONTHS))
+    _add(candidates[-1], _("milestone.maximum"))
 
     if params.preferred_down_payment is not None:
         pref = params.preferred_down_payment
         if pref in spec:
-            old_label, old_sweet, old_rf = spec[pref]
-            spec[pref] = (old_label + "  ← Your choice", old_sweet, old_rf)
+            old_label, old_sweet, old_rf, _uc = spec[pref]
+            spec[pref] = (old_label + _("milestone.your_choice_suffix"), old_sweet, old_rf, True)
         else:
-            spec[pref] = ("Your choice", False, False)
+            spec[pref] = (_("milestone.your_choice"), False, False, True)
 
     milestones = [
-        _milestone(dp, label, is_sweet, is_rf)
-        for dp, (label, is_sweet, is_rf) in sorted(spec.items())
+        _milestone(dp, label, is_sweet, is_rf, is_uc)
+        for dp, (label, is_sweet, is_rf, is_uc) in sorted(spec.items())
     ]
 
     return SweetSpotAnalysis(
