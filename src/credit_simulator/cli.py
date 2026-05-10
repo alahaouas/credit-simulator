@@ -101,12 +101,13 @@ def display_result(result: OptimizedResult) -> None:
 
 
 def display_amortization(result: OptimizedResult) -> None:
-    schedule = build_amortization_schedule(
-        result.plan.loan_principal,
-        result.plan.annual_interest_rate,
-        result.plan.annual_insurance_rate,
-        result.loan_duration_months,
-    )
+    with console.status("  [cyan]Generating amortization schedule…[/cyan]"):
+        schedule = build_amortization_schedule(
+            result.plan.loan_principal,
+            result.plan.annual_interest_rate,
+            result.plan.annual_insurance_rate,
+            result.loan_duration_months,
+        )
     cur = result.currency
 
     t = Table(title="Amortization Schedule", box=box.MINIMAL_HEAVY_HEAD)
