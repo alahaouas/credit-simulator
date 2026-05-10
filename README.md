@@ -20,13 +20,15 @@ loan plan and walks you through an amortization schedule — all in your termina
 - **Full amortization schedule** — month-by-month breakdown of principal,
   interest, and insurance components.
 - **Down-payment sweet-spot analysis** — automatically shown after every
-  simulation. Compares the loan APR against an opportunity-cost benchmark to
-  identify the rational floor for your down payment. Highlights all LTV tier
-  crossings (rate discounts and surcharge exits), the 6-month income reserve
-  ceiling, and the absolute maximum. When the minimum down payment falls in a
-  surcharge LTV tier, the sweet spot is automatically raised to the cheapest
-  exit from that penalty zone. If you set a preferred down payment, it appears
-  as a "Your choice" row in the table so you can compare it instantly to the
+  simulation. Compares the loan APR against a configurable opportunity-cost
+  benchmark to identify the rational floor for your down payment. Highlights all
+  LTV tier crossings (rate discounts and surcharge exits), the 6-month income
+  reserve ceiling, and the absolute rate floor. When the minimum down payment
+  falls in a surcharge LTV tier, the sweet spot is automatically raised to the
+  cheapest exit from that penalty zone. When the best-tier APR dips below the
+  opportunity cost rate, the sweet spot is capped at the rate floor rather than
+  the reserve ceiling. If you set a preferred down payment, it appears as a
+  "Your choice" row in the table so you can compare it instantly to the
   recommendation.
 - **Interactive update loop** — change any parameter and re-run instantly;
   no restart needed.
@@ -34,6 +36,8 @@ loan plan and walks you through an amortization schedule — all in your termina
   average mortgage rate live from a central bank API (ECB, Bank of England,
   FRED).
 - **8 countries supported** — BE (default), FR, DE, ES, IT, PT, GB, US.
+- **Multilingual UI** — English (default) and French. Locale auto-detected from
+  the system; override with `--locale fr` or `CREDIT_SIMULATOR_LOCALE=fr`.
 - **Decimal precision** — all monetary arithmetic uses `decimal.Decimal`;
   floating-point is never used for financial calculations.
 
@@ -72,9 +76,13 @@ the interactive loop:
 ```
 Property price? 350000
 Monthly net income? 6000
-Available savings (maximum you can use for down payment)? 80000
-Purchase taxes? (press Enter to estimate from country profile):
-Preferred down payment? (press Enter to let optimizer find the best):
+Available savings? 80000
+[country defaults panel shown]
+Use all country defaults and run immediately? [Y/n]:
+Purchase taxes? [Enter for ~43 750 EUR, ? for help]:
+Preferred down payment? [max 80 000, Enter to optimise, ? for help]:
+Loan duration? [Enter for 20y (240 months), ? for help]:
+Opportunity cost rate? [Enter for 3.5%, ? for help]:
 ```
 
 ### With CLI flags
@@ -103,6 +111,8 @@ Available flags:
 | `--quality` | `average` or `best` | `average` |
 | `--preference` | Optimization preference (see below) | `balanced` |
 | `--duration` | Loan duration in months (e.g. `240`) or years (e.g. `20y`) | `20y` (240 months) |
+| `--opp-rate` | Opportunity cost rate for sweet-spot analysis (e.g. `0.04` for 4%) | `3.5%` |
+| `--locale` | Interface language: `en` or `fr` | auto-detected |
 
 ### Optimization preferences
 
@@ -195,6 +205,24 @@ population-average rates; competitive "best" rates have no public API).
 
 ---
 
+## Localisation
+
+The interface is available in English and French. The locale is selected in
+this order:
+
+1. `CREDIT_SIMULATOR_LOCALE` environment variable (`en` or `fr`)
+2. `LANG` environment variable (e.g. `fr_BE.UTF-8`)
+3. System locale (`locale.getlocale()`)
+4. Fallback: `en`
+
+Override at runtime with the `--locale` flag:
+
+```bash
+python -m credit_simulator --locale fr
+```
+
+---
+
 ## Project structure
 
 ```
@@ -207,6 +235,7 @@ credit-simulator/
 │       ├── __main__.py     # Entry point
 │       ├── cli.py          # Interactive CLI and update loop
 │       ├── config.py       # Application-wide constants and defaults
+│       ├── i18n.py         # Translation registry (EN / FR) and locale helpers
 │       ├── profiles.py     # Country profiles + session-scoped store
 │       ├── resolver.py     # Parameter resolution and feasibility check
 │       ├── calculator.py   # EMI, amortization schedule, APR
