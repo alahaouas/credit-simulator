@@ -151,8 +151,12 @@ def _fetch_fred() -> Decimal:
     try:
         resp = requests.get(_FRED_URL, params=params, timeout=_TIMEOUT)
         resp.raise_for_status()
-    except requests.RequestException as exc:
-        raise FetchError(f"FRED API request failed: {exc}") from exc
+    except requests.RequestException:
+        # Use a generic error message and suppress the exception chain to avoid leaking the API key
+        # which might be present in the original exception's URL.
+        raise FetchError(
+            "FRED API request failed. Please check your network connection and API key."
+        ) from None
 
     try:
         data = resp.json()
