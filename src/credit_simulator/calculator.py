@@ -6,10 +6,19 @@ full precision for all intermediate steps.
 """
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from .config import APR_MAX_ITERATIONS, APR_PRECISION, APR_TOLERANCE, CENT, ZERO
+
+
+@functools.lru_cache(maxsize=1024)
+def _cached_rate_multiplier(annual_rate: Decimal, duration_months: int) -> Decimal:
+    """Return the rate-dependent multiplier for the EMI formula."""
+    r = annual_rate / Decimal(12)
+    factor = (1 + r) ** int(duration_months)
+    return r * factor / (factor - 1)
 
 
 def _round(value: Decimal) -> Decimal:
@@ -68,11 +77,8 @@ def compute_emi(
     if annual_rate == ZERO:
         return _round(principal / Decimal(duration_months))
 
-    r = annual_rate / Decimal(12)
-    n = Decimal(duration_months)
-    factor = (1 + r) ** int(duration_months)  # stays Decimal arithmetic
-    emi = principal * r * factor / (factor - 1)
-    return _round(emi)
+    multiplier = _cached_rate_multiplier(annual_rate, duration_months)
+    return _round(principal * multiplier)
 
 
 def compute_monthly_insurance(
