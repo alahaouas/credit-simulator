@@ -136,6 +136,16 @@ class TestFetchBoE:
             with pytest.raises(FetchError, match="Failed to parse Bank of England response"):
                 fetch_rate("GB")
 
+    def test_boe_value_error_raises(self):
+        """A ValueError raised during BoE response text processing should trigger FetchError."""
+        from unittest.mock import PropertyMock
+        with patch("credit_simulator.fetcher.requests.get") as mock_get:
+            mock_resp = MagicMock()
+            type(mock_resp).text = PropertyMock(side_effect=ValueError("Bad CSV format"))
+            mock_get.return_value = mock_resp
+            with pytest.raises(FetchError, match="Failed to parse Bank of England response: Bad CSV format"):
+                fetch_rate("GB")
+
 
 # ── FRED tests ────────────────────────────────────────────────────────────────
 
