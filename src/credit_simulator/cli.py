@@ -12,6 +12,7 @@ Update loop:
 """
 from __future__ import annotations
 
+import contextlib
 import sys
 from decimal import ROUND_HALF_UP as _ROUND_HALF_UP
 from decimal import Decimal, InvalidOperation
@@ -22,6 +23,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from . import preferences
 from .calculator import build_amortization_schedule
 from .config import (
     DEFAULT_COUNTRY,
@@ -353,6 +355,34 @@ def _prompt_decimal(
         return value
 
 
+def _prompt_decimal_with_default(
+    prompt: str,
+    default: Decimal,
+    *,
+    positive: bool = True,
+    allow_zero: bool = False,
+) -> Decimal:
+    """Prompt for a Decimal, accepting Enter to keep *default*."""
+    while True:
+        raw = console.input(
+            f"[bold]{prompt} [dim][saved: {default}][/dim][/bold] "
+        ).strip()
+        if not raw:
+            return default
+        try:
+            value = Decimal(raw.replace(",", ".").replace(" ", ""))
+        except InvalidOperation:
+            err_console.print(_("error.invalid_number", val=raw))
+            continue
+        if positive and value <= 0 and not (allow_zero and value == 0):
+            err_console.print(_("error.must_be_positive") if not allow_zero else _("error.must_be_nonneg"))
+            continue
+        if allow_zero and value < 0:
+            err_console.print(_("error.must_be_nonneg"))
+            continue
+        return value
+
+
 def _prompt_int(
     prompt: str,
     *,
@@ -569,6 +599,7 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
         action = console.input(f"[bold]{_('prompt.action')} [/bold]").strip().lower()
 
         if action in ("exit", "quit", "q"):
+            preferences.save(inputs, store)
             console.print(_("action.goodbye"))
             break
 
@@ -608,6 +639,7 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
             run_result = run_simulation(inputs, store)
             if run_result:
                 last_params, last_result, last_analysis = run_result
+                preferences.save(inputs, store)
 
         elif action == "reset":
             console.print(_("action.fields_list", fields=", ".join(sorted(_UPDATABLE_FIELDS))))
@@ -616,6 +648,7 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
             run_result = run_simulation(inputs, store)
             if run_result:
                 last_params, last_result, last_analysis = run_result
+                preferences.save(inputs, store)
 
         elif action == "profile":
             mode = console.input(f"[bold]{_('prompt.update_mode')}[/bold]").strip().lower()
@@ -629,6 +662,7 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
             run_result = run_simulation(inputs, store)
             if run_result:
                 last_params, last_result, last_analysis = run_result
+                preferences.save(inputs, store)
 
         else:
             err_console.print(_("error.unknown_action", action=action))
@@ -707,6 +741,37 @@ def _reset_field(field: str, inputs: UserInputs) -> None:
         err_console.print(_("error.unknown_field", field=field))
 
 
+def _apply_saved_optionals(prefs: dict, inputs: UserInputs) -> None:
+    """Copy saved optional fields onto *inputs*, skipping any already set by the user."""
+    saved = prefs.get("inputs", {})
+
+    for field in ("country", "profile_quality", "optimization_preference"):
+        if getattr(inputs, field, None) is None or (
+            field == "optimization_preference" and inputs.optimization_preference == "balanced"
+            and saved.get(field) not in (None, "balanced")
+        ):
+            val = saved.get(field)
+            if val is not None:
+                setattr(inputs, field, val)
+
+    for field in (
+        "opportunity_cost_rate", "annual_interest_rate", "insurance_rate",
+        "min_down_payment_ratio", "max_debt_ratio", "max_monthly_payment",
+    ):
+        if getattr(inputs, field, None) is None:
+            raw = saved.get(field)
+            if raw is not None:
+                with contextlib.suppress(InvalidOperation):
+                    setattr(inputs, field, Decimal(str(raw)))
+
+    for field in ("max_loan_duration_months", "fixed_loan_duration_months"):
+        if getattr(inputs, field, None) is None:
+            raw = saved.get(field)
+            if raw is not None:
+                with contextlib.suppress(TypeError, ValueError):
+                    setattr(inputs, field, int(raw))
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Click entry point
 # ──────────────────────────────────────────────────────────────────────────────
@@ -743,6 +808,8 @@ def main(
     console.print(Panel(_("panel.credit_simulator"), expand=False))
 
     store = SessionProfileStore()
+    prefs = preferences.load()
+    preferences.apply_to_store(prefs, store)
 
     def _parse_opt(s: str | None, name: str) -> Decimal | None:
         if s is None:
@@ -764,20 +831,19 @@ def main(
 
     inc = _parse_opt(income, "income")
     if inc is None:
-        inc = _prompt_decimal(
-            _("prompt.income"),
-            positive=True,
-            help_text=_("help.income"),
-        )
+        saved_inc = preferences.saved_decimal(prefs, "monthly_net_income")
+        if saved_inc is not None:
+            inc = _prompt_decimal_with_default(_("prompt.income"), saved_inc, positive=True)
+        else:
+            inc = _prompt_decimal(_("prompt.income"), positive=True, help_text=_("help.income"))
 
     sav = _parse_opt(savings, "savings")
     if sav is None:
-        sav = _prompt_decimal(
-            _("prompt.savings"),
-            allow_zero=True,
-            positive=False,
-            help_text=_("help.savings"),
-        )
+        saved_sav = preferences.saved_decimal(prefs, "available_savings")
+        if saved_sav is not None:
+            sav = _prompt_decimal_with_default(_("prompt.savings"), saved_sav, allow_zero=True, positive=False)
+        else:
+            sav = _prompt_decimal(_("prompt.savings"), allow_zero=True, positive=False, help_text=_("help.savings"))
 
     # --- Profile summary + two-stage gate ---
     country_code = (country or DEFAULT_COUNTRY).upper()
@@ -907,7 +973,12 @@ def main(
         opportunity_cost_rate=opp_rate_decimal,
     )
 
+    # Apply saved optional preferences (CLI flags and interactive entries take precedence
+    # because they are already non-None on inputs; apply_to_inputs only sets None fields).
+    _apply_saved_optionals(prefs, inputs)
+
     try:
         interactive_loop(inputs, store)
     except (KeyboardInterrupt, EOFError):
+        preferences.save(inputs, store)
         console.print(_("action.session_ended"))
