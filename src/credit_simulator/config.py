@@ -59,3 +59,4 @@ MIN_LOAN_DURATION_MONTHS: int = 12              # minimum accepted loan duration
 
 ZERO = Decimal("0")
 CENT = Decimal("0.01")
+MONTHS_IN_YEAR = Decimal("12")

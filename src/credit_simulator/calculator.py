@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
-from .config import APR_MAX_ITERATIONS, APR_PRECISION, APR_TOLERANCE, CENT, ZERO
+from .config import APR_MAX_ITERATIONS, APR_PRECISION, APR_TOLERANCE, CENT, MONTHS_IN_YEAR, ZERO
 
 
 def _round(value: Decimal) -> Decimal:
@@ -68,8 +68,7 @@ def compute_emi(
     if annual_rate == ZERO:
         return _round(principal / Decimal(duration_months))
 
-    r = annual_rate / Decimal(12)
-    n = Decimal(duration_months)
+    r = annual_rate / MONTHS_IN_YEAR
     factor = (1 + r) ** int(duration_months)  # stays Decimal arithmetic
     emi = principal * r * factor / (factor - 1)
     return _round(emi)
@@ -80,7 +79,7 @@ def compute_monthly_insurance(
     annual_insurance_rate: Decimal,
 ) -> Decimal:
     """Fixed monthly insurance = original_principal * annual_rate / 12."""
-    return _round(original_principal * annual_insurance_rate / Decimal(12))
+    return _round(original_principal * annual_insurance_rate / MONTHS_IN_YEAR)
 
 
 def compute_loan_plan(
@@ -92,10 +91,10 @@ def compute_loan_plan(
     """Compute the full loan plan summary (no amortization schedule)."""
     emi = compute_emi(principal, annual_interest_rate, duration_months)
     monthly_insurance = compute_monthly_insurance(principal, annual_insurance_rate)
-    monthly_installment = _round(emi + monthly_insurance)
+    monthly_installment = _round(emi + monthly_insurance)  # noqa: F841
 
     # First month interest component
-    r = annual_interest_rate / Decimal(12)
+    r = annual_interest_rate / MONTHS_IN_YEAR
     monthly_interest_first = _round(principal * r)
 
     # Total interest computed precisely via the amortization schedule to avoid accumulated rounding.
@@ -137,8 +136,8 @@ def build_amortization_schedule(
     """Build the full month-by-month amortization schedule."""
     emi = compute_emi(principal, annual_interest_rate, duration_months)
     monthly_insurance = compute_monthly_insurance(principal, annual_insurance_rate)
-    monthly_installment = _round(emi + monthly_insurance)
-    r = annual_interest_rate / Decimal(12)
+    monthly_installment = _round(emi + monthly_insurance)  # noqa: F841
+    r = annual_interest_rate / MONTHS_IN_YEAR
 
     rows: list[AmortizationRow] = []
     balance = principal
