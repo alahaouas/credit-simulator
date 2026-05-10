@@ -9,7 +9,7 @@ from credit_simulator.config import (
 )
 from credit_simulator.optimizer import TierEconomics, analyze_sweet_spot, optimize
 from credit_simulator.profiles import SessionProfileStore
-from credit_simulator.resolver import UserInputs, resolve
+from credit_simulator.resolver import ResolvedParams, UserInputs, resolve
 
 
 def _store() -> SessionProfileStore:
