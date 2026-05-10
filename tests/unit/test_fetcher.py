@@ -8,6 +8,12 @@ from credit_simulator.fetcher import FetchError, fetch_rate
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+@pytest.fixture(autouse=True)
+def clear_fetch_rate_cache():
+    """Clear the LRU cache on fetch_rate before each test to ensure mocked requests are made."""
+    fetch_rate.cache_clear()
+
+
 def _mock_response(json_data=None, text=None, status_code=200):
     resp = MagicMock()
     resp.status_code = status_code

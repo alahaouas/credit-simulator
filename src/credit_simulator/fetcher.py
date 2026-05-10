@@ -5,6 +5,7 @@ All fetches are user-triggered (no background polling).
 """
 from __future__ import annotations
 
+import functools
 import os
 from decimal import Decimal, InvalidOperation
 
@@ -43,6 +44,7 @@ class FetchError(Exception):
     """Raised when an online rate fetch fails for any reason."""
 
 
+@functools.cache
 def fetch_rate(country: str) -> Decimal:
     """Fetch the latest average annual mortgage rate for *country*.
 
