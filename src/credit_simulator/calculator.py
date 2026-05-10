@@ -83,6 +83,37 @@ def compute_monthly_insurance(
     return _round(original_principal * annual_insurance_rate / Decimal(12))
 
 
+def _compute_total_interest(
+    principal: Decimal,
+    annual_interest_rate: Decimal,
+    duration_months: int,
+) -> Decimal:
+    """Precisely compute total interest by simulating the amortization loop.
+
+    This avoids creating intermediate AmortizationRow objects.
+    """
+    emi = compute_emi(principal, annual_interest_rate, duration_months)
+    r = annual_interest_rate / Decimal(12)
+
+    total_interest = ZERO
+    balance = principal
+
+    for period in range(1, duration_months + 1):
+        interest = _round(balance * r)
+        total_interest += interest
+
+        if period == duration_months:
+            principal_component = balance
+        else:
+            principal_component = _round(emi - interest)
+            if principal_component > balance:
+                principal_component = balance
+
+        balance = _round(balance - principal_component)
+
+    return total_interest
+
+
 def compute_loan_plan(
     principal: Decimal,
     annual_interest_rate: Decimal,
@@ -98,12 +129,9 @@ def compute_loan_plan(
     r = annual_interest_rate / Decimal(12)
     monthly_interest_first = _round(principal * r)
 
-    # Total interest computed precisely via the amortization schedule to avoid accumulated rounding.
-    schedule = build_amortization_schedule(
-        principal, annual_interest_rate, annual_insurance_rate, duration_months
-    )
-    total_interest_paid = sum(
-        (row.interest_component for row in schedule), ZERO
+    # Total interest computed precisely via simulation to avoid accumulated rounding.
+    total_interest_paid = _compute_total_interest(
+        principal, annual_interest_rate, duration_months
     )
     total_insurance_paid = _round(monthly_insurance * Decimal(duration_months))
     total_cost_of_credit = _round(total_interest_paid + total_insurance_paid)
