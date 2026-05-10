@@ -88,6 +88,7 @@ def compute_loan_plan(
     annual_interest_rate: Decimal,
     annual_insurance_rate: Decimal,
     duration_months: int,
+    compute_apr_flag: bool = True,
 ) -> LoanPlan:
     """Compute the full loan plan summary (no amortization schedule)."""
     emi = compute_emi(principal, annual_interest_rate, duration_months)
@@ -109,7 +110,10 @@ def compute_loan_plan(
     total_cost_of_credit = _round(total_interest_paid + total_insurance_paid)
     total_repaid = _round(principal + total_cost_of_credit)
 
-    apr = compute_apr(principal, monthly_installment, duration_months)
+    if compute_apr_flag:
+        apr = compute_apr(principal, monthly_installment, duration_months)
+    else:
+        apr = ZERO
 
     return LoanPlan(
         loan_principal=principal,

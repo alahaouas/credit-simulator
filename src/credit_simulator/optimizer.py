@@ -10,7 +10,7 @@ Search space:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field as _field
+from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
 from .calculator import LoanPlan, compute_loan_plan
@@ -138,6 +138,7 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
                 effective_rate,
                 params.insurance_rate,
                 duration,
+                compute_apr_flag=False,
             )
 
             if plan.monthly_installment > effective_cap:
@@ -157,6 +158,16 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         )
 
     principal = params.total_acquisition_cost - best_down_payment
+
+    # Recompute best_plan to include the effective_annual_rate (APR)
+    best_plan = compute_loan_plan(
+        principal,
+        params.rate_for_ltv(principal / params.property_price),
+        params.insurance_rate,
+        best_duration,
+        compute_apr_flag=True,
+    )
+
     ltv_ratio = (principal / params.property_price).quantize(
         Decimal("0.0001"), rounding=ROUND_HALF_UP
     )
