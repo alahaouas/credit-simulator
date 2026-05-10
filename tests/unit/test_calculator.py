@@ -1,5 +1,6 @@
 """Unit tests for calculator.py — EMI, amortization, APR."""
 from decimal import Decimal
+from unittest import mock
 
 import pytest
 
@@ -189,3 +190,22 @@ class TestComputeAprDirect:
         principal = Decimal("150000")
         plan = compute_loan_plan(principal, annual_rate, ZERO, 240)
         assert abs(plan.effective_annual_rate - annual_rate) < Decimal("0.005")
+
+    @mock.patch("builtins.abs")
+    def test_apr_handles_zero_division_error_in_loop(self, mock_abs):
+        """ZeroDivisionError inside the Newton-Raphson loop is caught and APR converges safely."""
+        mock_abs.side_effect = ZeroDivisionError("Simulated ZeroDivisionError")
+        # Should complete without raising and return some Decimal value
+        apr = compute_apr(Decimal("100000"), Decimal("1000"), 120)
+        assert isinstance(apr, Decimal)
+        mock_abs.assert_called()
+
+    @mock.patch("builtins.abs")
+    def test_apr_handles_invalid_operation_in_loop(self, mock_abs):
+        """InvalidOperation inside the Newton-Raphson loop is caught and APR converges safely."""
+        from decimal import InvalidOperation
+        mock_abs.side_effect = InvalidOperation("Simulated InvalidOperation")
+        # Should complete without raising and return some Decimal value
+        apr = compute_apr(Decimal("100000"), Decimal("1000"), 120)
+        assert isinstance(apr, Decimal)
+        mock_abs.assert_called()

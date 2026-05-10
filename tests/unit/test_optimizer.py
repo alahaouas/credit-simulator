@@ -581,7 +581,7 @@ class TestBuildDpCandidates:
 
     from credit_simulator.optimizer import _build_dp_candidates  # noqa: PLC0415
 
-    def _params(self, min_dp: Decimal, savings: Decimal) -> ResolvedParams:
+    def _params(self, min_dp: Decimal, savings: Decimal) -> "ResolvedParams":
         import dataclasses
         base = resolve(
             UserInputs(
@@ -643,7 +643,7 @@ class TestRateFloorEfficiencyBoundary:
     best-tier APR (3.20%) is not — sweet spot must be rate_floor_dp.
     """
 
-    def _params(self) -> ResolvedParams:
+    def _params(self) -> "ResolvedParams":
         """BE profile, zero insurance, custom rate so APRs straddle opp_rate."""
         import dataclasses
         from credit_simulator.profiles import LtvRateTier
