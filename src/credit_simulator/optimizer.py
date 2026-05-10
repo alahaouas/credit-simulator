@@ -290,7 +290,7 @@ def analyze_sweet_spot(
     _min_principal = params.total_acquisition_cost - min_dp
     _min_ltv = _min_principal / params.property_price
     _min_rate_delta = ZERO
-    for _t in sorted(params.ltv_rate_tiers, key=lambda t: t.ltv_max):
+    for _t in params.ltv_rate_tiers:
         if _min_ltv <= _t.ltv_max:
             _min_rate_delta = _t.rate_delta
             break
@@ -334,7 +334,7 @@ def analyze_sweet_spot(
 
     # --- Per-tier economics ---
     tier_economics: list[TierEconomics] = []
-    tiers_sorted = sorted(params.ltv_rate_tiers, key=lambda t: t.ltv_max)
+    tiers_sorted = params.ltv_rate_tiers
     if tiers_sorted:
         min_delta = min(t.rate_delta for t in tiers_sorted)
         for i, tier in enumerate(tiers_sorted):

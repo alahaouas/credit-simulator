@@ -87,6 +87,38 @@ class TestFetchECB:
             with pytest.raises(FetchError, match="ECB API request failed"):
                 fetch_rate("FR")
 
+    def test_ecb_empty_series_raises(self):
+        """Empty series dict causes StopIteration when next(iter(series)) is called."""
+        bad_json = {
+            "dataSets": [
+                {
+                    "series": {}
+                }
+            ]
+        }
+        with patch("credit_simulator.fetcher.requests.get") as mock_get:
+            mock_get.return_value = _mock_response(json_data=bad_json)
+            with pytest.raises(FetchError, match="Failed to parse ECB response"):
+                fetch_rate("FR")
+
+    def test_ecb_type_error_raises(self):
+        """Invalid type for observations causes TypeError when next(iter(observations)) is called."""
+        bad_json = {
+            "dataSets": [
+                {
+                    "series": {
+                        "0:0:0:0:0:0:0:0:0:0:0": {
+                            "observations": None
+                        }
+                    }
+                }
+            ]
+        }
+        with patch("credit_simulator.fetcher.requests.get") as mock_get:
+            mock_get.return_value = _mock_response(json_data=bad_json)
+            with pytest.raises(FetchError, match="Failed to parse ECB response"):
+                fetch_rate("FR")
+
 
 # ── BoE tests ─────────────────────────────────────────────────────────────────
 
