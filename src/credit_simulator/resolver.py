@@ -22,6 +22,7 @@ from .config import (
     ZERO,
     ProfileQuality,
 )
+from .i18n import _
 from .profiles import LtvRateTier, SessionProfileStore, get_profile
 
 
@@ -227,23 +228,28 @@ def check_feasibility(params: ResolvedParams) -> None:
     3. required loan principal > 0
     """
     if params.available_savings < params.min_down_payment:
-        raise InfeasibleError(
-            f"Insufficient savings: you need at least "
-            f"{params.min_down_payment:,.2f} {params.currency} as a down payment "
-            f"(you have {params.available_savings:,.2f} {params.currency})."
-        )
+        raise InfeasibleError(_(
+            "error.infeasible.savings",
+            min_dp=f"{params.min_down_payment:,.2f}",
+            currency=params.currency,
+            savings=f"{params.available_savings:,.2f}",
+        ))
 
     if params.preferred_down_payment is not None:
         if params.preferred_down_payment < params.min_down_payment:
-            raise InfeasibleError(
-                f"Preferred down payment {params.preferred_down_payment:,.2f} {params.currency} "
-                f"is below the required minimum of {params.min_down_payment:,.2f} {params.currency}."
-            )
+            raise InfeasibleError(_(
+                "error.infeasible.preferred_below_min",
+                preferred=f"{params.preferred_down_payment:,.2f}",
+                currency=params.currency,
+                min_dp=f"{params.min_down_payment:,.2f}",
+            ))
         if params.preferred_down_payment > params.available_savings:
-            raise InfeasibleError(
-                f"Preferred down payment {params.preferred_down_payment:,.2f} {params.currency} "
-                f"exceeds available savings of {params.available_savings:,.2f} {params.currency}."
-            )
+            raise InfeasibleError(_(
+                "error.infeasible.preferred_above_savings",
+                preferred=f"{params.preferred_down_payment:,.2f}",
+                currency=params.currency,
+                savings=f"{params.available_savings:,.2f}",
+            ))
 
     # Minimum possible monthly payment = smallest principal at longest duration.
     # Smallest principal = total_acquisition_cost - all available savings.
@@ -266,12 +272,13 @@ def check_feasibility(params: ResolvedParams) -> None:
     min_payment = best_emi + min_insurance
 
     if min_payment > effective_cap:
-        raise InfeasibleError(
-            f"Monthly payment for the minimum loan "
-            f"({min_principal:,.2f} {params.currency} over {params.max_loan_duration_months} months) "
-            f"would be {min_payment:,.2f} {params.currency}, "
-            f"exceeding the effective monthly cap of "
-            f"{effective_cap:,.2f} {params.currency} "
-            f"(DTI limit: {params.max_debt_ratio:.0%} of income, "
-            f"absolute cap: {params.max_monthly_payment:,.2f} {params.currency})."
-        )
+        raise InfeasibleError(_(
+            "error.infeasible.payment_too_high",
+            principal=f"{min_principal:,.2f}",
+            currency=params.currency,
+            months=params.max_loan_duration_months,
+            payment=f"{min_payment:,.2f}",
+            cap=f"{effective_cap:,.2f}",
+            dti_pct=f"{params.max_debt_ratio:.0%}",
+            abs_cap=f"{params.max_monthly_payment:,.2f}",
+        ))

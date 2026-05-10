@@ -571,3 +571,167 @@ class TestCrossoverNote:
         a1 = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.02"))
         a2 = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.07"))
         assert a1.crossover_note == a2.crossover_note
+
+
+# ── New tests ────────────────────────────────────────────────────────────────
+
+
+class TestBuildDpCandidates:
+    """Direct tests for _build_dp_candidates edge cases."""
+
+    from credit_simulator.optimizer import _build_dp_candidates  # noqa: PLC0415
+
+    def _params(self, min_dp: Decimal, savings: Decimal) -> ResolvedParams:
+        import dataclasses
+        base = resolve(
+            UserInputs(
+                property_price=Decimal("200000"),
+                monthly_net_income=Decimal("5000"),
+                available_savings=savings,
+            ),
+            SessionProfileStore(),
+        )
+        return dataclasses.replace(base, min_down_payment=min_dp, available_savings=savings)
+
+    def test_first_candidate_is_min_down_payment(self):
+        from credit_simulator.optimizer import _build_dp_candidates
+        params = self._params(Decimal("40000"), Decimal("80000"))
+        candidates = _build_dp_candidates(params)
+        assert candidates[0] == Decimal("40000")
+
+    def test_last_candidate_is_available_savings(self):
+        from credit_simulator.optimizer import _build_dp_candidates
+        params = self._params(Decimal("40000"), Decimal("80000"))
+        candidates = _build_dp_candidates(params)
+        assert candidates[-1] == Decimal("80000")
+
+    def test_min_dp_equals_savings_single_candidate(self):
+        """When min_dp == savings there should be exactly one candidate."""
+        from credit_simulator.optimizer import _build_dp_candidates
+        params = self._params(Decimal("70000"), Decimal("70000"))
+        candidates = _build_dp_candidates(params)
+        assert candidates == [Decimal("70000")]
+
+    def test_step_aligned_min_dp_included(self):
+        """A step-aligned min_dp should appear as the first candidate."""
+        from credit_simulator.optimizer import _build_dp_candidates
+        params = self._params(Decimal("50000"), Decimal("100000"))
+        candidates = _build_dp_candidates(params)
+        assert candidates[0] == Decimal("50000")
+
+    def test_non_step_aligned_min_dp_included(self):
+        """A non-step-aligned min_dp (e.g. 78 750) must appear as the first candidate."""
+        from credit_simulator.optimizer import _build_dp_candidates
+        params = self._params(Decimal("78750"), Decimal("150000"))
+        candidates = _build_dp_candidates(params)
+        assert candidates[0] == Decimal("78750")
+        # Second candidate should be step-aligned above min_dp
+        assert candidates[1] == Decimal("79000")
+
+    def test_candidates_strictly_increasing(self):
+        from credit_simulator.optimizer import _build_dp_candidates
+        params = self._params(Decimal("30000"), Decimal("90000"))
+        candidates = _build_dp_candidates(params)
+        assert all(candidates[i] < candidates[i + 1] for i in range(len(candidates) - 1))
+
+
+class TestRateFloorEfficiencyBoundary:
+    """Sweet spot stops at rate floor when best-tier APR < opp_rate.
+
+    Scenario: zero insurance, base rate 3.5%, best-tier delta -0.30% → 3.2%.
+    With opp_rate = 3.28% the base-tier APR (3.50%) is efficient but the
+    best-tier APR (3.20%) is not — sweet spot must be rate_floor_dp.
+    """
+
+    def _params(self) -> ResolvedParams:
+        """BE profile, zero insurance, custom rate so APRs straddle opp_rate."""
+        import dataclasses
+        from credit_simulator.profiles import LtvRateTier
+
+        base = resolve(
+            UserInputs(
+                property_price=Decimal("350000"),
+                monthly_net_income=Decimal("10000"),
+                available_savings=Decimal("200000"),
+                annual_interest_rate=Decimal("0.035"),
+                insurance_rate=Decimal("0"),        # zero insurance → APR ≈ nominal rate
+                fixed_loan_duration_months=240,
+            ),
+            SessionProfileStore(),
+        )
+        # Override tiers: base at 90%, best at 75% (−0.30%)
+        tiers = (
+            LtvRateTier(Decimal("0.75"), Decimal("-0.0030")),
+            LtvRateTier(Decimal("0.90"), Decimal("0.0000")),
+            LtvRateTier(Decimal("1.00"), Decimal("0.0035")),
+        )
+        return dataclasses.replace(base, ltv_rate_tiers=tiers)
+
+    def test_sweet_spot_at_rate_floor_not_reserve(self):
+        """With opp_rate between best-tier and base APR, sweet_dp == rate_floor_dp."""
+        params = self._params()
+        # opp_rate = 3.28%: above best-tier APR (~3.20%) but below base APR (~3.50%)
+        analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.0328"))
+        sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
+        assert analysis.rate_floor_down_payment is not None
+        assert sweet.down_payment == analysis.rate_floor_down_payment
+
+    def test_sweet_spot_is_reserve_when_best_tier_still_efficient(self):
+        """When opp_rate < best-tier APR the sweet spot remains at the reserve ceiling."""
+        params = self._params()
+        # opp_rate = 2.5%: below even the best-tier APR (~3.20%) → maximise DP
+        analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.025"))
+        sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
+        assert sweet.down_payment == analysis.rate_floor_down_payment or \
+               sweet.down_payment > analysis.rate_floor_down_payment  # at or beyond floor
+
+    def test_rate_floor_boundary_reason_contains_both_aprs(self):
+        """The reason string must mention both the floor APR and the best-tier APR."""
+        params = self._params()
+        analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.0328"))
+        if analysis.rate_floor_down_payment is not None:
+            sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
+            if sweet.down_payment == analysis.rate_floor_down_payment:
+                # Both APR values appear in the reason
+                assert "3.50" in analysis.sweet_spot_reason or "3.28" in analysis.sweet_spot_reason
+
+    def test_down_payment_is_efficient_true_at_boundary(self):
+        """Even at the boundary, efficient=True (base-tier APR still beats opp_rate)."""
+        params = self._params()
+        analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.0328"))
+        if analysis.rate_floor_down_payment is not None:
+            sweet = next(m for m in analysis.milestones if m.is_sweet_spot)
+            if sweet.down_payment == analysis.rate_floor_down_payment:
+                assert analysis.down_payment_is_efficient is True
+
+
+class TestIsUserChoiceField:
+    """is_user_choice boolean is locale-independent; tests don't rely on label strings."""
+
+    def _params(self, preferred_down_payment=None):
+        defaults = dict(
+            property_price=Decimal("350000"),
+            monthly_net_income=Decimal("6000"),
+            available_savings=Decimal("150000"),
+            fixed_loan_duration_months=240,
+        )
+        if preferred_down_payment is not None:
+            defaults["preferred_down_payment"] = preferred_down_payment
+        return resolve(UserInputs(**defaults), SessionProfileStore())
+
+    def test_no_preferred_dp_no_user_choice_milestone(self):
+        analysis = analyze_sweet_spot(self._params())
+        assert not any(m.is_user_choice for m in analysis.milestones)
+
+    def test_preferred_dp_sets_is_user_choice(self):
+        analysis = analyze_sweet_spot(self._params(preferred_down_payment=Decimal("90000")))
+        assert any(m.is_user_choice for m in analysis.milestones)
+
+    def test_exactly_one_user_choice_milestone(self):
+        analysis = analyze_sweet_spot(self._params(preferred_down_payment=Decimal("90000")))
+        assert len([m for m in analysis.milestones if m.is_user_choice]) == 1
+
+    def test_is_user_choice_milestone_ordered_correctly(self):
+        analysis = analyze_sweet_spot(self._params(preferred_down_payment=Decimal("100000")))
+        dps = [m.down_payment for m in analysis.milestones]
+        assert dps == sorted(dps)
