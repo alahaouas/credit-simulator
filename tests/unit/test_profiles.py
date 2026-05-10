@@ -194,16 +194,36 @@ class TestSessionProfileStore:
         with pytest.raises(ValueError) as exc_info:
             store.set_annual_rate("BE", "best", Decimal("0.99"), manual=True)
         msg = str(exc_info.value)
-        assert "%" in msg
-        assert "BE" in msg
+        # BE average is 3.27%
+        expected = "'best' annual rate (99.0000%) cannot exceed 'average' rate (3.2700%) for BE."
+        assert msg == expected
+
+    def test_annual_rate_average_validation_error_message(self):
+        store = self._store()
+        with pytest.raises(ValueError) as exc_info:
+            store.set_annual_rate("BE", "average", Decimal("0.001"), manual=True)
+        msg = str(exc_info.value)
+        # BE best is 3.05%
+        expected = "'average' annual rate (0.1000%) cannot be lower than 'best' rate (3.0500%) for BE."
+        assert msg == expected
 
     def test_insurance_validation_error_message_is_valid_string(self):
         store = self._store()
         with pytest.raises(ValueError) as exc_info:
             store.set_insurance_rate("BE", "best", Decimal("0.99"))
         msg = str(exc_info.value)
-        assert "%" in msg
-        assert "BE" in msg
+        # BE insurance average is 0.20%
+        expected = "'best' insurance rate (99.0000%) cannot exceed 'average' rate (0.2000%) for BE."
+        assert msg == expected
+
+    def test_insurance_rate_average_validation_error_message(self):
+        store = self._store()
+        with pytest.raises(ValueError) as exc_info:
+            store.set_insurance_rate("BE", "average", Decimal("0.0001"))
+        msg = str(exc_info.value)
+        # BE insurance best is 0.15%
+        expected = "'average' insurance rate (0.0100%) cannot be lower than 'best' rate (0.1500%) for BE."
+        assert msg == expected
 
 
 class TestLtvTierInvariants:
