@@ -126,7 +126,7 @@ All `Decimal` fields stored as JSON strings to preserve precision.
 
 ### Layer 2 — Supabase auth + simulation history ✅
 - [ ] Supabase project setup (dashboard) — manual step
-- [x] `supabase/migrations/001_init.sql` — schema + RLS
+- [x] `migrations/001_init.sql` — schema + RLS
 - [x] `api/db.py` — `supabase-py` client singleton
 - [x] `api/auth.py` — JWT validation FastAPI dependency
 - [x] Update `POST /api/simulate` — persist when authenticated

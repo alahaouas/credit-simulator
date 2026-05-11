@@ -87,7 +87,7 @@ Never commit:
   - `pytest-mock` — mock fixtures for HTTP and external calls
   - `ruff` — linter (`ruff check src/ tests/`)
 - **Run locally**: `python -m credit_simulator` (or `credit-simulator` once installed)
-- **Run tests**: `pytest` (coverage report printed automatically; gate: ≥ 90% on core modules)
+- **Run tests**: `python -m pytest` (coverage report printed automatically; gate: ≥ 90% on core modules)
 - **Lint**: `ruff check src/ tests/`
 - **Arithmetic**: Python built-in `decimal.Decimal` — **never `float` for monetary values**
 
