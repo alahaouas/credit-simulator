@@ -1,0 +1,156 @@
+# Web Interface — Technical Plan & To-Do
+
+## Stack
+
+| Layer | Technology | Rationale |
+|---|---|---|
+| API backend | FastAPI + uvicorn | Pure Python, reuses existing modules directly, OpenAPI auto-generated |
+| Frontend | Next.js 14 (App Router) + TypeScript | Supabase JS SDK first-class support, SSR, Vercel deployment |
+| Database / Auth | Supabase (PostgreSQL + Auth) | Row-level security; JS client on frontend; Python client on backend |
+| Styling | Tailwind CSS | Minimal setup, works well in Next.js |
+| Charts | Recharts | React-native, handles amortization curve well |
+| Deployment | Vercel (frontend) + Railway or Render (FastAPI) | Both have free tiers |
+
+## Architecture
+
+```
+Browser (Next.js)
+    │  Supabase JS SDK ← handles login (magic link / OAuth)
+    │  fetch() → JWT in Authorization header
+    ▼
+FastAPI  api/
+    │  validates JWT via Supabase Python client
+    │  calls existing Python modules (resolver, optimizer, calculator)
+    │  persists results via supabase-py
+    ▼
+Supabase (PostgreSQL)
+    tables: simulations, amortization_rows (or JSONB blob)
+    RLS: users see only their own rows
+```
+
+The existing Python domain code (`calculator.py`, `resolver.py`, `optimizer.py`, `profiles.py`)
+is **not rewritten** — FastAPI imports them directly.
+
+## Repository Structure (additions only)
+
+```
+credit-simulator/
+├── api/                          # FastAPI service
+│   ├── __init__.py
+│   ├── main.py                   # app, CORS, router includes
+│   ├── auth.py                   # JWT validation dependency  (Layer 2)
+│   ├── db.py                     # supabase-py client         (Layer 2)
+│   ├── serializers.py            # Decimal ↔ JSON (str) helpers
+│   ├── models.py                 # Pydantic I/O models
+│   └── routes/
+│       ├── __init__.py
+│       ├── simulate.py           # POST /api/simulate
+│       ├── history.py            # GET/DELETE /api/simulations (Layer 2)
+│       └── profiles.py          # GET /api/profiles/{country} (future)
+├── web/                          # Next.js app                 (Layer 4+)
+│   ├── src/app/
+│   │   ├── page.tsx
+│   │   ├── results/page.tsx
+│   │   ├── history/page.tsx
+│   │   └── auth/page.tsx
+│   ├── src/lib/
+│   │   ├── supabase.ts
+│   │   └── api.ts
+│   └── src/components/
+│       ├── SimulatorForm.tsx
+│       ├── AmortizationTable.tsx
+│       └── LoanChart.tsx
+├── supabase/
+│   └── migrations/
+│       └── 001_init.sql          # schema + RLS policies       (Layer 2)
+└── docs/
+    ├── web-interface-plan.md     # this file
+    └── api.md                    # API reference
+```
+
+## Supabase Schema (Layer 2)
+
+```sql
+create table simulations (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid references auth.users(id) on delete cascade,
+  created_at    timestamptz default now(),
+  inputs        jsonb not null,
+  result        jsonb not null,
+  schedule      jsonb not null
+);
+
+alter table simulations enable row level security;
+create policy "users own their simulations"
+  on simulations for all
+  using (auth.uid() = user_id);
+```
+
+All `Decimal` fields stored as JSON strings to preserve precision.
+
+## API Endpoints
+
+| Method | Path | Layer | Description |
+|---|---|---|---|
+| `POST` | `/api/simulate` | 1 | Run simulation; saves to DB if auth header present (Layer 2) |
+| `GET` | `/api/simulations` | 2 | List authenticated user's saved simulations |
+| `GET` | `/api/simulations/{id}` | 2 | Fetch one simulation with full schedule |
+| `DELETE` | `/api/simulations/{id}` | 2 | Delete (RLS enforces ownership) |
+| `GET` | `/api/profiles/{country}` | future | Return country profile rates |
+
+## Key Implementation Notes
+
+1. **Decimal precision**: Custom serializer converts `Decimal → str` throughout. Inbound
+   fields are typed as `str` in Pydantic and validated with `Decimal(v)`.
+2. **JWT validation** (Layer 2): `supabase-py` `auth.get_user(jwt)` as a FastAPI dependency.
+3. **CORS**: FastAPI must allow the Next.js origin (Vercel domain + `localhost:3000`).
+4. **Locale**: Accept `Accept-Language` header; pass locale to `i18n.set_locale()`.
+5. **Anonymous use**: `POST /api/simulate` returns a result without persisting when
+   no auth header is present.
+
+---
+
+## To-Do Checklist
+
+### Layer 1 — FastAPI + `POST /simulate` (no auth) ✅
+- [x] `api/__init__.py`
+- [x] `api/main.py` — app, CORS middleware, router
+- [x] `api/serializers.py` — `to_json_safe()` (Decimal → str via `dataclasses.asdict`)
+- [x] `api/models.py` — `SimulateRequest` Pydantic model with validators
+- [x] `api/routes/__init__.py`
+- [x] `api/routes/simulate.py` — `POST /api/simulate` handler
+- [x] `tests/api/__init__.py`
+- [x] `tests/api/test_simulate.py` — 16 unit + integration tests
+- [x] `docs/api.md` — API reference
+- [x] `pyproject.toml` — add FastAPI, httpx; add `pythonpath`; update coverage
+
+### Layer 2 — Supabase auth + simulation history ✅
+- [ ] Supabase project setup (dashboard) — manual step
+- [x] `supabase/migrations/001_init.sql` — schema + RLS
+- [x] `api/db.py` — `supabase-py` client singleton
+- [x] `api/auth.py` — JWT validation FastAPI dependency
+- [x] Update `POST /api/simulate` — persist when authenticated
+- [x] `api/routes/history.py` — `GET /api/simulations`, `GET /api/simulations/{id}`, `DELETE /api/simulations/{id}`
+- [x] `tests/api/conftest.py` — shared mock DB fixture
+- [x] `tests/api/test_history.py` — 10 history endpoint tests
+- [x] `TestSimulateWithAuth` class in `test_simulate.py` — 5 auth tests
+- [x] `pyproject.toml` — add `supabase>=2.4` to `[web]` extra
+- [x] `docs/api.md` — auth + history endpoint documentation
+
+### Layer 3 — Next.js scaffold + Supabase auth
+- [ ] `web/` — `npx create-next-app` with TypeScript + Tailwind
+- [ ] `web/src/lib/supabase.ts` — `createBrowserClient()`
+- [ ] `web/src/app/auth/page.tsx` — magic-link login
+- [ ] Auth middleware (Next.js middleware.ts)
+
+### Layer 4 — Simulator UI
+- [ ] `web/src/components/SimulatorForm.tsx` — form → `POST /api/simulate`
+- [ ] `web/src/app/results/page.tsx` — display `OptimizedResult` + sweet-spot table
+- [ ] `web/src/components/AmortizationTable.tsx`
+- [ ] `web/src/components/LoanChart.tsx` — balance-over-time chart (Recharts)
+
+### Layer 5 — History & deployment
+- [ ] `web/src/app/history/page.tsx` — saved simulations list
+- [ ] Vercel deployment config (`vercel.json`)
+- [ ] Railway / Render deployment config for FastAPI
+- [ ] Environment variables documentation
