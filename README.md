@@ -257,7 +257,7 @@ credit-simulator/
 ## Running tests
 
 ```bash
-pytest
+python -m pytest
 ```
 
 `pytest` is pre-configured (via `pyproject.toml`) to run with branch coverage
