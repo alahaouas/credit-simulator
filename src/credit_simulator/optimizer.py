@@ -1,12 +1,12 @@
 """Grid-search optimizer (§4.3).
 
-Searches over down_payment candidates and selects the best feasible plan
+Searches over down_payment and duration candidates and selects the best feasible plan
 according to the declared optimization preference.
 
 Search space:
 - down_payment: min_down_payment to available_savings, step 1 000 (country currency)
-- duration: fixed to params.fixed_loan_duration_months (default 20 years)
-  Duration grid-search is not yet implemented; use --duration to vary it.
+- duration: MIN_LOAN_DURATION_MONTHS to max_loan_duration_months in STEP_DURATION steps,
+  unless the user pinned a specific duration via fixed_loan_duration_months.
 """
 from __future__ import annotations
 
@@ -15,7 +15,9 @@ from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
 from .calculator import LoanPlan, compute_loan_plan
 from .config import (
+    MIN_LOAN_DURATION_MONTHS,
     STEP_DOWN_PAYMENT,
+    STEP_DURATION,
     SWEET_SPOT_LTV_TARGET,
     SWEET_SPOT_RESERVE_MONTHS,
     VALID_PREFERENCES,
@@ -50,11 +52,7 @@ def _score(
     down_payment: Decimal,
     duration: int,
 ) -> tuple:
-    """Return a sort key (lower is better) for the given plan.
-
-    Note: 'minimize_duration' degrades to minimize_total_cost when the
-    duration grid-search is disabled (single fixed duration).
-    """
+    """Return a sort key (lower is better) for the given plan."""
     tc = plan.total_cost_of_credit
     mp = plan.monthly_installment
     dp = down_payment
@@ -94,6 +92,14 @@ def _build_dp_candidates(params: ResolvedParams) -> list:
     return candidates
 
 
+def _build_duration_candidates(params: ResolvedParams) -> list[int]:
+    """Return candidate durations from MIN_LOAN_DURATION_MONTHS to max, in STEP_DURATION steps."""
+    candidates = list(range(MIN_LOAN_DURATION_MONTHS, params.max_loan_duration_months + 1, STEP_DURATION))
+    if not candidates or candidates[-1] != params.max_loan_duration_months:
+        candidates.append(params.max_loan_duration_months)
+    return candidates
+
+
 def optimize(params: ResolvedParams) -> OptimizedResult:
     """Run the grid search and return the best feasible plan.
 
@@ -123,6 +129,11 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
     else:
         candidates_dp = _build_dp_candidates(params)
 
+    if params.sources.get("fixed_loan_duration_months") == "user":
+        duration_candidates = [params.fixed_loan_duration_months]
+    else:
+        duration_candidates = _build_duration_candidates(params)
+
     for down_payment in candidates_dp:
         principal = params.total_acquisition_cost - down_payment
         if principal <= ZERO:
@@ -131,7 +142,6 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         ltv = principal / params.property_price
         effective_rate = params.rate_for_ltv(ltv)
 
-        duration_candidates = [params.fixed_loan_duration_months]
         for duration in duration_candidates:
             plan = compute_loan_plan(
                 principal,
