@@ -99,6 +99,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
 
         # === Status messages ===
+        "status.resolving": "  [cyan]Resolving simulation parameters...[/cyan]",
+        "status.generating_schedule": "  [cyan]Generating amortization schedule...[/cyan]",
         "status.optimizing": "  [cyan]Optimizing loan plan...[/cyan]",
         "status.sweet_spot": "  [cyan]Analyzing sweet spot...[/cyan]",
         "status.fetching_rate": "  Fetching latest average annual rate for {country}…",
@@ -384,6 +386,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
 
         # === Status messages ===
+        "status.resolving": "  [cyan]Résolution des paramètres de simulation...[/cyan]",
+        "status.generating_schedule": "  [cyan]Génération du tableau d'amortissement...[/cyan]",
         "status.optimizing": "  [cyan]Optimisation du plan de prêt...[/cyan]",
         "status.sweet_spot": "  [cyan]Analyse de l'apport optimal...[/cyan]",
         "status.fetching_rate": "  Récupération du taux moyen pour {country}…",
