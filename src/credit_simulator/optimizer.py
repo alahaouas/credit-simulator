@@ -10,7 +10,7 @@ Search space:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field as _field
+from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
 from .calculator import LoanPlan, compute_loan_plan
