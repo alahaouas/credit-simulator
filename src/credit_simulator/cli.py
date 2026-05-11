@@ -120,7 +120,7 @@ def display_result(result: OptimizedResult) -> None:
 
 
 def display_amortization(result: OptimizedResult) -> None:
-    with console.status("  [cyan]Generating amortization schedule…[/cyan]"):
+    with console.status(_("status.generating_schedule")):
         schedule = build_amortization_schedule(
             result.plan.loan_principal,
             result.plan.annual_interest_rate,
@@ -447,7 +447,8 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> tuple | No
     analysis may be None if the sweet-spot computation itself fails.
     """
     try:
-        params = resolve(inputs, store)
+        with console.status(_("status.resolving")):
+            params = resolve(inputs, store)
     except ValueError as exc:
         err_console.print(_("error.param_error", exc=exc))
         return None

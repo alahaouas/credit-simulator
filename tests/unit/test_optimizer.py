@@ -646,6 +646,7 @@ class TestRateFloorEfficiencyBoundary:
     def _params(self) -> ResolvedParams:
         """BE profile, zero insurance, custom rate so APRs straddle opp_rate."""
         import dataclasses
+
         from credit_simulator.profiles import LtvRateTier
 
         base = resolve(
