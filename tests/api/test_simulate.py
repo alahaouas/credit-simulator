@@ -110,9 +110,9 @@ class TestScheduleOption:
             assert isinstance(row[field], str), f"schedule row {field!r} is not a string"
 
     def test_schedule_length_matches_duration(self):
-        payload = {**BASE, "fixed_loan_duration_months": 60, "include_schedule": True}
+        payload = {**BASE, "fixed_loan_duration_months": 276, "include_schedule": True}
         data = client.post("/api/simulate", json=payload).json()
-        assert len(data["schedule"]) == 60
+        assert len(data["schedule"]) == 276
 
 
 # ---------------------------------------------------------------------------
@@ -179,9 +179,9 @@ class TestOptionalParameters:
 
     def test_fixed_duration_is_honoured(self):
         result = client.post(
-            "/api/simulate", json={**BASE, "fixed_loan_duration_months": 180}
+            "/api/simulate", json={**BASE, "fixed_loan_duration_months": 276}
         ).json()["result"]
-        assert result["loan_duration_months"] == 180
+        assert result["loan_duration_months"] == 276
 
     def test_country_gb_is_supported(self):
         resp = client.post("/api/simulate", json={**BASE, "country": "GB"})
@@ -197,9 +197,9 @@ class TestOptionalParameters:
 
     def test_preferred_down_payment_is_used(self):
         result = client.post(
-            "/api/simulate", json={**BASE, "preferred_down_payment": "60000"}
+            "/api/simulate", json={**BASE, "preferred_down_payment": "70000"}
         ).json()["result"]
-        assert Decimal(result["down_payment"]) == Decimal("60000")
+        assert Decimal(result["down_payment"]) == Decimal("70000")
 
 
 # ---------------------------------------------------------------------------
