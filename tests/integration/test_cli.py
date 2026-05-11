@@ -111,6 +111,7 @@ class TestCLIRunner:
                 "--preference", "minimize_total_cost",
             ],
             input="exit\n",
+            env={"CREDIT_SIMULATOR_LOCALE": "en"},
         )
         assert result.exit_code == 0
         assert "Loan" in result.output or "loan" in result.output.lower()
@@ -141,6 +142,7 @@ class TestCLIRunner:
                 "--country", "BE",
             ],
             input="exit\n",
+            env={"CREDIT_SIMULATOR_LOCALE": "en"},
         )
         assert result.exit_code == 0
         assert "Ineligible" in result.output or "savings" in result.output.lower()
@@ -159,6 +161,7 @@ class TestCLIRunner:
                 "--preference", "balanced",
             ],
             input="exit\n",
+            env={"CREDIT_SIMULATOR_LOCALE": "en"},
         )
         assert result.exit_code == 0
         assert "Sweet" in result.output
@@ -175,6 +178,7 @@ class TestCLIRunner:
                 "--country", "BE",
             ],
             input="sweetspot\nexit\n",
+            env={"CREDIT_SIMULATOR_LOCALE": "en"},
         )
         assert result.exit_code == 0
         # "Sweet" should appear at least twice: automatic + re-display
