@@ -10,6 +10,7 @@ create table if not exists simulations (
 
 alter table simulations enable row level security;
 
+drop policy if exists "users own their simulations" on simulations;
 create policy "users own their simulations"
   on simulations for all
   using  (auth.uid() = user_id)
