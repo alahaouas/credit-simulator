@@ -100,6 +100,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         # === Status messages ===
         "status.resolving": "  [cyan]Resolving simulation parameters...[/cyan]",
+        "status.checking_feasibility": "  [cyan]Checking feasibility...[/cyan]",
         "status.generating_schedule": "  [cyan]Generating amortization schedule...[/cyan]",
         "status.optimizing": "  [cyan]Optimizing loan plan...[/cyan]",
         "status.sweet_spot": "  [cyan]Analyzing sweet spot...[/cyan]",
@@ -387,6 +388,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         # === Status messages ===
         "status.resolving": "  [cyan]Résolution des paramètres de simulation...[/cyan]",
+        "status.checking_feasibility": "  [cyan]Vérification de la faisabilité...[/cyan]",
         "status.generating_schedule": "  [cyan]Génération du tableau d'amortissement...[/cyan]",
         "status.optimizing": "  [cyan]Optimisation du plan de prêt...[/cyan]",
         "status.sweet_spot": "  [cyan]Analyse de l'apport optimal...[/cyan]",

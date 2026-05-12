@@ -454,7 +454,8 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> tuple | No
         return None
 
     try:
-        check_feasibility(params)
+        with console.status(_("status.checking_feasibility")):
+            check_feasibility(params)
     except InfeasibleError as exc:
         console.print(Panel(_("panel.ineligible", exc=exc), expand=False))
         return None

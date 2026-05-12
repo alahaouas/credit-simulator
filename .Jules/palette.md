@@ -9,3 +9,7 @@
 ## 2024-05-15 - [Manage expectations for instantaneous tasks]
 **Learning:** When making UX improvements to the CLI, wrapping non-instantaneous compute tasks (even fast ones taking under a second) in a visual indicator like `rich.console.status` manages user expectations and prevents the application from feeling frozen. Hardcoded UI strings must be avoided to ensure proper localization.
 **Action:** Added `status.resolving` and `status.generating_schedule` localized strings to wrap the `resolve` and `build_amortization_schedule` methods.
+
+## 2024-05-20 - Ensure consistent loading sequences for multi-step synchronous processes
+**Learning:** In terminal applications, having gaps in visual feedback between sequential, computationally intensive steps (e.g., `resolve` -> `check_feasibility` -> `optimize`) can make the UI momentarily freeze, breaking the illusion of continuous progress and responsiveness.
+**Action:** Always maintain a continuous sequence of loading spinners (`rich.console.status`) across contiguous synchronous operations, even if some steps are relatively fast, to provide smooth, uninterrupted feedback.
