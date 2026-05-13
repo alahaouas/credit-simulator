@@ -446,24 +446,25 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> tuple | No
     Returns (params, result, analysis) on success, or None on any failure.
     analysis may be None if the sweet-spot computation itself fails.
     """
+    params = None
     try:
-        with console.status(_("status.resolving")):
+        with console.status(_("status.resolving")) as status:
             params = resolve(inputs, store)
-    except ValueError as exc:
-        err_console.print(_("error.param_error", exc=exc))
-        return None
 
-    try:
-        check_feasibility(params)
-    except InfeasibleError as exc:
-        console.print(Panel(_("panel.ineligible", exc=exc), expand=False))
-        return None
+            check_feasibility(params)
 
-    try:
-        with console.status(_("status.optimizing")):
+            status.update(_("status.optimizing"))
             result = optimize(params)
     except ValueError as exc:
-        console.print(Panel(_("panel.no_plan", exc=exc), expand=False))
+        if params is None:
+            # It's the param error from resolve
+            err_console.print(_("error.param_error", exc=exc))
+        else:
+            # It's the "no plan" error from optimize
+            console.print(Panel(_("panel.no_plan", exc=exc), expand=False))
+        return None
+    except InfeasibleError as exc:
+        console.print(Panel(_("panel.ineligible", exc=exc), expand=False))
         return None
 
     display_result(result)

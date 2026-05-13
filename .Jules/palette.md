@@ -9,3 +9,7 @@
 ## 2024-05-15 - [Manage expectations for instantaneous tasks]
 **Learning:** When making UX improvements to the CLI, wrapping non-instantaneous compute tasks (even fast ones taking under a second) in a visual indicator like `rich.console.status` manages user expectations and prevents the application from feeling frozen. Hardcoded UI strings must be avoided to ensure proper localization.
 **Action:** Added `status.resolving` and `status.generating_schedule` localized strings to wrap the `resolve` and `build_amortization_schedule` methods.
+
+## 2024-05-13 - Group contiguous compute tasks in single spinners
+**Learning:** Having multiple successive `with console.status(...)` blocks with synchronous compute logic in between them causes the CLI spinner to blink, disappear, and reappear, which creates UI jitter. Fast operations (like validation) between longer tasks (like optimize) should be part of the same visual loading lifecycle.
+**Action:** Group contiguous synchronous operations under a single `with console.status(...) as status:` block and use `status.update(...)` to change the message rather than creating separate disjoint spinners. Make sure that try/catch exception handlers that print to error consoles are placed *outside* the `with console.status()` block so that printing to stderr does not race with the spinner on stdout and erase error messages.
