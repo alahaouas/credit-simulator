@@ -446,35 +446,40 @@ def run_simulation(inputs: UserInputs, store: SessionProfileStore) -> tuple | No
     Returns (params, result, analysis) on success, or None on any failure.
     analysis may be None if the sweet-spot computation itself fails.
     """
-    try:
-        with console.status(_("status.resolving")):
-            params = resolve(inputs, store)
-    except ValueError as exc:
-        err_console.print(_("error.param_error", exc=exc))
-        return None
+    params = None
+    result = None
+    analysis: SweetSpotAnalysis | None = None
+    sweet_spot_exc: Exception | None = None
 
     try:
-        check_feasibility(params)
+        with console.status(_("status.resolving")) as status:
+            params = resolve(inputs, store)
+            check_feasibility(params)
+
+            status.update(_("status.optimizing"))
+            result = optimize(params)
+
+            status.update(_("status.sweet_spot"))
+            try:
+                analysis = analyze_sweet_spot(params)
+            except Exception as exc:
+                sweet_spot_exc = exc
+    except ValueError as exc:
+        if params is None:
+            err_console.print(_("error.param_error", exc=exc))
+        else:
+            console.print(Panel(_("panel.no_plan", exc=exc), expand=False))
+        return None
     except InfeasibleError as exc:
         console.print(Panel(_("panel.ineligible", exc=exc), expand=False))
         return None
 
-    try:
-        with console.status(_("status.optimizing")):
-            result = optimize(params)
-    except ValueError as exc:
-        console.print(Panel(_("panel.no_plan", exc=exc), expand=False))
-        return None
-
     display_result(result)
 
-    analysis: SweetSpotAnalysis | None = None
-    try:
-        with console.status(_("status.sweet_spot")):
-            analysis = analyze_sweet_spot(params)
+    if sweet_spot_exc:
+        err_console.print(_("error.sweet_spot_failed", exc=sweet_spot_exc))
+    elif analysis is not None:
         display_sweet_spot(analysis, params.currency)
-    except Exception as exc:
-        err_console.print(_("error.sweet_spot_failed", exc=exc))
 
     return params, result, analysis
 
