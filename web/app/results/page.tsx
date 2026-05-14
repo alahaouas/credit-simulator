@@ -22,6 +22,24 @@ function fmt(val: string, currency = '') {
   return `${currency}${parseFloat(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
+function exportScheduleToCsv(rows: SimulateResponse['schedule'], currency: string) {
+  if (!rows) return
+  const headers = ['Period', 'Opening Balance', 'Monthly Installment', 'Principal', 'Interest', 'Insurance', 'Closing Balance']
+  const lines = [
+    headers.join(','),
+    ...rows.map(r =>
+      [r.period, r.opening_balance, r.monthly_installment, r.principal_component, r.interest_component, r.insurance_component, r.closing_balance].join(',')
+    ),
+  ]
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `amortization_${currency}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border p-4 flex flex-col gap-1">
@@ -132,6 +150,15 @@ export default function ResultsPage() {
 
       {schedule && schedule.length > 0 && (
         <section>
+          <div className="flex items-center justify-between mb-2">
+            <span />
+            <button
+              onClick={() => exportScheduleToCsv(schedule, c)}
+              className="text-sm border rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors"
+            >
+              {t('results.export_csv')}
+            </button>
+          </div>
           <LoanChart rows={schedule} />
           <AmortizationTable rows={schedule} />
         </section>

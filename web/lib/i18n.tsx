@@ -102,6 +102,7 @@ const TRANSLATIONS = {
     'results.total_cost': 'Total cost of credit',
     'results.sweet_spot_title': 'Down-payment sweet-spot',
     'results.no_results': 'No results yet.',
+    'results.export_csv': 'Export schedule (CSV)',
     // Sweet-spot table headers
     'sweet.down_payment': 'Down payment',
     'sweet.label': 'Label',
@@ -225,6 +226,7 @@ const TRANSLATIONS = {
     'results.total_cost': 'Coût total du crédit',
     'results.sweet_spot_title': 'Apport optimal',
     'results.no_results': 'Aucun résultat pour le moment.',
+    'results.export_csv': 'Exporter le tableau (CSV)',
     // Sweet-spot table headers
     'sweet.down_payment': 'Apport',
     'sweet.label': 'Libellé',

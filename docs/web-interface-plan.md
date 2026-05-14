@@ -2,7 +2,13 @@
 
 ## Current Status (2026-05-14)
 
-**Layers 1–5 complete.** All layers shipped.
+**Layers 1–5 complete. Layer 6 Theme E complete (E1–E5).** All shipped layers as of 2026-05-14.
+
+**Also completed (2026-05-14, outside web plan):**
+- CLI `rates` subcommand (runtime BE rate refresh) — see `docs/runtime-rates.md`
+- GitHub Actions CI workflow + Dependabot config
+- BE mortgage rates refreshed to May 2026
+- PostCSS CVE GHSA-qx2v patched
 
 ### Environment notes
 - Single environment: local dev talks directly to the production Supabase project (no staging).
@@ -241,7 +247,7 @@ Features are grouped by theme. Each can be picked independently or bundled into 
 
 | # | Feature | Description |
 |---|---|---|
-| D1 | **CSV export** | Download the amortization schedule as a `.csv` file; pure client-side generation from the JSONB schedule in memory. |
+| D1 | **CSV export** ✅ | Download the amortization schedule as a `.csv` file; pure client-side generation from the JSONB schedule in memory. |
 | D2 | **PDF export** | Printable one-page summary + full schedule as PDF; use the browser's `window.print()` with a `@media print` stylesheet, or a server-side option (WeasyPrint / Puppeteer). |
 | D3 | **Email the report** | Send a formatted simulation report to the user's registered email; triggered from the results page; backend uses Resend or Supabase's SMTP. |
 
