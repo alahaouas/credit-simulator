@@ -29,7 +29,7 @@ Vercel (Next.js)  ──fetch──▶  Render (FastAPI)  ──supabase-py─�
 ```bash
 # from repo root
 pip install -e ".[web]"
-uvicorn api.main:app --reload
+python -m uvicorn api.main:app --reload
 ```
 
 Requires `api/.env`:

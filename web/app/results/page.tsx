@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SimulateResponse } from '@/lib/api'
+import dynamic from 'next/dynamic'
 import AmortizationTable from '@/components/AmortizationTable'
-import LoanChart from '@/components/LoanChart'
+
+const LoanChart = dynamic(() => import('@/components/LoanChart'), { ssr: false })
 
 function fmt(val: string, currency = '') {
   return `${currency}${parseFloat(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
