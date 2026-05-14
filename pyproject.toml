@@ -64,3 +64,7 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# B008: FastAPI Depends() in function defaults is the intended pattern.
+"api/**/*.py" = ["B008"]
