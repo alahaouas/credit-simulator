@@ -39,3 +39,14 @@ Thumbs.db
 # Supabase
 supabase/.temp
 supabase/.temp.claude/
+
+# Next.js
+web/.next/
+web/node_modules/
+web/out/
+
+# Playwright
+web/playwright-report/
+web/test-results/
+web/playwright/.cache/
+web/.playwright/

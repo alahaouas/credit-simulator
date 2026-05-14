@@ -25,6 +25,14 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
+// Run only on routes that need a fresh Supabase session cookie. Public pages
+// (`/`, `/simulate`, `/results`) read auth state client-side and don't need
+// middleware overhead on every request.
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/auth/:path*',
+    '/history/:path*',
+    '/preferences/:path*',
+    '/settings/:path*',
+  ],
 }

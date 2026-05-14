@@ -1,8 +1,7 @@
 """GET/DELETE /api/simulations — simulation history for authenticated users."""
 from __future__ import annotations
 
-import contextlib
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -10,6 +9,24 @@ from ..auth import require_user
 from ..db import get_db
 
 router = APIRouter()
+
+
+def _to_decimal(value: object) -> Decimal:
+    if value is None:
+        return Decimal(0)
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return Decimal(0)
+
+
+def _to_int(value: object) -> int:
+    if value is None:
+        return 0
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
 
 
 @router.get("/simulations/stats", summary="Aggregate stats for the authenticated user's simulations")
@@ -41,14 +58,11 @@ def simulation_stats(
 
     for row in rows:
         r = row.get("result") or {}
-        with contextlib.suppress(Exception):
-            total_installment += Decimal(str(r.get("plan", {}).get("monthly_installment") or 0))
-        with contextlib.suppress(Exception):
-            total_duration += int(r.get("loan_duration_months") or 0)
-        with contextlib.suppress(Exception):
-            total_principal += Decimal(str(r.get("loan_principal") or 0))
-        with contextlib.suppress(Exception):
-            total_down_payment += Decimal(str(r.get("down_payment") or 0))
+        plan = r.get("plan") or {}
+        total_installment += _to_decimal(plan.get("monthly_installment"))
+        total_duration += _to_int(r.get("loan_duration_months"))
+        total_principal += _to_decimal(r.get("loan_principal"))
+        total_down_payment += _to_decimal(r.get("down_payment"))
 
     return {
         "total_count": count,

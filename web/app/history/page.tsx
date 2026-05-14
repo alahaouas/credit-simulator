@@ -8,7 +8,8 @@ import {
   listSimulations, deleteSimulation, getSimulation,
   getSimulationStats, ApiError, SimulateRequest, SimulationStats,
 } from '@/lib/api'
-import { useI18n } from '@/lib/i18n'
+import { DEFAULT_COUNTRY, SESSION_RESULT_KEY } from '@/lib/constants'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { LocaleToggle } from '@/components/LocaleToggle'
 
 type SimulationSummary = {
@@ -21,14 +22,15 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-function inputSummary(inputs: SimulateRequest) {
+function inputSummary(inputs: SimulateRequest, t: (k: TranslationKey) => string) {
   const price = parseFloat(inputs.property_price).toLocaleString(undefined, { maximumFractionDigits: 0 })
-  const country = inputs.country ?? 'BE'
-  const duration = inputs.loan_duration_months ? `${inputs.loan_duration_months / 12}y` : 'auto'
+  const country = inputs.country ?? DEFAULT_COUNTRY
+  const fixedMonths = inputs.fixed_loan_duration_months
+  const duration = fixedMonths ? `${fixedMonths / 12}y` : t('history.duration_auto')
   return `${country} · ${price} · ${duration}`
 }
 
-function StatsCards({ stats, t }: { stats: SimulationStats; t: (k: string) => string }) {
+function StatsCards({ stats, t }: { stats: SimulationStats; t: (k: TranslationKey) => string }) {
   if (stats.total_count === 0) return null
   const cards = [
     { label: t('stats.total'), value: String(stats.total_count) },
@@ -114,7 +116,7 @@ export default function HistoryPage() {
     if (!session) return
     try {
       const sim = await getSimulation(id, session.access_token)
-      sessionStorage.setItem('simulator_result', JSON.stringify(sim.result))
+      sessionStorage.setItem(SESSION_RESULT_KEY, JSON.stringify(sim.result))
       router.push('/results')
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('error.generic'))
@@ -157,7 +159,7 @@ export default function HistoryPage() {
           {items.map(sim => (
             <li key={sim.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-gray-50">
               <div className="min-w-0">
-                <p className="font-medium truncate">{inputSummary(sim.inputs)}</p>
+                <p className="font-medium truncate">{inputSummary(sim.inputs, t)}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{formatDate(sim.created_at)}</p>
               </div>
               <div className="flex gap-2 shrink-0">

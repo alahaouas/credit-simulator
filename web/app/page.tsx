@@ -4,17 +4,20 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useI18n } from '@/lib/i18n'
+import { API_BASE } from '@/lib/constants'
 import { LocaleToggle } from '@/components/LocaleToggle'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 export default function Home() {
   const { t } = useI18n()
   const [user, setUser] = useState<{ email?: string } | null>(null)
 
   useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null))
+    supabase.auth
+      .getUser()
+      .then(({ data }) => setUser(data.user ?? null))
+      .catch(() => setUser(null))
   }, [])
 
   return (

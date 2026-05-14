@@ -284,12 +284,27 @@ class TestSimulateWithAuth:
         from tests.api.conftest import make_db_mock
         from api.db import get_db
         from api.main import app
-        db = make_db_mock(auth_fail=True)
+        db = make_db_mock(invalid_token=True)
         app.dependency_overrides[get_db] = lambda: db
         try:
             resp = client.post("/api/simulate", json=BASE, headers={"Authorization": "Bearer bad"})
             assert resp.status_code == 200
             db.table.return_value.insert.assert_not_called()
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_auth_backend_error_returns_503(self):
+        """Per security-controls rule: auth check that can't resolve must reject."""
+        from tests.api.conftest import make_db_mock
+        from api.db import get_db
+        from api.main import app
+        db = make_db_mock(auth_fail=True)
+        app.dependency_overrides[get_db] = lambda: db
+        try:
+            resp = client.post(
+                "/api/simulate", json=BASE, headers={"Authorization": "Bearer anything"}
+            )
+            assert resp.status_code == 503
         finally:
             app.dependency_overrides.clear()
 
