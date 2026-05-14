@@ -215,6 +215,175 @@ Delete a simulation. Returns `204 No Content` on success.
 
 ---
 
+---
+
+## GET /api/simulations/stats
+
+Return aggregate statistics across all of the authenticated user's simulations.
+
+**Auth required** — `Authorization: Bearer <token>` or `X-Api-Key: csim_...`
+
+### Response
+
+```json
+{
+  "total_count": 12,
+  "avg_monthly_installment": "1423.50",
+  "avg_loan_duration_months": 240,
+  "total_principal": "2987000.00",
+  "avg_down_payment": "74250.00"
+}
+```
+
+All monetary fields are decimal strings. Fields are `null` when `total_count` is 0.
+
+---
+
+## GET /api/preferences
+
+Return the authenticated user's saved preferences (or defaults if none have been saved).
+
+**Auth required**
+
+### Response
+
+```json
+{
+  "default_country": "BE",
+  "default_optimization_preference": "balanced",
+  "currency_display": "symbol"
+}
+```
+
+| Field | Values |
+|---|---|
+| `default_country` | ISO 3166-1 alpha-2 code (`BE`, `FR`, `DE`, `ES`, `PT`, `IT`, `GB`, `US`) |
+| `default_optimization_preference` | `balanced` · `minimize_total_cost` · `minimize_monthly_payment` · `minimize_duration` · `minimize_down_payment` |
+| `currency_display` | `symbol` (€, £, $) · `code` (EUR, GBP, USD) |
+
+---
+
+## PUT /api/preferences
+
+Upsert the authenticated user's preferences. All fields are optional (defaults are applied for missing fields).
+
+**Auth required**
+
+### Request body
+
+```json
+{
+  "default_country": "FR",
+  "default_optimization_preference": "minimize_total_cost",
+  "currency_display": "code"
+}
+```
+
+Returns the saved preferences object (same shape as GET response).
+
+### Error responses
+
+| HTTP status | Cause |
+|---|---|
+| `401 Unauthorized` | Missing or invalid token |
+| `422 Unprocessable Entity` | Invalid country code, preference, or currency_display value |
+
+---
+
+## GET /api/keys
+
+List the authenticated user's API keys. The full key value is **never** returned here.
+
+**Auth required**
+
+### Response
+
+```json
+[
+  {
+    "id": "uuid",
+    "name": "my-script",
+    "key_prefix": "csim_ab12cd",
+    "created_at": "2026-05-14T10:00:00+00:00",
+    "last_used_at": null
+  }
+]
+```
+
+---
+
+## POST /api/keys
+
+Create a new API key. The full key value is returned **only in this response** — it cannot be retrieved later.
+
+**Auth required**
+
+### Request body
+
+```json
+{ "name": "my-script" }
+```
+
+### Response (`201 Created`)
+
+```json
+{
+  "id": "uuid",
+  "name": "my-script",
+  "key_prefix": "csim_ab12cd",
+  "created_at": "2026-05-14T10:00:00+00:00",
+  "key": "csim_<64 hex chars>"
+}
+```
+
+### Error responses
+
+| HTTP status | Cause |
+|---|---|
+| `401 Unauthorized` | Missing or invalid token |
+| `422 Unprocessable Entity` | Name is empty or missing |
+
+---
+
+## DELETE /api/keys/{key_id}
+
+Revoke an API key. Returns `204 No Content`.
+
+**Auth required**
+
+### Error responses
+
+| HTTP status | Cause |
+|---|---|
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Key does not exist or belongs to another user |
+
+---
+
+## API key authentication (E3)
+
+In addition to `Authorization: Bearer <supabase_jwt>`, all endpoints that accept auth also accept an API key:
+
+```
+X-Api-Key: csim_<64 hex chars>
+```
+
+API keys are useful for headless scripts and CI pipelines where a Supabase magic-link flow is impractical.
+
+---
+
+## OpenAPI / Swagger UI (E5)
+
+The API auto-generates OpenAPI 3.x documentation via FastAPI:
+
+| URL | Format |
+|---|---|
+| `/api/docs` | Swagger UI (interactive) |
+| `/api/redoc` | ReDoc |
+| `/api/openapi.json` | Raw OpenAPI JSON spec |
+
+---
+
 ## Development
 
 ### Prerequisites

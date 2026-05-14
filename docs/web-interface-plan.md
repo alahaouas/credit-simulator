@@ -195,3 +195,62 @@ All `Decimal` fields stored as JSON strings to preserve precision.
 - [x] `render.yaml` — Render deployment config for FastAPI
 - [x] `docs/deployment.md` — environment variables + deployment steps
 - [x] `api/main.py` — ALLOWED_ORIGINS env var for dynamic CORS
+
+---
+
+## Layer 6 — Feature backlog (candidates)
+
+Features are grouped by theme. Each can be picked independently or bundled into a sub-layer.
+
+### A. UX & Simulation Workflow
+
+| # | Feature | Description |
+|---|---|---|
+| A1 | **Simulation naming & tagging** | Users can give each saved simulation a human-readable name (e.g. "Brussels apartment") and optional tags; editable inline from the history page. Requires a `name` + `tags` column in `simulations`. |
+| A2 | **Simulation duplication** | "Clone" button on history — opens the simulator pre-filled with the saved inputs; lets users tweak one variable at a time. |
+| A3 | **What-if inline tweaking** | On the results page, change one parameter (rate, duration, down payment) without leaving; re-simulate on the fly and show the delta vs the original run. |
+| A4 | **Scenario comparison view** | Select 2–3 simulations from history and view them side-by-side; each metric column highlights the best value in green. Implements the §3.3 multi-scenario output. |
+| A5 | **Shareable read-only link** | Generate a signed public URL for a simulation (e.g. `/share/<token>`); viewable without login — useful for sharing with a partner or broker. Requires a `share_token` column + public RLS policy. |
+| A6 | **History search & pagination** | Search history by name/tag/date; paginate with cursor-based loading. Currently the list is unbounded. |
+| A7 | **Onboarding tooltip tour** | First-time user walkthrough of the simulator form; purely frontend state + Tailwind, no external tour library. |
+| A8 | **Dark mode** | Tailwind `dark:` variant toggle; persisted to `localStorage`. |
+
+### B. Financial Depth
+
+| # | Feature | Description |
+|---|---|---|
+| B1 | **All-preferences scenario run** | Run all 5 optimization preferences in one call; return a results matrix; display in a tabbed or stacked comparison on the results page. Already specced in §3.3. |
+| B2 | **Early repayment calculator** | From the results page, input a lump-sum at month N; show the revised amortization schedule, new end date, and total interest saved. Pure frontend math using the existing schedule JSONB. |
+| B3 | **Refinancing break-even** | Input a new (lower) interest rate; compute the break-even month at which the total savings from refinancing exceed the closing costs. |
+| B4 | **Rent-vs-buy comparison** | Input a monthly rent; chart the cumulative cost of renting vs owning over the loan period (accounting for equity build-up). |
+| B5 | **Sweet-spot heatmap** | 2D color grid (down payment × duration) showing total cost or monthly payment for every grid point the optimizer already evaluates — gives a visual intuition of the solution space. |
+| B6 | **Opportunity cost display** | Expose the CLI's `--opp-rate` flag on the web: "if you invested your down payment at X% p.a. instead, you'd have Y after Z years." |
+| B7 | **Purchase tax breakdown** | Show the purchase-tax estimate broken down by component (registration, notary, agency) per country with the applicable rates. |
+
+### C. Country Profiles & Rates
+
+| # | Feature | Description |
+|---|---|---|
+| C1 | **`GET /api/profiles/{country}` endpoint** | Already listed as "future" in the API table. Return the full country profile (rates, regulatory fields, currency). |
+| C2 | **Rates reference page** | Frontend page rendering all country profiles from C1 in a sortable table — useful for quick country comparison before running a simulation. |
+| C3 | **Live rate refresh** | Button on the simulator form to fetch current rates for the selected country via `fetcher.py` (ECB / BoE / FRED). Calls a new `POST /api/profiles/{country}/refresh` endpoint. |
+| C4 | **Session-scoped custom profile** | Let users override any country profile field (rate, tax, max duration) for a single session — mirrors the CLI's session update loop. Stored in frontend state only, never persisted. |
+| C5 | **Rate alert (email notification)** | User sets a target rate for a country; a Supabase Edge Function cron fetches rates daily and emails the user (via Resend or Supabase's built-in mailer) when the threshold is crossed. |
+
+### D. Export & Sharing
+
+| # | Feature | Description |
+|---|---|---|
+| D1 | **CSV export** | Download the amortization schedule as a `.csv` file; pure client-side generation from the JSONB schedule in memory. |
+| D2 | **PDF export** | Printable one-page summary + full schedule as PDF; use the browser's `window.print()` with a `@media print` stylesheet, or a server-side option (WeasyPrint / Puppeteer). |
+| D3 | **Email the report** | Send a formatted simulation report to the user's registered email; triggered from the results page; backend uses Resend or Supabase's SMTP. |
+
+### E. Account & Developer
+
+| # | Feature | Description |
+|---|---|---|
+| E1 | **User preferences page** ✅ | Default country, default optimization preference, currency display format — stored in a `user_preferences` Supabase table (`002_user_preferences.sql`). API: `GET/PUT /api/preferences`. Frontend: `web/app/preferences/page.tsx`. |
+| E2 | **i18n in the web UI** ✅ | French / English toggle via `web/lib/i18n.tsx` (React context) + `web/components/LocaleToggle.tsx`; Accept-Language detection on first visit; stored in `localStorage`. Layout wraps with `I18nProvider`. |
+| E3 | **API key management** ✅ | Long-lived `csim_<hex>` keys stored SHA-256 hashed in Supabase (`003_api_keys.sql`). API: `GET/POST/DELETE /api/keys`. `auth.py` accepts `X-Api-Key` header. Frontend: `web/app/settings/page.tsx`. |
+| E4 | **Personal stats dashboard** ✅ | `GET /api/simulations/stats` returns total count, avg EMI, avg duration, total principal, avg down payment. History page shows 4 stat cards above the list. |
+| E5 | **Embedded OpenAPI docs** ✅ | Already wired in `api/main.py` (`docs_url="/api/docs"`, `redoc_url="/api/redoc"`). Link added to home page. Documented in `docs/api.md`. |

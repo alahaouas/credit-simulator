@@ -164,3 +164,108 @@ export async function deleteSimulation(id: string, accessToken: string) {
     throw new ApiError(res.status, err.detail ?? res.statusText)
   }
 }
+
+// --- Simulation stats (E4) ---
+
+export interface SimulationStats {
+  total_count: number
+  avg_monthly_installment: string | null
+  avg_loan_duration_months: number | null
+  total_principal: string | null
+  avg_down_payment: string | null
+}
+
+export async function getSimulationStats(accessToken: string): Promise<SimulationStats> {
+  const res = await fetch(`${API_BASE}/api/simulations/stats`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json() as Promise<SimulationStats>
+}
+
+// --- User preferences (E1) ---
+
+export interface UserPreferences {
+  default_country: string
+  default_optimization_preference: string
+  currency_display: 'symbol' | 'code'
+}
+
+export async function getPreferences(accessToken: string): Promise<UserPreferences> {
+  const res = await fetch(`${API_BASE}/api/preferences`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json() as Promise<UserPreferences>
+}
+
+export async function updatePreferences(
+  prefs: Partial<UserPreferences>,
+  accessToken: string
+): Promise<UserPreferences> {
+  const res = await fetch(`${API_BASE}/api/preferences`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(prefs),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json() as Promise<UserPreferences>
+}
+
+// --- API keys (E3) ---
+
+export interface ApiKey {
+  id: string
+  name: string
+  key_prefix: string
+  created_at: string
+  last_used_at: string | null
+}
+
+export interface CreatedApiKey extends ApiKey {
+  key: string
+}
+
+export async function listApiKeys(accessToken: string): Promise<ApiKey[]> {
+  const res = await fetch(`${API_BASE}/api/keys`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json() as Promise<ApiKey[]>
+}
+
+export async function createApiKey(name: string, accessToken: string): Promise<CreatedApiKey> {
+  const res = await fetch(`${API_BASE}/api/keys`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ name }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json() as Promise<CreatedApiKey>
+}
+
+export async function deleteApiKey(id: string, accessToken: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/keys/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+}

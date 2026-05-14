@@ -59,6 +59,15 @@ def make_db_mock(*, rows: list[dict] | None = None, auth_fail: bool = False, use
         .eq.return_value
         .execute.return_value) = execute_result
 
+    # select().eq().execute() — single-eq queries (stats, preferences GET, api_key lookup)
+    (db.table.return_value
+        .select.return_value
+        .eq.return_value
+        .execute.return_value) = execute_result
+
+    # upsert().execute() — preferences PUT
+    db.table.return_value.upsert.return_value.execute.return_value = execute_result
+
     return db
 
 

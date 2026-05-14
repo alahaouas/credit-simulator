@@ -1,4 +1,4 @@
-"""Pydantic request model for the Credit Simulator API.
+"""Pydantic request/response models for the Credit Simulator API.
 
 Monetary and rate fields are typed as str so that JSON numbers (IEEE-754
 floats) never silently truncate financial precision.  Validators confirm
@@ -11,6 +11,41 @@ from decimal import Decimal, InvalidOperation
 from pydantic import BaseModel, field_validator
 
 from credit_simulator.config import VALID_PREFERENCES
+
+_SUPPORTED_COUNTRIES = {"BE", "FR", "DE", "ES", "PT", "IT", "GB", "US"}
+_CURRENCY_DISPLAY_OPTIONS = {"symbol", "code"}
+
+
+class UserPreferencesModel(BaseModel):
+    """Body model for PUT /api/preferences (E1)."""
+
+    default_country: str = "BE"
+    default_optimization_preference: str = "balanced"
+    currency_display: str = "symbol"
+
+    @field_validator("default_country", mode="before")
+    @classmethod
+    def validate_country(cls, v: object) -> str:
+        s = str(v).upper()
+        if s not in _SUPPORTED_COUNTRIES:
+            raise ValueError(f"unsupported country '{v}'; must be one of {sorted(_SUPPORTED_COUNTRIES)}")
+        return s
+
+    @field_validator("default_optimization_preference", mode="before")
+    @classmethod
+    def validate_pref(cls, v: object) -> str:
+        if v not in VALID_PREFERENCES:
+            raise ValueError(
+                f"optimization_preference must be one of {sorted(VALID_PREFERENCES)}, got {v!r}"
+            )
+        return str(v)
+
+    @field_validator("currency_display", mode="before")
+    @classmethod
+    def validate_currency_display(cls, v: object) -> str:
+        if v not in _CURRENCY_DISPLAY_OPTIONS:
+            raise ValueError(f"currency_display must be 'symbol' or 'code', got {v!r}")
+        return str(v)
 
 
 class SimulateRequest(BaseModel):
@@ -53,8 +88,8 @@ class SimulateRequest(BaseModel):
             raise ValueError("field is required")
         try:
             d = Decimal(str(v))
-        except InvalidOperation:
-            raise ValueError(f"cannot parse {v!r} as a decimal number")
+        except InvalidOperation as err:
+            raise ValueError(f"cannot parse {v!r} as a decimal number") from err
         if d <= 0:
             raise ValueError(f"must be > 0, got {v!r}")
         return str(v)
@@ -76,8 +111,8 @@ class SimulateRequest(BaseModel):
             return None
         try:
             d = Decimal(str(v))
-        except InvalidOperation:
-            raise ValueError(f"cannot parse {v!r} as a decimal number")
+        except InvalidOperation as err:
+            raise ValueError(f"cannot parse {v!r} as a decimal number") from err
         if d < 0:
             raise ValueError(f"must be >= 0, got {v!r}")
         return str(v)

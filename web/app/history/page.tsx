@@ -4,7 +4,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { listSimulations, deleteSimulation, getSimulation, ApiError, SimulateRequest } from '@/lib/api'
+import {
+  listSimulations, deleteSimulation, getSimulation,
+  getSimulationStats, ApiError, SimulateRequest, SimulationStats,
+} from '@/lib/api'
+import { useI18n } from '@/lib/i18n'
+import { LocaleToggle } from '@/components/LocaleToggle'
 
 type SimulationSummary = {
   id: string
@@ -13,22 +18,56 @@ type SimulationSummary = {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
+  return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 function inputSummary(inputs: SimulateRequest) {
-  const price = parseFloat(inputs.property_price).toLocaleString('en-US', { maximumFractionDigits: 0 })
+  const price = parseFloat(inputs.property_price).toLocaleString(undefined, { maximumFractionDigits: 0 })
   const country = inputs.country ?? 'BE'
   const duration = inputs.loan_duration_months ? `${inputs.loan_duration_months / 12}y` : 'auto'
   return `${country} · ${price} · ${duration}`
 }
 
+function StatsCards({ stats, t }: { stats: SimulationStats; t: (k: string) => string }) {
+  if (stats.total_count === 0) return null
+  const cards = [
+    { label: t('stats.total'), value: String(stats.total_count) },
+    {
+      label: t('stats.avg_monthly'),
+      value: stats.avg_monthly_installment
+        ? parseFloat(stats.avg_monthly_installment).toLocaleString(undefined, { maximumFractionDigits: 0 })
+        : '—',
+    },
+    {
+      label: t('stats.avg_duration'),
+      value: stats.avg_loan_duration_months
+        ? `${stats.avg_loan_duration_months} ${t('stats.months')}`
+        : '—',
+    },
+    {
+      label: t('stats.total_principal'),
+      value: stats.total_principal
+        ? parseFloat(stats.total_principal).toLocaleString(undefined, { maximumFractionDigits: 0 })
+        : '—',
+    },
+  ]
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+      {cards.map(c => (
+        <div key={c.label} className="rounded-lg border p-4">
+          <p className="text-xs text-gray-400 mb-1">{c.label}</p>
+          <p className="text-lg font-semibold">{c.value}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function HistoryPage() {
   const router = useRouter()
+  const { t } = useI18n()
   const [items, setItems] = useState<SimulationSummary[]>([])
+  const [stats, setStats] = useState<SimulationStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -36,19 +75,20 @@ export default function HistoryPage() {
   const load = useCallback(async () => {
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      router.replace('/auth')
-      return
-    }
+    if (!session) { router.replace('/auth'); return }
     try {
-      const simulations = await listSimulations(session.access_token)
+      const [simulations, statsData] = await Promise.all([
+        listSimulations(session.access_token),
+        getSimulationStats(session.access_token),
+      ])
       setItems(simulations)
+      setStats(statsData)
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load simulations.')
+      setError(e instanceof ApiError ? e.message : t('error.generic'))
     } finally {
       setLoading(false)
     }
-  }, [router])
+  }, [router, t])
 
   useEffect(() => { load() }, [load])
 
@@ -60,8 +100,9 @@ export default function HistoryPage() {
     try {
       await deleteSimulation(id, session.access_token)
       setItems(prev => prev.filter(s => s.id !== id))
+      if (stats) setStats(s => s ? { ...s, total_count: s.total_count - 1 } : s)
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Delete failed.')
+      setError(e instanceof ApiError ? e.message : t('error.generic'))
     } finally {
       setDeleting(null)
     }
@@ -76,14 +117,14 @@ export default function HistoryPage() {
       sessionStorage.setItem('simulator_result', JSON.stringify(sim.result))
       router.push('/results')
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load simulation.')
+      setError(e instanceof ApiError ? e.message : t('error.generic'))
     }
   }
 
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">Loading…</p>
+        <p className="text-gray-500">{t('history.loading')}</p>
       </main>
     )
   }
@@ -91,21 +132,24 @@ export default function HistoryPage() {
   return (
     <main className="min-h-screen p-8 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">My simulations</h1>
-        <Link href="/simulate" className="text-sm border rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors">
-          New simulation
-        </Link>
+        <h1 className="text-3xl font-bold tracking-tight">{t('history.title')}</h1>
+        <div className="flex items-center gap-3">
+          <LocaleToggle />
+          <Link href="/simulate" className="text-sm border rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors">
+            {t('history.new')}
+          </Link>
+        </div>
       </div>
 
-      {error && (
-        <p className="text-red-500 text-sm mb-4">{error}</p>
-      )}
+      {stats && <StatsCards stats={stats} t={t} />}
+
+      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
       {items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <p className="mb-4">No saved simulations yet.</p>
+          <p className="mb-4">{t('history.empty')}</p>
           <Link href="/simulate" className="rounded-lg bg-black text-white px-6 py-3 font-medium hover:bg-gray-800 transition-colors">
-            Run your first simulation
+            {t('history.first')}
           </Link>
         </div>
       ) : (
@@ -121,14 +165,14 @@ export default function HistoryPage() {
                   onClick={() => handleView(sim.id)}
                   className="text-sm px-3 py-1.5 rounded border hover:bg-gray-100 transition-colors"
                 >
-                  View
+                  {t('history.view')}
                 </button>
                 <button
                   onClick={() => handleDelete(sim.id)}
                   disabled={deleting === sim.id}
                   className="text-sm px-3 py-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
                 >
-                  {deleting === sim.id ? '…' : 'Delete'}
+                  {deleting === sim.id ? '…' : t('history.delete')}
                 </button>
               </div>
             </li>
@@ -137,7 +181,7 @@ export default function HistoryPage() {
       )}
 
       <div className="mt-6 text-center">
-        <Link href="/" className="text-sm text-gray-400 hover:text-gray-600">← Home</Link>
+        <Link href="/" className="text-sm text-gray-400 hover:text-gray-600">{t('nav.home')}</Link>
       </div>
     </main>
   )
