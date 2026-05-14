@@ -85,6 +85,36 @@ def save(inputs: UserInputs, store: SessionProfileStore) -> None:
         )
 
 
+def save_overrides_only(store: SessionProfileStore) -> None:
+    """Persist just the profile overrides, preserving any existing inputs block.
+
+    Used by the `rates` CLI subcommand to refresh country rates outside of an
+    interactive simulator session.
+    """
+    _PREFS_DIR.mkdir(parents=True, exist_ok=True)
+    existing = load()
+
+    profile_overrides: dict[str, dict[str, Any]] = {}
+    for country, overrides in store._overrides.items():
+        serialized: dict[str, Any] = {}
+        for k, v in overrides.items():
+            serialized[k] = str(v) if isinstance(v, Decimal) else v
+        profile_overrides[country] = serialized
+
+    manual_rates = [[c, q] for c, q in store._manual_rate_set]
+
+    with _PREFS_FILE.open("w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "version": _VERSION,
+                "inputs": existing.get("inputs", {}),
+                "profile_overrides": profile_overrides,
+                "manual_rates": manual_rates,
+            },
+            f, indent=2,
+        )
+
+
 def apply_to_inputs(prefs: dict, inputs: UserInputs) -> None:
     """Restore saved optional fields into *inputs* (in-place).
 

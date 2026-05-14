@@ -31,7 +31,7 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
 | CI/CD | Local coverage gate via `pytest-cov`; no remote CI pipeline yet |
 | Linting | `ruff` configured (rules E/F/W/I/UP/B/SIM, py311, 100-char line length) |
 | Documentation | Requirements doc complete (`docs/requirements.md`) |
-| BE mortgage rates | Manually maintained in `profiles.py` (Feb 2026 data; ECB MIR endpoint excluded — see `fetcher.py`) |
+| BE mortgage rates | Manually maintained in `profiles.py` (May 2026 data; ECB MIR endpoint excluded — see `fetcher.py`). Refresh at runtime with `credit-simulator rates set ...` (see [docs/runtime-rates.md](docs/runtime-rates.md)). |
 | Localisation | EN/FR via `i18n.py`; locale auto-detected from env/system; override with `--locale` flag |
 
 ---
@@ -113,11 +113,13 @@ credit-simulator/
 ├── pyproject.toml              # Package metadata, dependencies, pytest/coverage/ruff config
 ├── .gitignore
 ├── docs/
-│   └── requirements.md         # Full product specification
+│   ├── requirements.md         # Full product specification
+│   └── runtime-rates.md        # `credit-simulator rates` subcommand reference
 ├── src/
 │   └── credit_simulator/
 │       ├── __main__.py         # Entry point: `python -m credit_simulator`
-│       ├── cli.py              # click CLI definition and interactive loop
+│       ├── cli.py              # click CLI definition and interactive loop (Group with `rates` subcommand)
+│       ├── rate_cli.py         # `rates set/show/clear/list/path` subcommand group
 │       ├── config.py           # Application-wide constants and tuneable defaults
 │       ├── i18n.py             # Translation registry (EN/FR), locale detection, _() helper
 │       ├── profiles.py         # Static country profiles + SessionProfileStore
@@ -131,7 +133,8 @@ credit-simulator/
     │   ├── test_profiles.py    # Country profiles, LTV tiers, SessionProfileStore
     │   ├── test_optimizer.py   # Grid-search optimizer and sweet-spot analysis
     │   ├── test_resolver.py    # Parameter resolution and feasibility
-    │   └── test_fetcher.py     # Online rate fetch (mocked HTTP)
+    │   ├── test_fetcher.py     # Online rate fetch (mocked HTTP)
+    │   └── test_rate_cli.py    # `credit-simulator rates` subcommand tests
     └── integration/
         └── test_cli.py         # End-to-end CLI smoke tests
 ```

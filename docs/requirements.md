@@ -70,7 +70,7 @@ Profile quality only affects **market-driven fields** (`annual_interest_rate`, `
 | Spain | `ES` | EUR | 3.50% | 2.80% | 0.20% | 0.09% |
 | Germany | `DE` | EUR | 3.80% | 3.10% | 0.15% | 0.08% |
 | Portugal | `PT` | EUR | 4.00% | 3.20% | 0.25% | 0.10% |
-| Belgium _(default)_ | `BE` | EUR | 3.27% | 3.05% | 0.20% | 0.15% |
+| Belgium _(default)_ | `BE` | EUR | 3.40% | 3.20% | 0.20% | 0.15% |
 | Italy | `IT` | EUR | 4.00% | 3.20% | 0.20% | 0.08% |
 | United Kingdom | `GB` | GBP | 5.00% | 4.20% | 0.25% | 0.12% |
 | United States | `US` | USD | 7.00% | 6.20% | 0.80% | 0.40% |
@@ -330,7 +330,7 @@ All fields from sections 2.1, 2.2, and 2.3 are updatable interactively, except d
 
 The user may update any field of any country profile during the interactive loop. Two update modes are available: **manual entry** and **online fetch**.
 
-**Scope**: all profile updates are session-scoped — they are not persisted to disk. The static embedded profiles are restored at the next session start.
+A third path — **non-interactive runtime refresh** — is available outside the simulator via `credit-simulator rates set/show/clear/list/path`. See [docs/runtime-rates.md](runtime-rates.md) for the full surface. Persisted rate overrides are loaded automatically at the next simulator startup via `preferences.apply_to_store`.
 
 ---
 
@@ -446,7 +446,7 @@ The ECB series key `MIR.M.{CC}.B.A2C.F.R.A.2250.EUR.N` encodes: monthly frequenc
 | Country | system default | `BE` |
 | Profile quality | system default | `average` |
 | Purchase taxes | estimated (12.5% of price) | ~43,750 EUR |
-| Annual interest rate | BE average profile | 3.27% |
+| Annual interest rate | BE average profile | 3.40% |
 | Insurance rate | BE average profile | 0.20% /year |
 | Max debt ratio | BE profile | 35% |
 | Max loan duration | BE profile | 300 months (25 years) |

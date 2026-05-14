@@ -71,8 +71,8 @@ class CountryProfile:
 
 def _be_tiers() -> tuple:
     # Base rate anchored at LTV ≤ 90% (standard 20% down).
-    # Best lenders (KBC, Belfius, BNP) quote ~2.74% for premium LTV ≤ 80%:
-    # with best=2.90%, a -0.20% delta gives 2.70% ≈ market floor.
+    # Best lenders (Belfius, Argenta, KBC) quote ~3.05% for premium LTV ≤ 80%:
+    # with best=3.20%, a -0.20% delta gives 3.00% ≈ market floor.
     return (
         LtvRateTier(Decimal("0.75"), Decimal("-0.0030")),  # LTV ≤ 75%: −0.30%
         LtvRateTier(Decimal("0.80"), Decimal("-0.0020")),  # LTV ≤ 80%: −0.20%
@@ -197,12 +197,12 @@ _PROFILES: dict[str, CountryProfile] = {
     "BE": CountryProfile(
         code="BE",
         currency="EUR",
-        # Manually sourced rates — Feb 2026 (20-year term used as base):
-        #   15 yr → avg 3.18% / best 2.95%
-        #   20 yr → avg 3.27% / best 3.05%   ← base used here
-        #   25 yr → avg 3.38% / best 3.20%
-        annual_rate_average=Decimal("0.0327"),
-        annual_rate_best=Decimal("0.0305"),
+        # Manually sourced rates — May 2026 (20-year term used as base):
+        #   15 yr → avg 3.30% / best 3.10%
+        #   20 yr → avg 3.40% / best 3.20%   ← base used here
+        #   25 yr → avg 3.50% / best 3.25%
+        annual_rate_average=Decimal("0.0340"),
+        annual_rate_best=Decimal("0.0320"),
         insurance_rate_average=Decimal("0.0020"),
         insurance_rate_best=Decimal("0.0015"),
         purchase_tax_rate=Decimal("0.125"),
@@ -211,7 +211,7 @@ _PROFILES: dict[str, CountryProfile] = {
         max_debt_ratio=Decimal("0.35"),
         max_loan_duration_months=300,
         ltv_rate_tiers=_be_tiers(),
-        last_updated_date="2026-02",
+        last_updated_date="2026-05",
     ),
     "IT": CountryProfile(
         code="IT",

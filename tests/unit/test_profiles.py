@@ -34,11 +34,11 @@ class TestGetProfile:
 class TestCountryProfileRates:
     def test_average_rate_for_be(self):
         profile = get_profile("BE")
-        assert profile.annual_rate("average") == Decimal("0.0327")
+        assert profile.annual_rate("average") == Decimal("0.0340")
 
     def test_best_rate_for_be(self):
         profile = get_profile("BE")
-        assert profile.annual_rate("best") == Decimal("0.0305")
+        assert profile.annual_rate("best") == Decimal("0.0320")
 
     def test_best_rate_le_average_for_all_countries(self):
         """Invariant: best rate must be <= average for every country."""
@@ -66,34 +66,34 @@ class TestLtvRateTierLookup:
         """LTV=70% falls in BE's ≤75% tier: rate_delta = -0.30%."""
         profile = self._be()
         rate = profile.rate_for_ltv(Decimal("0.70"), "average")
-        expected = Decimal("0.0327") + Decimal("-0.0030")
+        expected = Decimal("0.0340") + Decimal("-0.0030")
         assert rate == expected
 
     def test_ltv_at_tier_boundary(self):
         """LTV exactly at boundary belongs to that tier (inclusive upper bound)."""
         profile = self._be()
         rate = profile.rate_for_ltv(Decimal("0.75"), "average")
-        expected = Decimal("0.0327") + Decimal("-0.0030")
+        expected = Decimal("0.0340") + Decimal("-0.0030")
         assert rate == expected
 
     def test_ltv_just_above_boundary(self):
         """LTV=0.751 falls in the ≤80% tier."""
         profile = self._be()
         rate = profile.rate_for_ltv(Decimal("0.751"), "average")
-        expected = Decimal("0.0327") + Decimal("-0.0020")
+        expected = Decimal("0.0340") + Decimal("-0.0020")
         assert rate == expected
 
     def test_ltv_base_tier(self):
         """LTV=85% falls in BE's ≤90% tier: rate_delta = 0.00%."""
         profile = self._be()
         rate = profile.rate_for_ltv(Decimal("0.85"), "average")
-        assert rate == Decimal("0.0327")
+        assert rate == Decimal("0.0340")
 
     def test_ltv_surcharge_tier(self):
         """LTV=95% falls in BE's ≤100% tier: rate_delta = +0.35%."""
         profile = self._be()
         rate = profile.rate_for_ltv(Decimal("0.95"), "average")
-        expected = Decimal("0.0327") + Decimal("0.0035")
+        expected = Decimal("0.0340") + Decimal("0.0035")
         assert rate == expected
 
     def test_no_tiers_returns_base_rate(self):
@@ -119,7 +119,7 @@ class TestLtvRateTierLookup:
         # BE last tier covers ≤100%; use LTV = 100% exactly
         profile = self._be()
         rate = profile.rate_for_ltv(Decimal("1.00"), "average")
-        expected = Decimal("0.0327") + Decimal("0.0035")
+        expected = Decimal("0.0340") + Decimal("0.0035")
         assert rate == expected
 
 
@@ -129,7 +129,7 @@ class TestSessionProfileStore:
 
     def test_get_annual_rate_returns_static_default(self):
         store = self._store()
-        assert store.get_annual_rate("BE", "average") == Decimal("0.0327")
+        assert store.get_annual_rate("BE", "average") == Decimal("0.0340")
 
     def test_set_and_get_annual_rate(self):
         store = self._store()
@@ -180,7 +180,7 @@ class TestSessionProfileStore:
         store = self._store()
         # LTV 70% → ≤75% tier, delta = -0.30%
         rate = store.get_rate_for_ltv("BE", "average", Decimal("0.70"))
-        assert rate == Decimal("0.0327") + Decimal("-0.0030")
+        assert rate == Decimal("0.0340") + Decimal("-0.0030")
 
     def test_be_last_updated_date(self):
         """BE profile has a non-empty last_updated_date."""
@@ -193,8 +193,8 @@ class TestSessionProfileStore:
         with pytest.raises(ValueError) as exc_info:
             store.set_annual_rate("BE", "best", Decimal("0.99"), manual=True)
         msg = str(exc_info.value)
-        # BE average is 3.27%
-        expected = "'best' annual rate (99.0000%) cannot exceed 'average' rate (3.2700%) for BE."
+        # BE average is 3.40%
+        expected = "'best' annual rate (99.0000%) cannot exceed 'average' rate (3.4000%) for BE."
         assert msg == expected
 
     def test_annual_rate_average_validation_error_message(self):
@@ -202,8 +202,8 @@ class TestSessionProfileStore:
         with pytest.raises(ValueError) as exc_info:
             store.set_annual_rate("BE", "average", Decimal("0.001"), manual=True)
         msg = str(exc_info.value)
-        # BE best is 3.05%
-        expected = "'average' annual rate (0.1000%) cannot be lower than 'best' rate (3.0500%) for BE."
+        # BE best is 3.20%
+        expected = "'average' annual rate (0.1000%) cannot be lower than 'best' rate (3.2000%) for BE."
         assert msg == expected
 
     def test_insurance_validation_error_message_is_valid_string(self):

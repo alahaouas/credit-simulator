@@ -782,7 +782,8 @@ def _apply_saved_optionals(prefs: dict, inputs: UserInputs) -> None:
 # Click entry point
 # ──────────────────────────────────────────────────────────────────────────────
 
-@click.command()
+@click.group(invoke_without_command=True)
+@click.pass_context
 @click.option("--property-price", type=str, default=None, help="Property price")
 @click.option("--income", type=str, default=None, help="Monthly net income")
 @click.option("--savings", type=str, default=None, help="Available savings")
@@ -795,6 +796,7 @@ def _apply_saved_optionals(prefs: dict, inputs: UserInputs) -> None:
 @click.option("--opp-rate", type=str, default=None, help="Opportunity-cost rate for sweet-spot analysis (e.g. 0.04 for 4%). Default: 3.5%.")
 @click.option("--locale", type=str, default=None, help="Interface language: 'en' or 'fr'. Auto-detected if omitted.")
 def main(
+    ctx: click.Context,
     property_price: str | None,
     income: str | None,
     savings: str | None,
@@ -808,6 +810,10 @@ def main(
     locale: str | None,
 ) -> None:
     """Interactive credit / mortgage loan simulator."""
+    # Subcommands (e.g. `rates`) handle their own flow — don't run the simulator.
+    if ctx.invoked_subcommand is not None:
+        return
+
     # Set locale before any output
     set_locale(locale if locale is not None else detect_locale())
 
@@ -985,3 +991,10 @@ def main(
     except (KeyboardInterrupt, EOFError):
         preferences.save(inputs, store)
         console.print(_("action.session_ended"))
+
+
+# Register `rates` subcommand group.
+# Imported at the bottom to avoid a circular import with profiles → preferences.
+from .rate_cli import rates_group  # noqa: E402
+
+main.add_command(rates_group, name="rates")

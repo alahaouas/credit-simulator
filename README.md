@@ -166,7 +166,7 @@ Goodbye.
 
 | Country | Code | Currency | Avg rate | Best rate | Max duration |
 |---|---|---|---|---|---|
-| Belgium _(default)_ | `BE` | EUR | 3.27% | 3.05% | 25 years |
+| Belgium _(default)_ | `BE` | EUR | 3.40% | 3.20% | 25 years |
 | France | `FR` | EUR | 3.50% | 2.90% | 25 years |
 | Spain | `ES` | EUR | 3.50% | 2.80% | 30 years |
 | Germany | `DE` | EUR | 3.80% | 3.10% | 30 years |
@@ -178,6 +178,21 @@ Goodbye.
 Regulatory parameters (purchase tax rate, minimum down payment, maximum
 debt-to-income ratio) are embedded per country and can be overridden manually
 during a session.
+
+---
+
+## Refreshing rates between releases
+
+Market rates change faster than releases. Use `credit-simulator rates` to
+override the bundled rates at runtime — the change persists across sessions
+and survives upgrades that don't ship newer numbers.
+
+```pwsh
+credit-simulator rates set BE annual_rate_best 0.0310
+credit-simulator rates show BE
+```
+
+Full reference: [docs/runtime-rates.md](docs/runtime-rates.md).
 
 ---
 
