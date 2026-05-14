@@ -254,7 +254,7 @@ ruff check src/ tests/
 ### Start the API server
 
 ```bash
-uvicorn api.main:app --reload --port 8000
+python -m uvicorn api.main:app --reload --port 8000
 ```
 
 The interactive Swagger UI is then available at `http://localhost:8000/api/docs`.

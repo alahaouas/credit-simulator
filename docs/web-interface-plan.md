@@ -9,7 +9,7 @@
 - `api/.env` — FastAPI env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
 - `web/.env.local` — Next.js env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
 - `supabase link` already done; run `supabase db push` for future migrations.
-- Start FastAPI: `uvicorn api.main:app --reload` from repo root.
+- Start FastAPI: `python -m uvicorn api.main:app --reload` from repo root.
 - Start Next.js: `npm run dev` from `web/`.
 
 ### Repository structure (current)
