@@ -138,20 +138,26 @@ All `Decimal` fields stored as JSON strings to preserve precision.
 - [x] `pyproject.toml` — add `supabase>=2.4` to `[web]` extra
 - [x] `docs/api.md` — auth + history endpoint documentation
 
-### Layer 3 — Next.js scaffold + Supabase auth
-- [ ] `web/` — `npx create-next-app` with TypeScript + Tailwind
-- [ ] `web/src/lib/supabase.ts` — `createBrowserClient()`
-- [ ] `web/src/app/auth/page.tsx` — magic-link login
-- [ ] Auth middleware (Next.js middleware.ts)
+### Layer 3 — Next.js scaffold + Supabase auth ✅
+- [x] `web/` — Next.js 14, TypeScript, Tailwind, App Router (no `src/` dir)
+- [x] `web/lib/supabase.ts` — `createBrowserClient()` (browser)
+- [x] `web/lib/supabase-server.ts` — `createServerSupabaseClient()` (server/route handlers)
+- [x] `web/app/auth/page.tsx` — magic-link login form
+- [x] `web/app/auth/callback/route.ts` — PKCE code exchange
+- [x] `web/middleware.ts` — session refresh on every request
+- [x] `web/app/page.tsx` — homepage (auth-aware: shows history link when signed in)
+- [x] `web/lib/api.ts` — typed fetch wrapper for all FastAPI endpoints
+- [x] `web/.env.local` — `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ### Layer 4 — Simulator UI
-- [ ] `web/src/components/SimulatorForm.tsx` — form → `POST /api/simulate`
-- [ ] `web/src/app/results/page.tsx` — display `OptimizedResult` + sweet-spot table
-- [ ] `web/src/components/AmortizationTable.tsx`
-- [ ] `web/src/components/LoanChart.tsx` — balance-over-time chart (Recharts)
+- [ ] `web/components/SimulatorForm.tsx` — form → `POST /api/simulate`
+- [ ] `web/app/simulate/page.tsx` — simulation page (hosts SimulatorForm)
+- [ ] `web/app/results/page.tsx` — display `OptimizedResult` + sweet-spot table
+- [ ] `web/components/AmortizationTable.tsx`
+- [ ] `web/components/LoanChart.tsx` — balance-over-time chart (Recharts)
 
 ### Layer 5 — History & deployment
-- [ ] `web/src/app/history/page.tsx` — saved simulations list
+- [ ] `web/app/history/page.tsx` — saved simulations list
 - [ ] Vercel deployment config (`vercel.json`)
 - [ ] Railway / Render deployment config for FastAPI
 - [ ] Environment variables documentation
