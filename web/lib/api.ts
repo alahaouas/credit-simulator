@@ -140,7 +140,7 @@ export async function listSimulations(accessToken: string) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new ApiError(res.status, err.detail ?? res.statusText)
   }
-  return res.json() as Promise<{ simulations: Array<{ id: string; created_at: string; inputs: SimulateRequest }> }>
+  return res.json() as Promise<Array<{ id: string; created_at: string; inputs: SimulateRequest }>>
 }
 
 export async function getSimulation(id: string, accessToken: string) {

@@ -1,6 +1,8 @@
 """Credit Simulator API — FastAPI application entry point."""
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,12 +17,16 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+_default_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+]
+_extra = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+_origins = _default_origins + _extra
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",   # Next.js dev server
-        "http://localhost:5173",   # Vite dev server (alternative)
-    ],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,8 +1,8 @@
 # Web Interface — Technical Plan & To-Do
 
-## Current Status (2026-05-13)
+## Current Status (2026-05-14)
 
-**Layers 1–3 complete.** Next session starts at Layer 4 — Simulator UI.
+**Layers 1–5 complete.** All layers shipped.
 
 ### Environment notes
 - Single environment: local dev talks directly to the production Supabase project (no staging).
@@ -182,15 +182,16 @@ All `Decimal` fields stored as JSON strings to preserve precision.
 - [x] `web/lib/api.ts` — typed fetch wrapper for all FastAPI endpoints
 - [x] `web/.env.local` — `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-### Layer 4 — Simulator UI
-- [ ] `web/components/SimulatorForm.tsx` — form → `POST /api/simulate`
-- [ ] `web/app/simulate/page.tsx` — simulation page (hosts SimulatorForm)
-- [ ] `web/app/results/page.tsx` — display `OptimizedResult` + sweet-spot table
-- [ ] `web/components/AmortizationTable.tsx`
-- [ ] `web/components/LoanChart.tsx` — balance-over-time chart (Recharts)
+### Layer 4 — Simulator UI ✅
+- [x] `web/components/SimulatorForm.tsx` — form → `POST /api/simulate`
+- [x] `web/app/simulate/page.tsx` — simulation page (hosts SimulatorForm)
+- [x] `web/app/results/page.tsx` — display `OptimizedResult` + sweet-spot table
+- [x] `web/components/AmortizationTable.tsx`
+- [x] `web/components/LoanChart.tsx` — balance-over-time chart (Recharts)
 
-### Layer 5 — History & deployment
-- [ ] `web/app/history/page.tsx` — saved simulations list
-- [ ] Vercel deployment config (`vercel.json`)
-- [ ] Railway / Render deployment config for FastAPI
-- [ ] Environment variables documentation
+### Layer 5 — History & deployment ✅
+- [x] `web/app/history/page.tsx` — saved simulations list
+- [x] `web/vercel.json` — Vercel deployment config
+- [x] `render.yaml` — Render deployment config for FastAPI
+- [x] `docs/deployment.md` — environment variables + deployment steps
+- [x] `api/main.py` — ALLOWED_ORIGINS env var for dynamic CORS
