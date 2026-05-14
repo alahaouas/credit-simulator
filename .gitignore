@@ -37,4 +37,5 @@ Thumbs.db
 .env.*.local
 
 # Supabase
+supabase/.temp
 supabase/.temp.claude/
