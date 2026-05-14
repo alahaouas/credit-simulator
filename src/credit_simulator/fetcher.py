@@ -115,10 +115,10 @@ def _fetch_boe() -> Decimal:
         header = [h.strip() for h in lines[0].split(",")]
         try:
             rate_col = header.index("IUMTLMV")
-        except ValueError:
+        except ValueError as err:
             raise FetchError(
                 f"Expected column 'IUMTLMV' not found in BoE CSV header: {header}"
-            )
+            ) from err
         last_value = None
         for line in lines[1:]:
             parts = line.split(",")

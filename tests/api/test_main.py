@@ -1,7 +1,6 @@
 """Tests for api/main.py — CORS origin configuration."""
 from __future__ import annotations
 
-import importlib
 import sys
 from unittest.mock import patch
 

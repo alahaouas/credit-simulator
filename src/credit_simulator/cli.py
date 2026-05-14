@@ -870,10 +870,7 @@ def main(
     if duration is not None:
         raw_dur = duration.strip().lower()
         try:
-            if raw_dur.endswith("y"):
-                fixed_duration = int(raw_dur[:-1]) * 12
-            else:
-                fixed_duration = int(raw_dur)
+            fixed_duration = int(raw_dur[:-1]) * 12 if raw_dur.endswith("y") else int(raw_dur)
         except ValueError:
             err_console.print(_("error.invalid_cli_duration", val=duration))
             sys.exit(1)

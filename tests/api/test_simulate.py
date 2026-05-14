@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import pytest
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -281,9 +280,9 @@ class TestSimulateWithAuth:
         mock_db.table.return_value.insert.assert_called_once()
 
     def test_invalid_token_treated_as_anonymous(self, mock_db):
-        from tests.api.conftest import make_db_mock
         from api.db import get_db
         from api.main import app
+        from tests.api.conftest import make_db_mock
         db = make_db_mock(invalid_token=True)
         app.dependency_overrides[get_db] = lambda: db
         try:
@@ -295,9 +294,9 @@ class TestSimulateWithAuth:
 
     def test_auth_backend_error_returns_503(self):
         """Per security-controls rule: auth check that can't resolve must reject."""
-        from tests.api.conftest import make_db_mock
         from api.db import get_db
         from api.main import app
+        from tests.api.conftest import make_db_mock
         db = make_db_mock(auth_fail=True)
         app.dependency_overrides[get_db] = lambda: db
         try:

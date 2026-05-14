@@ -193,8 +193,8 @@ class TestAnalyzeSweetSpot:
     def test_always_includes_minimum_and_maximum(self):
         analysis = analyze_sweet_spot(self._params())
         labels = [m.label for m in analysis.milestones]
-        assert any("Minimum" in l for l in labels)
-        assert any("Maximum" in l for l in labels)
+        assert any("Minimum" in label for label in labels)
+        assert any("Maximum" in label for label in labels)
 
     def test_exactly_one_sweet_spot(self):
         analysis = analyze_sweet_spot(self._params())
@@ -303,7 +303,7 @@ class TestAnalyzeSweetSpot:
         )
         analysis = analyze_sweet_spot(params, opportunity_cost_rate=Decimal("0.20"))
         labels = [m.label for m in analysis.milestones]
-        assert any("LTV" in l for l in labels)
+        assert any("LTV" in label for label in labels)
 
 
 class TestSweetSpotPreferredDownPayment:
@@ -328,7 +328,7 @@ class TestSweetSpotPreferredDownPayment:
         params = self._params(preferred_down_payment=Decimal("90000"))
         analysis = analyze_sweet_spot(params)
         labels = [m.label for m in analysis.milestones]
-        assert any("Your choice" in l for l in labels)
+        assert any("Your choice" in label for label in labels)
 
     def test_preferred_dp_coinciding_with_sweet_spot_appended(self):
         """When preferred equals the sweet spot its label gets '← Your choice' appended."""
@@ -341,14 +341,14 @@ class TestSweetSpotPreferredDownPayment:
         params2 = self._params(preferred_down_payment=sweet_dp)
         analysis2 = analyze_sweet_spot(params2, opportunity_cost_rate=Decimal("0.20"))
         labels = [m.label for m in analysis2.milestones]
-        assert any("← Your choice" in l for l in labels)
+        assert any("← Your choice" in label for label in labels)
 
     def test_preferred_dp_none_adds_no_your_choice(self):
         """Without a preferred_down_payment, no 'Your choice' milestone is added."""
         params = self._params()
         analysis = analyze_sweet_spot(params)
         labels = [m.label for m in analysis.milestones]
-        assert not any("Your choice" in l for l in labels)
+        assert not any("Your choice" in label for label in labels)
 
     def test_preferred_dp_milestone_ordered_correctly(self):
         """'Your choice' row is sorted in ascending down-payment order."""

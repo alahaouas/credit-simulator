@@ -6,8 +6,6 @@ from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from credit_simulator import preferences as prefs
 from credit_simulator.profiles import SessionProfileStore
 from credit_simulator.resolver import UserInputs

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from credit_simulator.i18n import _, detect_locale, get_locale, set_locale
+from credit_simulator.i18n import detect_locale, get_locale, set_locale
 
 
 @pytest.fixture(autouse=True)
@@ -60,13 +60,17 @@ class TestDetectLocale:
                 assert detect_locale() == "fr"
 
     def test_defaults_to_en_when_no_locale_detected(self):
-        with patch.dict(os.environ, {}, clear=True):
-            with patch("credit_simulator.i18n._sys_locale") as mock_sys:
-                mock_sys.getlocale.return_value = (None, None)
-                assert detect_locale() == "en"
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch("credit_simulator.i18n._sys_locale") as mock_sys,
+        ):
+            mock_sys.getlocale.return_value = (None, None)
+            assert detect_locale() == "en"
 
     def test_handles_sys_locale_exception(self):
-        with patch.dict(os.environ, {}, clear=True):
-            with patch("credit_simulator.i18n._sys_locale") as mock_sys:
-                mock_sys.getlocale.side_effect = Exception("locale error")
-                assert detect_locale() == "en"
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch("credit_simulator.i18n._sys_locale") as mock_sys,
+        ):
+            mock_sys.getlocale.side_effect = Exception("locale error")
+            assert detect_locale() == "en"
