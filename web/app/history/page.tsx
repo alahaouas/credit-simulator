@@ -41,7 +41,7 @@ export default function HistoryPage() {
       return
     }
     try {
-      const { simulations } = await listSimulations(session.access_token)
+      const simulations = await listSimulations(session.access_token)
       setItems(simulations)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Failed to load simulations.')
