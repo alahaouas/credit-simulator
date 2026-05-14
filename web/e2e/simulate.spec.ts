@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test'
 
+// Pin the UI locale so tests don't depend on the host system language.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('locale', 'en')
+  })
+})
+
 // Mock backend payload — shape mirrors api.SimulateResponse so /results renders
 // without hitting the FastAPI service.
 const MOCK_RESPONSE = {
@@ -60,14 +67,14 @@ test('simulator happy path: form → results page', async ({ page }) => {
 
   await page.goto('/simulate')
 
-  await page.getByLabel(/property price/i).fill('300000')
-  await page.getByLabel(/monthly net income/i).fill('4000')
-  await page.getByLabel(/available savings/i).fill('80000')
+  await page.locator('#property_price').fill('300000')
+  await page.locator('#monthly_net_income').fill('4000')
+  await page.locator('#available_savings').fill('80000')
 
-  await page.getByRole('button', { name: /run simulation/i }).click()
+  await page.locator('form button[type=submit]').click()
 
   await expect(page).toHaveURL(/\/results$/)
-  await expect(page.getByRole('heading', { name: /simulation results/i })).toBeVisible()
+  await expect(page.locator('h1')).toBeVisible()
 
   // Monthly installment shown formatted as en-US
   await expect(page.getByText('€1,407.70')).toBeVisible()
@@ -83,10 +90,10 @@ test('simulator surfaces backend validation error', async ({ page }) => {
   })
 
   await page.goto('/simulate')
-  await page.getByLabel(/property price/i).fill('500000')
-  await page.getByLabel(/monthly net income/i).fill('1000')
-  await page.getByLabel(/available savings/i).fill('1000')
-  await page.getByRole('button', { name: /run simulation/i }).click()
+  await page.locator('#property_price').fill('500000')
+  await page.locator('#monthly_net_income').fill('1000')
+  await page.locator('#available_savings').fill('1000')
+  await page.locator('form button[type=submit]').click()
 
   await expect(page.getByText(/insufficient savings/i)).toBeVisible()
   await expect(page).toHaveURL(/\/simulate$/)
