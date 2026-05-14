@@ -5,17 +5,24 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { getPreferences, updatePreferences, ApiError, UserPreferences } from '@/lib/api'
-import { useI18n } from '@/lib/i18n'
+import {
+  COUNTRIES,
+  CURRENCY_DISPLAY_OPTIONS,
+  DEFAULT_COUNTRY,
+  DEFAULT_CURRENCY_DISPLAY,
+  DEFAULT_OPTIMIZATION_PREFERENCE,
+  OPTIMIZATION_PREFERENCES,
+} from '@/lib/constants'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { LocaleToggle } from '@/components/LocaleToggle'
 
-const COUNTRIES = ['BE', 'FR', 'DE', 'ES', 'PT', 'IT', 'GB', 'US']
-const PREFERENCES = [
-  'balanced',
-  'minimize_total_cost',
-  'minimize_monthly_payment',
-  'minimize_duration',
-  'minimize_down_payment',
-]
+const PREFERENCE_LABEL_KEY: Record<(typeof OPTIMIZATION_PREFERENCES)[number], TranslationKey> = {
+  balanced: 'pref.balanced',
+  minimize_total_cost: 'pref.minimize_total_cost',
+  minimize_monthly_payment: 'pref.minimize_monthly_payment',
+  minimize_duration: 'pref.minimize_duration',
+  minimize_down_payment: 'pref.minimize_down_payment',
+}
 
 export default function PreferencesPage() {
   const router = useRouter()
@@ -25,9 +32,9 @@ export default function PreferencesPage() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<UserPreferences>({
-    default_country: 'BE',
-    default_optimization_preference: 'balanced',
-    currency_display: 'symbol',
+    default_country: DEFAULT_COUNTRY,
+    default_optimization_preference: DEFAULT_OPTIMIZATION_PREFERENCE,
+    currency_display: DEFAULT_CURRENCY_DISPLAY,
   })
 
   useEffect(() => {
@@ -106,8 +113,8 @@ export default function PreferencesPage() {
             onChange={e => setForm(f => ({ ...f, default_optimization_preference: e.target.value }))}
             className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
           >
-            {PREFERENCES.map(p => (
-              <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>
+            {OPTIMIZATION_PREFERENCES.map(p => (
+              <option key={p} value={p}>{t(PREFERENCE_LABEL_KEY[p])}</option>
             ))}
           </select>
         </div>
@@ -117,7 +124,7 @@ export default function PreferencesPage() {
             {t('prefs.currency_display')}
           </label>
           <div className="flex gap-4">
-            {(['symbol', 'code'] as const).map(opt => (
+            {CURRENCY_DISPLAY_OPTIONS.map(opt => (
               <label key={opt} className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"

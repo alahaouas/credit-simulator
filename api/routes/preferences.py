@@ -4,16 +4,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from ..auth import require_user
+from ..constants import DEFAULT_USER_PREFERENCES
 from ..db import get_db
 from ..models import UserPreferencesModel
 
 router = APIRouter()
-
-_DEFAULTS: dict[str, str] = {
-    "default_country": "BE",
-    "default_optimization_preference": "balanced",
-    "currency_display": "symbol",
-}
 
 
 @router.get("/preferences", summary="Get user preferences")
@@ -29,8 +24,8 @@ def get_preferences(
     )
     if resp.data:
         row = resp.data[0]
-        return {k: row[k] for k in _DEFAULTS}
-    return dict(_DEFAULTS)
+        return {k: row[k] for k in DEFAULT_USER_PREFERENCES}
+    return dict(DEFAULT_USER_PREFERENCES)
 
 
 @router.put("/preferences", summary="Update user preferences")

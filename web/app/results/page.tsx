@@ -3,10 +3,20 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SimulateResponse } from '@/lib/api'
+import { DEFAULT_CURRENCY_SYMBOL, SESSION_RESULT_KEY } from '@/lib/constants'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 import dynamic from 'next/dynamic'
 import AmortizationTable from '@/components/AmortizationTable'
 
 const LoanChart = dynamic(() => import('@/components/LoanChart'), { ssr: false })
+
+const PREFERENCE_LABEL_KEY: Record<string, TranslationKey> = {
+  balanced: 'pref.balanced',
+  minimize_total_cost: 'pref.minimize_total_cost',
+  minimize_monthly_payment: 'pref.minimize_monthly_payment',
+  minimize_duration: 'pref.minimize_duration',
+  minimize_down_payment: 'pref.minimize_down_payment',
+}
 
 function fmt(val: string, currency = '') {
   return `${currency}${parseFloat(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -22,10 +32,11 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 export default function ResultsPage() {
+  const { t } = useI18n()
   const [data, setData] = useState<SimulateResponse | null>(null)
 
   useEffect(() => {
-    const raw = sessionStorage.getItem('simulator_result')
+    const raw = sessionStorage.getItem(SESSION_RESULT_KEY)
     if (raw) setData(JSON.parse(raw))
   }, [])
 
@@ -33,9 +44,9 @@ export default function ResultsPage() {
     return (
       <main className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 mb-4">No results yet.</p>
+          <p className="text-gray-500 mb-4">{t('results.no_results')}</p>
           <Link href="/simulate" className="rounded-lg bg-black text-white px-6 py-3 font-medium hover:bg-gray-800 transition-colors">
-            Run a simulation
+            {t('nav.run')}
           </Link>
         </div>
       </main>
@@ -44,38 +55,40 @@ export default function ResultsPage() {
 
   const { result, sweet_spot, schedule } = data
   const { plan, currency } = result
-  const c = currency || '€'
+  const c = currency || DEFAULT_CURRENCY_SYMBOL
+  const prefKey = PREFERENCE_LABEL_KEY[result.optimization_preference]
+  const prefLabel = prefKey ? t(prefKey) : result.optimization_preference.replace(/_/g, ' ')
 
   return (
     <main className="min-h-screen p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Simulation results</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('results.title')}</h1>
         <Link href="/simulate" className="text-sm border rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors">
-          New simulation
+          {t('results.new')}
         </Link>
       </div>
 
       <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">Optimal loan plan</h2>
+        <h2 className="text-lg font-semibold mb-3">{t('results.optimal_plan')}</h2>
         <p className="text-sm text-gray-500 mb-4">
-          {result.country} · {result.profile_quality} profile · {result.optimization_preference.replace(/_/g, ' ')}
+          {result.country} · {result.profile_quality} {t('results.profile_suffix')} · {prefLabel}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <StatCard label="Property price" value={fmt(result.property_price, c)} />
-          <StatCard label="Down payment" value={fmt(result.down_payment, c)} />
-          <StatCard label="Loan principal" value={fmt(result.loan_principal, c)} />
-          <StatCard label="Duration" value={`${result.loan_duration_months} months`} />
-          <StatCard label="Monthly installment" value={fmt(plan.monthly_installment, c)} />
-          <StatCard label="Interest rate" value={`${parseFloat(plan.annual_interest_rate) * 100}%`} />
-          <StatCard label="Total interest" value={fmt(plan.total_interest_paid, c)} />
-          <StatCard label="Total insurance" value={fmt(plan.total_insurance_paid, c)} />
-          <StatCard label="Total cost of credit" value={fmt(plan.total_cost_of_credit, c)} />
+          <StatCard label={t('results.property_price')} value={fmt(result.property_price, c)} />
+          <StatCard label={t('results.down_payment')} value={fmt(result.down_payment, c)} />
+          <StatCard label={t('results.loan_principal')} value={fmt(result.loan_principal, c)} />
+          <StatCard label={t('results.duration')} value={`${result.loan_duration_months} ${t('stats.months')}`} />
+          <StatCard label={t('results.monthly_installment')} value={fmt(plan.monthly_installment, c)} />
+          <StatCard label={t('results.interest_rate')} value={`${(parseFloat(plan.annual_interest_rate) * 100).toFixed(2)}%`} />
+          <StatCard label={t('results.total_interest')} value={fmt(plan.total_interest_paid, c)} />
+          <StatCard label={t('results.total_insurance')} value={fmt(plan.total_insurance_paid, c)} />
+          <StatCard label={t('results.total_cost')} value={fmt(plan.total_cost_of_credit, c)} />
         </div>
       </section>
 
       {sweet_spot && sweet_spot.milestones.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-1">Down-payment sweet-spot</h2>
+          <h2 className="text-lg font-semibold mb-1">{t('results.sweet_spot_title')}</h2>
           <p className="text-sm text-gray-500 mb-3">{sweet_spot.sweet_spot_reason}</p>
           {sweet_spot.reserve_warning && (
             <p className="text-sm text-amber-600 mb-3">{sweet_spot.reserve_warning}</p>
@@ -84,8 +97,18 @@ export default function ResultsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Down payment', 'Label', 'Monthly', 'Total cost', 'Net saving', 'LTV', 'Rate'].map(h => (
-                    <th key={h} className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">{h}</th>
+                  {(
+                    [
+                      'sweet.down_payment',
+                      'sweet.label',
+                      'sweet.monthly',
+                      'sweet.total_cost',
+                      'sweet.net_saving',
+                      'sweet.ltv',
+                      'sweet.rate',
+                    ] as TranslationKey[]
+                  ).map(k => (
+                    <th key={k} className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">{t(k)}</th>
                   ))}
                 </tr>
               </thead>

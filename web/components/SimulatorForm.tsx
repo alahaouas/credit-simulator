@@ -3,18 +3,26 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { simulate, SimulateRequest, ApiError } from '@/lib/api'
+import {
+  COUNTRIES,
+  OPTIMIZATION_PREFERENCES,
+  DEFAULT_OPTIMIZATION_PREFERENCE,
+  SESSION_RESULT_KEY,
+  type ProfileQuality,
+} from '@/lib/constants'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 
-const COUNTRIES = ['BE', 'FR', 'DE', 'ES', 'IT', 'PT', 'GB', 'US']
-const PREFERENCES = [
-  { value: 'balanced', label: 'Balanced' },
-  { value: 'minimize_total_cost', label: 'Minimize total cost' },
-  { value: 'minimize_monthly_payment', label: 'Minimize monthly payment' },
-  { value: 'minimize_duration', label: 'Minimize duration' },
-  { value: 'minimize_down_payment', label: 'Minimize down payment' },
-]
+const PREFERENCE_LABEL_KEY: Record<(typeof OPTIMIZATION_PREFERENCES)[number], TranslationKey> = {
+  balanced: 'pref.balanced',
+  minimize_total_cost: 'pref.minimize_total_cost',
+  minimize_monthly_payment: 'pref.minimize_monthly_payment',
+  minimize_duration: 'pref.minimize_duration',
+  minimize_down_payment: 'pref.minimize_down_payment',
+}
 
 export default function SimulatorForm() {
   const router = useRouter()
+  const { t } = useI18n()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -23,7 +31,7 @@ export default function SimulatorForm() {
     available_savings: '',
     country: '',
     profile_quality: '',
-    optimization_preference: 'balanced',
+    optimization_preference: DEFAULT_OPTIMIZATION_PREFERENCE as string,
     include_schedule: false,
   })
 
@@ -44,13 +52,13 @@ export default function SimulatorForm() {
         include_sweet_spot: true,
         include_schedule: form.include_schedule,
         ...(form.country && { country: form.country }),
-        ...(form.profile_quality && { profile_quality: form.profile_quality as 'average' | 'best' }),
+        ...(form.profile_quality && { profile_quality: form.profile_quality as ProfileQuality }),
       }
       const result = await simulate(req)
-      sessionStorage.setItem('simulator_result', JSON.stringify(result))
+      sessionStorage.setItem(SESSION_RESULT_KEY, JSON.stringify(result))
       router.push('/results')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unexpected error — is the API running?')
+      setError(err instanceof ApiError ? err.message : t('form.error_generic'))
     } finally {
       setLoading(false)
     }
@@ -59,8 +67,9 @@ export default function SimulatorForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full max-w-lg">
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium">Property price</label>
+        <label htmlFor="property_price" className="text-sm font-medium">{t('form.property_price')}</label>
         <input
+          id="property_price"
           type="number" min="0" step="any" required
           placeholder="300000"
           value={form.property_price}
@@ -70,8 +79,9 @@ export default function SimulatorForm() {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium">Monthly net income</label>
+        <label htmlFor="monthly_net_income" className="text-sm font-medium">{t('form.monthly_net_income')}</label>
         <input
+          id="monthly_net_income"
           type="number" min="0" step="any" required
           placeholder="3500"
           value={form.monthly_net_income}
@@ -81,8 +91,9 @@ export default function SimulatorForm() {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium">Available savings</label>
+        <label htmlFor="available_savings" className="text-sm font-medium">{t('form.available_savings')}</label>
         <input
+          id="available_savings"
           type="number" min="0" step="any" required
           placeholder="60000"
           value={form.available_savings}
@@ -93,39 +104,44 @@ export default function SimulatorForm() {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">Country</label>
+          <label htmlFor="country" className="text-sm font-medium">{t('form.country')}</label>
           <select
+            id="country"
             value={form.country}
             onChange={e => set('country', e.target.value)}
             className="border rounded px-3 py-2 bg-white"
           >
-            <option value="">Auto-detect</option>
+            <option value="">{t('form.country_auto')}</option>
             {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">Profile quality</label>
+          <label htmlFor="profile_quality" className="text-sm font-medium">{t('form.profile_quality')}</label>
           <select
+            id="profile_quality"
             value={form.profile_quality}
             onChange={e => set('profile_quality', e.target.value)}
             className="border rounded px-3 py-2 bg-white"
           >
-            <option value="">Default</option>
-            <option value="average">Average</option>
-            <option value="best">Best</option>
+            <option value="">{t('form.profile_default')}</option>
+            <option value="average">{t('form.profile_average')}</option>
+            <option value="best">{t('form.profile_best')}</option>
           </select>
         </div>
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium">Optimization preference</label>
+        <label htmlFor="optimization_preference" className="text-sm font-medium">{t('form.optimization_preference')}</label>
         <select
+          id="optimization_preference"
           value={form.optimization_preference}
           onChange={e => set('optimization_preference', e.target.value)}
           className="border rounded px-3 py-2 bg-white"
         >
-          {PREFERENCES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+          {OPTIMIZATION_PREFERENCES.map(p => (
+            <option key={p} value={p}>{t(PREFERENCE_LABEL_KEY[p])}</option>
+          ))}
         </select>
       </div>
 
@@ -135,7 +151,7 @@ export default function SimulatorForm() {
           checked={form.include_schedule}
           onChange={e => set('include_schedule', e.target.checked)}
         />
-        Include full amortization schedule
+        {t('form.include_schedule')}
       </label>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -145,7 +161,7 @@ export default function SimulatorForm() {
         disabled={loading}
         className="rounded-lg bg-black text-white px-6 py-3 font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
       >
-        {loading ? 'Running…' : 'Run simulation'}
+        {loading ? t('form.submitting') : t('form.submit')}
       </button>
     </form>
   )

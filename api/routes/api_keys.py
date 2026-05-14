@@ -8,19 +8,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..auth import require_user
+from ..constants import API_KEY_DISPLAY_PREFIX_LEN, API_KEY_PREFIX
 from ..db import get_db
 
 router = APIRouter()
-
-_PREFIX = "csim_"
 
 
 def _generate_key() -> tuple[str, str, str]:
     """Return (full_key, sha256_hash, display_prefix)."""
     raw = secrets.token_hex(32)
-    full_key = f"{_PREFIX}{raw}"
+    full_key = f"{API_KEY_PREFIX}{raw}"
     key_hash = hashlib.sha256(full_key.encode()).hexdigest()
-    key_prefix = full_key[:12]
+    key_prefix = full_key[:API_KEY_DISPLAY_PREFIX_LEN]
     return full_key, key_hash, key_prefix
 
 

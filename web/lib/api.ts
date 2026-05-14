@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+import { API_BASE } from './constants'
 
 // All monetary/rate values are decimal strings to preserve precision.
 
@@ -9,13 +9,15 @@ export interface SimulateRequest {
   available_savings: string
   // Optional — property
   country?: string
-  profile_quality?: string
+  profile_quality?: 'average' | 'best'
   purchase_taxes?: string
-  loan_duration_months?: number
   // Optional — rates
   annual_interest_rate?: string
   insurance_rate?: string
   min_down_payment_ratio?: string
+  // Optional — duration
+  max_loan_duration_months?: number
+  fixed_loan_duration_months?: number
   // Optional — constraints
   max_debt_ratio?: string
   max_monthly_payment?: string
@@ -23,7 +25,6 @@ export interface SimulateRequest {
   // Optional — behaviour
   optimization_preference?: string
   opportunity_cost_rate?: string
-  locale?: string
   // Optional — output
   include_schedule?: boolean
   include_sweet_spot?: boolean
@@ -88,13 +89,12 @@ export interface SweetSpotAnalysis {
 }
 
 export interface AmortizationRow {
-  month: number
+  period: number
   opening_balance: string
-  emi: string
-  interest: string
-  principal: string
-  insurance: string
-  total_payment: string
+  monthly_installment: string
+  principal_component: string
+  interest_component: string
+  insurance_component: string
   closing_balance: string
 }
 

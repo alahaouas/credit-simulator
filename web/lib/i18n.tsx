@@ -1,8 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-
-type Locale = 'en' | 'fr'
+import { LOCALE_STORAGE_KEY, type Locale } from './constants'
 
 const TRANSLATIONS = {
   en: {
@@ -15,6 +14,7 @@ const TRANSLATIONS = {
     'nav.settings': 'API Keys',
     'nav.home': '← Home',
     'nav.api_docs': 'API docs',
+    'nav.toggle_lang': 'Toggle language',
     // Home
     'home.tagline':
       'Find the optimal mortgage plan for your property purchase — down-payment analysis, amortization schedule, and sweet-spot breakdown.',
@@ -26,6 +26,7 @@ const TRANSLATIONS = {
     'history.view': 'View',
     'history.delete': 'Delete',
     'history.loading': 'Loading…',
+    'history.duration_auto': 'auto',
     // Stats cards
     'stats.total': 'Total simulations',
     'stats.avg_monthly': 'Avg. monthly payment',
@@ -61,6 +62,67 @@ const TRANSLATIONS = {
     'auth.email_placeholder': 'you@example.com',
     'auth.send': 'Send magic link',
     'auth.check_inbox': 'Check your inbox for the sign-in link.',
+    // Simulate page
+    'simulate.title': 'Run a simulation',
+    'simulate.subtitle': 'Enter your financial details to find the optimal loan plan.',
+    // Form
+    'form.property_price': 'Property price',
+    'form.monthly_net_income': 'Monthly net income',
+    'form.available_savings': 'Available savings',
+    'form.country': 'Country',
+    'form.country_auto': 'Auto-detect',
+    'form.profile_quality': 'Profile quality',
+    'form.profile_default': 'Default',
+    'form.profile_average': 'Average',
+    'form.profile_best': 'Best',
+    'form.optimization_preference': 'Optimization preference',
+    'form.include_schedule': 'Include full amortization schedule',
+    'form.submit': 'Run simulation',
+    'form.submitting': 'Running…',
+    'form.error_generic': 'Unexpected error — is the API running?',
+    // Optimization preferences
+    'pref.balanced': 'Balanced',
+    'pref.minimize_total_cost': 'Minimize total cost',
+    'pref.minimize_monthly_payment': 'Minimize monthly payment',
+    'pref.minimize_duration': 'Minimize duration',
+    'pref.minimize_down_payment': 'Minimize down payment',
+    // Results page
+    'results.title': 'Simulation results',
+    'results.new': 'New simulation',
+    'results.optimal_plan': 'Optimal loan plan',
+    'results.profile_suffix': 'profile',
+    'results.property_price': 'Property price',
+    'results.down_payment': 'Down payment',
+    'results.loan_principal': 'Loan principal',
+    'results.duration': 'Duration',
+    'results.monthly_installment': 'Monthly installment',
+    'results.interest_rate': 'Interest rate',
+    'results.total_interest': 'Total interest',
+    'results.total_insurance': 'Total insurance',
+    'results.total_cost': 'Total cost of credit',
+    'results.sweet_spot_title': 'Down-payment sweet-spot',
+    'results.no_results': 'No results yet.',
+    // Sweet-spot table headers
+    'sweet.down_payment': 'Down payment',
+    'sweet.label': 'Label',
+    'sweet.monthly': 'Monthly',
+    'sweet.total_cost': 'Total cost',
+    'sweet.net_saving': 'Net saving',
+    'sweet.ltv': 'LTV',
+    'sweet.rate': 'Rate',
+    // Amortization table
+    'amort.show': 'Show amortization schedule',
+    'amort.hide': 'Hide amortization schedule',
+    'amort.month': 'Month',
+    'amort.opening': 'Opening',
+    'amort.interest': 'Interest',
+    'amort.principal': 'Principal',
+    'amort.insurance': 'Insurance',
+    'amort.total': 'Total',
+    'amort.closing': 'Closing',
+    // Loan chart
+    'chart.balance_title': 'Outstanding balance over time',
+    'chart.month_axis': 'Month',
     // Errors
     'error.generic': 'Something went wrong.',
   },
@@ -74,6 +136,7 @@ const TRANSLATIONS = {
     'nav.settings': 'Clés API',
     'nav.home': '← Accueil',
     'nav.api_docs': 'Docs API',
+    'nav.toggle_lang': 'Changer de langue',
     // Home
     'home.tagline':
       "Trouvez le plan de prêt optimal pour votre achat immobilier — analyse de l'apport, tableau d'amortissement et point optimal.",
@@ -85,6 +148,7 @@ const TRANSLATIONS = {
     'history.view': 'Voir',
     'history.delete': 'Supprimer',
     'history.loading': 'Chargement…',
+    'history.duration_auto': 'auto',
     // Stats cards
     'stats.total': 'Simulations totales',
     'stats.avg_monthly': 'Mensualité moy.',
@@ -121,12 +185,73 @@ const TRANSLATIONS = {
     'auth.email_placeholder': 'vous@exemple.com',
     'auth.send': 'Envoyer le lien magique',
     'auth.check_inbox': 'Vérifiez votre boîte mail pour le lien de connexion.',
+    // Simulate page
+    'simulate.title': 'Lancer une simulation',
+    'simulate.subtitle': 'Saisissez vos détails financiers pour trouver le plan de prêt optimal.',
+    // Form
+    'form.property_price': 'Prix du bien',
+    'form.monthly_net_income': 'Revenu net mensuel',
+    'form.available_savings': 'Épargne disponible',
+    'form.country': 'Pays',
+    'form.country_auto': 'Auto-détection',
+    'form.profile_quality': 'Qualité du profil',
+    'form.profile_default': 'Par défaut',
+    'form.profile_average': 'Moyenne',
+    'form.profile_best': 'Meilleure',
+    'form.optimization_preference': "Préférence d'optimisation",
+    'form.include_schedule': "Inclure le tableau d'amortissement complet",
+    'form.submit': 'Lancer la simulation',
+    'form.submitting': 'Calcul en cours…',
+    'form.error_generic': "Erreur inattendue — l’API est-elle démarrée ?",
+    // Optimization preferences
+    'pref.balanced': 'Équilibré',
+    'pref.minimize_total_cost': 'Minimiser le coût total',
+    'pref.minimize_monthly_payment': 'Minimiser la mensualité',
+    'pref.minimize_duration': 'Minimiser la durée',
+    'pref.minimize_down_payment': "Minimiser l'apport",
+    // Results page
+    'results.title': 'Résultats de la simulation',
+    'results.new': 'Nouvelle simulation',
+    'results.optimal_plan': 'Plan de prêt optimal',
+    'results.profile_suffix': 'profil',
+    'results.property_price': 'Prix du bien',
+    'results.down_payment': 'Apport',
+    'results.loan_principal': 'Capital emprunté',
+    'results.duration': 'Durée',
+    'results.monthly_installment': 'Mensualité',
+    'results.interest_rate': "Taux d'intérêt",
+    'results.total_interest': 'Intérêts totaux',
+    'results.total_insurance': 'Assurance totale',
+    'results.total_cost': 'Coût total du crédit',
+    'results.sweet_spot_title': 'Apport optimal',
+    'results.no_results': 'Aucun résultat pour le moment.',
+    // Sweet-spot table headers
+    'sweet.down_payment': 'Apport',
+    'sweet.label': 'Libellé',
+    'sweet.monthly': 'Mensualité',
+    'sweet.total_cost': 'Coût total',
+    'sweet.net_saving': 'Économie nette',
+    'sweet.ltv': 'LTV',
+    'sweet.rate': 'Taux',
+    // Amortization table
+    'amort.show': "Afficher le tableau d'amortissement",
+    'amort.hide': "Masquer le tableau d'amortissement",
+    'amort.month': 'Mois',
+    'amort.opening': 'Solde initial',
+    'amort.interest': 'Intérêts',
+    'amort.principal': 'Capital',
+    'amort.insurance': 'Assurance',
+    'amort.total': 'Total',
+    'amort.closing': 'Solde final',
+    // Loan chart
+    'chart.balance_title': 'Solde restant au fil du temps',
+    'chart.month_axis': 'Mois',
     // Errors
-    'error.generic': 'Une erreur s\'est produite.',
+    'error.generic': "Une erreur s'est produite.",
   },
 } satisfies Record<Locale, Record<string, string>>
 
-type TranslationKey = keyof (typeof TRANSLATIONS)['en']
+export type TranslationKey = keyof (typeof TRANSLATIONS)['en']
 
 interface I18nContextValue {
   locale: Locale
@@ -138,7 +263,7 @@ const I18nContext = createContext<I18nContextValue | null>(null)
 
 function detectLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
-  const stored = localStorage.getItem('locale')
+  const stored = localStorage.getItem(LOCALE_STORAGE_KEY)
   if (stored === 'fr' || stored === 'en') return stored
   const lang = navigator.language.toLowerCase()
   return lang.startsWith('fr') ? 'fr' : 'en'
@@ -157,7 +282,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const toggle = () => {
     const next: Locale = locale === 'en' ? 'fr' : 'en'
     setLocale(next)
-    localStorage.setItem('locale', next)
+    localStorage.setItem(LOCALE_STORAGE_KEY, next)
   }
 
   return <I18nContext.Provider value={{ locale, t, toggle }}>{children}</I18nContext.Provider>

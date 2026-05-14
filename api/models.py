@@ -12,8 +12,7 @@ from pydantic import BaseModel, field_validator
 
 from credit_simulator.config import VALID_PREFERENCES
 
-_SUPPORTED_COUNTRIES = {"BE", "FR", "DE", "ES", "PT", "IT", "GB", "US"}
-_CURRENCY_DISPLAY_OPTIONS = {"symbol", "code"}
+from .constants import CURRENCY_DISPLAY_OPTIONS, SUPPORTED_COUNTRIES
 
 
 class UserPreferencesModel(BaseModel):
@@ -27,8 +26,8 @@ class UserPreferencesModel(BaseModel):
     @classmethod
     def validate_country(cls, v: object) -> str:
         s = str(v).upper()
-        if s not in _SUPPORTED_COUNTRIES:
-            raise ValueError(f"unsupported country '{v}'; must be one of {sorted(_SUPPORTED_COUNTRIES)}")
+        if s not in SUPPORTED_COUNTRIES:
+            raise ValueError(f"unsupported country '{v}'; must be one of {sorted(SUPPORTED_COUNTRIES)}")
         return s
 
     @field_validator("default_optimization_preference", mode="before")
@@ -43,7 +42,7 @@ class UserPreferencesModel(BaseModel):
     @field_validator("currency_display", mode="before")
     @classmethod
     def validate_currency_display(cls, v: object) -> str:
-        if v not in _CURRENCY_DISPLAY_OPTIONS:
+        if v not in CURRENCY_DISPLAY_OPTIONS:
             raise ValueError(f"currency_display must be 'symbol' or 'code', got {v!r}")
         return str(v)
 

@@ -6,6 +6,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .constants import DEFAULT_CORS_ORIGINS
 from .routes import api_keys, history, preferences, simulate
 
 app = FastAPI(
@@ -17,12 +18,8 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-_default_origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-]
 _extra = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
-_origins = _default_origins + _extra
+_origins = list(DEFAULT_CORS_ORIGINS) + _extra
 
 app.add_middleware(
     CORSMiddleware,

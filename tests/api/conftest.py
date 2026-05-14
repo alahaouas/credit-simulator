@@ -22,11 +22,26 @@ SAMPLE_SIM = {
 }
 
 
-def make_db_mock(*, rows: list[dict] | None = None, auth_fail: bool = False, user_id: str = USER_ID) -> MagicMock:
+def make_db_mock(
+    *,
+    rows: list[dict] | None = None,
+    auth_fail: bool = False,
+    invalid_token: bool = False,
+    user_id: str = USER_ID,
+) -> MagicMock:
+    """Build a chained-call mock of the Supabase client used in tests.
+
+    auth_fail=True       — auth backend raises (simulates service outage → 503)
+    invalid_token=True   — auth backend returns no user (simulates bad/expired JWT → anonymous)
+    """
     db = MagicMock()
 
     if auth_fail:
-        db.auth.get_user.side_effect = Exception("invalid jwt")
+        db.auth.get_user.side_effect = Exception("auth backend unreachable")
+    elif invalid_token:
+        resp = MagicMock()
+        resp.user = None
+        db.auth.get_user.return_value = resp
     else:
         user = MagicMock()
         user.user.id = user_id

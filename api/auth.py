@@ -3,17 +3,37 @@
 Supports two auth schemes:
 - Bearer <supabase_jwt>  — via Authorization header
 - csim_<hex>            — API key via X-Api-Key header (E3)
+
+Failure semantics (per the security-controls rule: a check that cannot resolve
+its required context must reject, not silently fall back):
+- Invalid / expired token              → return None  (request treated as anonymous)
+- Auth backend reachable but rejecting → return None  (anonymous)
+- Auth backend errored / unreachable   → HTTP 503     (never silent fallback)
 """
 from __future__ import annotations
 
 import contextlib
 import hashlib
+import logging
 from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException
 
 from .db import get_db
+
+logger = logging.getLogger(__name__)
+
+# supabase-py / gotrue surface their auth-rejection errors via AuthApiError.
+# If the import shape ever changes, AuthRejected falls back to a sentinel so
+# the isinstance check is always safe.
+try:
+    from gotrue.errors import AuthApiError as _AuthRejected  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover - defensive
+    class _AuthRejected(Exception):
+        pass
+
+AuthRejected = _AuthRejected
 
 
 def optional_user(
@@ -24,7 +44,8 @@ def optional_user(
     """Return the authenticated user's UUID, or None for anonymous requests.
 
     Checks Bearer token first, then X-Api-Key.
-    Raises 503 if auth material is provided but Supabase is not configured.
+    Raises 503 if auth material is provided but Supabase is not configured,
+    or if the auth backend errors unexpectedly.
     """
     # --- Bearer token (Supabase JWT) ---
     if authorization is not None and authorization.startswith("Bearer "):
@@ -33,11 +54,14 @@ def optional_user(
         token = authorization.removeprefix("Bearer ")
         try:
             resp = db.auth.get_user(token)
-            if resp.user is None:
-                return None
-            return str(resp.user.id)
-        except Exception:
+        except AuthRejected:
             return None
+        except Exception as exc:
+            logger.warning("auth backend error verifying Bearer token: %s", exc)
+            raise HTTPException(status_code=503, detail="Authentication service error") from exc
+        if resp is None or resp.user is None:
+            return None
+        return str(resp.user.id)
 
     # --- API key ---
     if x_api_key is not None:
@@ -51,16 +75,17 @@ def optional_user(
                 .eq("key_hash", key_hash)
                 .execute()
             )
-            if not resp.data:
-                return None
-            row = resp.data[0]
-            with contextlib.suppress(Exception):
-                db.table("api_keys").update(
-                    {"last_used_at": datetime.now(UTC).isoformat()}
-                ).eq("id", row["id"]).execute()
-            return str(row["user_id"])
-        except Exception:
+        except Exception as exc:
+            logger.warning("auth backend error verifying API key: %s", exc)
+            raise HTTPException(status_code=503, detail="Authentication service error") from exc
+        if not resp.data:
             return None
+        row = resp.data[0]
+        with contextlib.suppress(Exception):
+            db.table("api_keys").update(
+                {"last_used_at": datetime.now(UTC).isoformat()}
+            ).eq("id", row["id"]).execute()
+        return str(row["user_id"])
 
     return None
 
