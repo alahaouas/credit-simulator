@@ -208,24 +208,30 @@ class TestFetchFRED:
         bad_json = {"observations": [{"date": "2024-03-14", "value": "."}]}
         with patch("credit_simulator.fetcher.requests.get") as mock_get:
             mock_get.return_value = _mock_response(json_data=bad_json)
-            with patch.dict("os.environ", {"FRED_API_KEY": "test_key"}):
-                with pytest.raises(FetchError, match="missing value"):
-                    fetch_rate("US")
+            with (
+                patch.dict("os.environ", {"FRED_API_KEY": "test_key"}),
+                pytest.raises(FetchError, match="missing value"),
+            ):
+                fetch_rate("US")
 
     def test_fred_empty_observations_raises(self):
         with patch("credit_simulator.fetcher.requests.get") as mock_get:
             mock_get.return_value = _mock_response(json_data={"observations": []})
-            with patch.dict("os.environ", {"FRED_API_KEY": "test_key"}):
-                with pytest.raises(FetchError, match="no observations"):
-                    fetch_rate("US")
+            with (
+                patch.dict("os.environ", {"FRED_API_KEY": "test_key"}),
+                pytest.raises(FetchError, match="no observations"),
+            ):
+                fetch_rate("US")
 
     def test_fred_network_error_raises(self):
         import requests as _requests
         with patch("credit_simulator.fetcher.requests.get") as mock_get:
             mock_get.side_effect = _requests.RequestException("timeout")
-            with patch.dict("os.environ", {"FRED_API_KEY": "test_key"}):
-                with pytest.raises(FetchError, match="FRED API request failed"):
-                    fetch_rate("US")
+            with (
+                patch.dict("os.environ", {"FRED_API_KEY": "test_key"}),
+                pytest.raises(FetchError, match="FRED API request failed"),
+            ):
+                fetch_rate("US")
 
 
 # ── Unsupported country ────────────────────────────────────────────────────────
