@@ -25,6 +25,7 @@ htmlcov/
 .vscode/
 *.swp
 *.swo
+.history
 
 # OS
 .DS_Store
