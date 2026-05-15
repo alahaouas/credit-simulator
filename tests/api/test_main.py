@@ -24,17 +24,17 @@ class TestCorsOrigins:
 
     def test_allowed_origins_env_adds_extra_origin(self):
         origins = _reload_app({"ALLOWED_ORIGINS": "https://myapp.vercel.app"})
-        assert "https://myapp.vercel.app" in origins
+        assert any(o == "https://myapp.vercel.app" for o in origins)
 
     def test_allowed_origins_env_supports_multiple_comma_separated(self):
         origins = _reload_app({"ALLOWED_ORIGINS": "https://a.example.com,https://b.example.com"})
-        assert "https://a.example.com" in origins
-        assert "https://b.example.com" in origins
+        assert any(o == "https://a.example.com" for o in origins)
+        assert any(o == "https://b.example.com" for o in origins)
 
     def test_allowed_origins_strips_whitespace(self):
         origins = _reload_app({"ALLOWED_ORIGINS": " https://a.example.com , https://b.example.com "})
-        assert "https://a.example.com" in origins
-        assert "https://b.example.com" in origins
+        assert any(o == "https://a.example.com" for o in origins)
+        assert any(o == "https://b.example.com" for o in origins)
 
     def test_empty_allowed_origins_does_not_add_blank_entry(self):
         origins = _reload_app({"ALLOWED_ORIGINS": ""})
