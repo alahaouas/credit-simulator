@@ -1,13 +1,12 @@
 """GET/POST/DELETE /api/keys — API key management (E3)."""
 from __future__ import annotations
 
-import hashlib
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..auth import require_user
+from ..auth import hash_api_key, require_user
 from ..constants import API_KEY_DISPLAY_PREFIX_LEN, API_KEY_PREFIX
 from ..db import get_db
 
@@ -15,10 +14,10 @@ router = APIRouter()
 
 
 def _generate_key() -> tuple[str, str, str]:
-    """Return (full_key, sha256_hash, display_prefix)."""
+    """Return (full_key, pbkdf2_hash, display_prefix)."""
     raw = secrets.token_hex(32)
     full_key = f"{API_KEY_PREFIX}{raw}"
-    key_hash = hashlib.sha256(full_key.encode()).hexdigest()
+    key_hash = hash_api_key(full_key)
     key_prefix = full_key[:API_KEY_DISPLAY_PREFIX_LEN]
     return full_key, key_hash, key_prefix
 
