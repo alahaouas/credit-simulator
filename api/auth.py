@@ -35,6 +35,17 @@ except ImportError:  # pragma: no cover - defensive
 
 AuthRejected = _AuthRejected
 
+_API_KEY_SALT = b"credit-simulator/api-key/v1"
+_API_KEY_ITERATIONS = 600_000
+
+
+def hash_api_key(key: str) -> str:
+    """Deterministic PBKDF2-HMAC-SHA256 hash used for both storage and lookup."""
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", key.encode(), _API_KEY_SALT, _API_KEY_ITERATIONS
+    )
+    return digest.hex()
+
 
 def optional_user(
     authorization: Annotated[str | None, Header()] = None,
@@ -67,7 +78,7 @@ def optional_user(
     if x_api_key is not None:
         if db is None:
             raise HTTPException(status_code=503, detail="Authentication service not configured")
-        key_hash = hashlib.sha256(x_api_key.encode()).hexdigest()
+        key_hash = hash_api_key(x_api_key)
         try:
             resp = (
                 db.table("api_keys")

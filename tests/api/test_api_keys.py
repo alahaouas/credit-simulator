@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
+from api.auth import hash_api_key
 from api.db import get_db
 from api.main import app
 from tests.api.conftest import BEARER, USER_ID, make_db_mock
@@ -31,6 +32,29 @@ SAMPLE_KEY_ROW = {
 }
 # Full key row as stored (includes key_hash, not returned to clients)
 FULL_KEY_ROW = {**SAMPLE_KEY_ROW, "user_id": USER_ID, "key_hash": "fakehash"}
+
+
+# ---------------------------------------------------------------------------
+# hash_api_key
+# ---------------------------------------------------------------------------
+
+class TestApiKeyHashing:
+    def test_same_input_produces_same_hash(self):
+        key = "csim_" + "b" * 64
+        assert hash_api_key(key) == hash_api_key(key)
+
+    def test_different_inputs_produce_different_hashes(self):
+        assert hash_api_key("csim_aaa") != hash_api_key("csim_bbb")
+
+    def test_output_is_hex_string(self):
+        result = hash_api_key("csim_test")
+        assert all(c in "0123456789abcdef" for c in result)
+
+    def test_output_is_not_raw_sha256(self):
+        import hashlib
+        key = "csim_" + "c" * 64
+        sha256_hex = hashlib.sha256(key.encode()).hexdigest()
+        assert hash_api_key(key) != sha256_hex
 
 
 # ---------------------------------------------------------------------------
