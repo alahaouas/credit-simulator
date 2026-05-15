@@ -107,7 +107,7 @@ def rates_set(country: str, field: str, value: str) -> None:
     preferences.save_overrides_only(store)
     _console.print(
         f"[green]✓[/green] {code}.{field} = "
-        f"[bold]{decimal_value * Decimal('100'):.4f}%[/bold] (persisted)"
+        f"[bold]{decimal_value:.4%}[/bold] (persisted)"
     )
 
 
@@ -138,10 +138,10 @@ def rates_show(country: str | None) -> None:
         ins_best = store.get_insurance_rate(code, "best")
         table.add_row(
             code,
-            f"{avg * Decimal('100'):.4f}%",
-            f"{best * Decimal('100'):.4f}%",
-            f"{ins_avg * Decimal('100'):.4f}%",
-            f"{ins_best * Decimal('100'):.4f}%",
+            f"{avg:.4%}",
+            f"{best:.4%}",
+            f"{ins_avg:.4%}",
+            f"{ins_best:.4%}",
             profile.last_updated_date or "—",
             "yes" if overridden else "—",
         )
@@ -152,7 +152,8 @@ def rates_show(country: str | None) -> None:
 @rates_group.command("clear")
 @click.argument("country")
 @click.argument("field", required=False)
-def rates_clear(country: str, field: str | None) -> None:
+@click.option("-y", "--yes", is_flag=True, help="Skip confirmation prompt.")
+def rates_clear(country: str, field: str | None, yes: bool) -> None:
     """Clear persisted overrides for COUNTRY (single FIELD or all)."""
     code = _validate_country(country)
     if field is not None:
@@ -163,6 +164,10 @@ def rates_clear(country: str, field: str | None) -> None:
     if not overrides:
         _console.print(f"No overrides set for {code}.")
         return
+
+    if not yes:
+        target = f"{code}.{field}" if field else f"all overrides for {code}"
+        click.confirm(f"Are you sure you want to clear {target}?", abort=True)
 
     if field is None:
         store._overrides.pop(code, None)
@@ -189,6 +194,7 @@ def rates_list() -> None:
     overrides = prefs.get("profile_overrides", {})
     if not overrides:
         _console.print("No persisted rate overrides.")
+        _console.print("Use [bold cyan]credit-simulator rates set <COUNTRY> <FIELD> <VALUE>[/bold cyan] to add one.")
         return
 
     table = Table(box=box.SIMPLE, show_header=True, header_style="bold")
@@ -199,8 +205,8 @@ def rates_list() -> None:
         for field, value in sorted(overrides[code].items()):
             if field in REFRESHABLE_FIELDS:
                 try:
-                    pct = Decimal(str(value)) * Decimal("100")
-                    rendered = f"{pct:.4f}%"
+                    pct = Decimal(str(value))
+                    rendered = f"{pct:.4%}"
                 except InvalidOperation:
                     rendered = str(value)
             else:
