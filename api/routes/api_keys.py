@@ -15,10 +15,16 @@ router = APIRouter()
 
 
 def _generate_key() -> tuple[str, str, str]:
-    """Return (full_key, sha256_hash, display_prefix)."""
+    """Return (full_key, pbkdf2_hash, display_prefix)."""
     raw = secrets.token_hex(32)
     full_key = f"{API_KEY_PREFIX}{raw}"
-    key_hash = hashlib.sha256(full_key.encode()).hexdigest()
+
+    # Store API keys with a slow KDF instead of a fast hash.
+    iterations = 310_000
+    salt = secrets.token_bytes(16)
+    dk = hashlib.pbkdf2_hmac("sha256", full_key.encode(), salt, iterations)
+    key_hash = f"pbkdf2_sha256${iterations}${salt.hex()}${dk.hex()}"
+
     key_prefix = full_key[:API_KEY_DISPLAY_PREFIX_LEN]
     return full_key, key_hash, key_prefix
 
