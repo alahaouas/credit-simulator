@@ -68,7 +68,7 @@ def _fmt_money(value: Decimal, currency: str) -> str:
 
 
 def _fmt_pct(value: Decimal) -> str:
-    return f"{value * Decimal('100'):.4f}%"
+    return f"{value:.4%}"
 
 
 def _fmt_months(n: int) -> str:
@@ -166,8 +166,8 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
     ))
 
     # --- Marginal economics header ---
-    yield_pct = f"{analysis.effective_annual_yield * Decimal('100'):.2f}%"
-    opp_pct   = f"{analysis.opportunity_cost_rate * Decimal('100'):.1f}%"
+    yield_pct = f"{analysis.effective_annual_yield:.2%}"
+    opp_pct   = f"{analysis.opportunity_cost_rate:.1%}"
     saving_k  = _fmt_k(analysis.marginal_saving_per_1k)
     verdict = (
         _("sweetspot.verdict.efficient")
@@ -208,10 +208,10 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
         t.add_row(
             label,
             _fmt_k(m.down_payment),
-            f"{m.effective_rate * Decimal('100'):.2f}%",
+            f"{m.effective_rate:.2%}",
             _fmt_k(m.plan.monthly_installment),
-            f"{m.dti_ratio * Decimal('100'):.0f}%",
-            f"{m.ltv_ratio * Decimal('100'):.0f}%",
+            f"{m.dti_ratio:.0%}",
+            f"{m.ltv_ratio:.0%}",
             _fmt_k(m.plan.total_cost_of_credit),
             _fmt_k(m.savings_remaining),
         )
@@ -232,9 +232,9 @@ def display_sweet_spot(analysis: SweetSpotAnalysis, currency: str) -> None:
         te.add_column(_("sweetspot.col.saves"),    justify="right", min_width=12)
         te.add_column(_("sweetspot.col.yield"),    justify="right", min_width=6)
         for tier in analysis.tier_economics:
-            rate_str = f"{tier.effective_rate * Decimal('100'):.2f}%"
+            rate_str = f"{tier.effective_rate:.2%}"
             save_str = f"{_fmt_k(tier.saving_per_1k)} {currency}"
-            yield_str = f"{tier.annual_yield * Decimal('100'):.2f}%"
+            yield_str = f"{tier.annual_yield:.2%}"
             if tier.is_best_tier:
                 te.add_row(
                     f"[magenta]{tier.ltv_range}[/magenta]",

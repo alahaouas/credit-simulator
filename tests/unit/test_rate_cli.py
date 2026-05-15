@@ -165,7 +165,7 @@ class TestRatesClear:
     def test_clear_removes_all_overrides_for_country(self, tmp_path):
         with _patch_prefs_file(tmp_path):
             CliRunner().invoke(rates_group, ["set", "BE", "annual_rate_best", "0.0310"])
-            result = CliRunner().invoke(rates_group, ["clear", "BE"])
+            result = CliRunner().invoke(rates_group, ["clear", "-y", "BE"])
             assert result.exit_code == 0
             data = _read_prefs(tmp_path)
             assert "BE" not in data["profile_overrides"]
@@ -175,7 +175,7 @@ class TestRatesClear:
             CliRunner().invoke(rates_group, ["set", "BE", "annual_rate_best", "0.0310"])
             CliRunner().invoke(rates_group, ["set", "BE", "insurance_rate_best", "0.0010"])
             result = CliRunner().invoke(
-                rates_group, ["clear", "BE", "annual_rate_best"]
+                rates_group, ["clear", "-y", "BE", "annual_rate_best"]
             )
             assert result.exit_code == 0
             data = _read_prefs(tmp_path)
@@ -194,7 +194,7 @@ class TestRatesClear:
             data = _read_prefs(tmp_path)
             assert ["BE", "best"] in data["manual_rates"]
 
-            CliRunner().invoke(rates_group, ["clear", "BE"])
+            CliRunner().invoke(rates_group, ["clear", "-y", "BE"])
             data = _read_prefs(tmp_path)
             assert ["BE", "best"] not in data["manual_rates"]
 
