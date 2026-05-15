@@ -67,12 +67,18 @@ def optional_user(
     if x_api_key is not None:
         if db is None:
             raise HTTPException(status_code=503, detail="Authentication service not configured")
-        key_hash = hashlib.sha256(x_api_key.encode()).hexdigest()
+        legacy_key_hash = hashlib.sha256(x_api_key.encode()).hexdigest()
+        key_hash = hashlib.pbkdf2_hmac(
+            "sha256",
+            x_api_key.encode(),
+            b"api-key-hash-v1",
+            600_000,
+        ).hex()
         try:
             resp = (
                 db.table("api_keys")
                 .select("user_id,id")
-                .eq("key_hash", key_hash)
+                .in_("key_hash", [key_hash, legacy_key_hash])
                 .execute()
             )
         except Exception as exc:
