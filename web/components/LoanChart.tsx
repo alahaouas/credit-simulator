@@ -21,7 +21,7 @@ export default function LoanChart({ rows }: { rows: AmortizationRow[] }) {
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis dataKey="month" tick={{ fontSize: 12 }} label={{ value: t('chart.month_axis'), position: 'insideBottom', offset: -2, fontSize: 12 }} />
           <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-          <Tooltip formatter={(v: number) => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
+          <Tooltip formatter={(v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
           <Line type="monotone" dataKey="balance" stroke="#000" dot={false} strokeWidth={2} name={t('amort.closing')} />
         </LineChart>
       </ResponsiveContainer>
