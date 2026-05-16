@@ -8,6 +8,7 @@ import {
   OPTIMIZATION_PREFERENCES,
   DEFAULT_OPTIMIZATION_PREFERENCE,
   SESSION_RESULT_KEY,
+  SESSION_INPUTS_KEY,
   type ProfileQuality,
 } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
@@ -59,6 +60,7 @@ export default function SimulatorForm() {
       }
       const result = await simulate(req)
       sessionStorage.setItem(SESSION_RESULT_KEY, JSON.stringify(result))
+      sessionStorage.setItem(SESSION_INPUTS_KEY, JSON.stringify(req))
       router.push('/results')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('form.error_generic'))

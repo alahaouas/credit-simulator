@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
 // Pin the UI locale so tests don't depend on the host system language.
 test.beforeEach(async ({ page }) => {
@@ -97,4 +97,88 @@ test('simulator surfaces backend validation error', async ({ page }) => {
 
   await expect(page.getByText(/insufficient savings/i)).toBeVisible()
   await expect(page).toHaveURL(/\/simulate$/)
+})
+
+// Tweaked response: lower rate → lower monthly installment and total cost
+const MOCK_TWEAKED_RESPONSE = {
+  result: {
+    ...MOCK_RESPONSE.result,
+    plan: {
+      ...MOCK_RESPONSE.result.plan,
+      annual_interest_rate: '0.0300',
+      monthly_emi: '1270.00',
+      monthly_installment: '1337.20',
+      total_interest_paid: '112600.00',
+      total_cost_of_credit: '132760.00',
+    },
+  },
+  sweet_spot: null,
+  schedule: null,
+}
+
+async function goToResults(page: Page) {
+  let callCount = 0
+  await page.route('**/api/simulate', async (route) => {
+    callCount++
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(callCount === 1 ? MOCK_RESPONSE : MOCK_TWEAKED_RESPONSE),
+    })
+  })
+  await page.goto('/simulate')
+  await page.locator('#property_price').fill('300000')
+  await page.locator('#monthly_net_income').fill('4000')
+  await page.locator('#available_savings').fill('80000')
+  await page.locator('form button[type=submit]').click()
+  await page.waitForURL(/\/results$/)
+}
+
+test('what-if panel is visible on results page with original values', async ({ page }) => {
+  await page.route('**/api/simulate', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_RESPONSE) })
+  })
+  await page.goto('/simulate')
+  await page.locator('#property_price').fill('300000')
+  await page.locator('#monthly_net_income').fill('4000')
+  await page.locator('#available_savings').fill('80000')
+  await page.locator('form button[type=submit]').click()
+  await page.waitForURL(/\/results$/)
+
+  await expect(page.getByText('What-if tweaking')).toBeVisible()
+  await expect(page.locator('#whatif-rate')).toHaveValue('3.45')
+  await expect(page.locator('#whatif-duration')).toHaveValue('300')
+  // Delta table should not yet be shown (no changes made)
+  await expect(page.getByText('Original')).not.toBeVisible()
+})
+
+test('what-if panel shows delta table after rate change', async ({ page }) => {
+  await goToResults(page)
+
+  await expect(page.getByText('What-if tweaking')).toBeVisible()
+
+  // Change rate to trigger re-simulation
+  await page.locator('#whatif-rate').fill('3.00')
+
+  // Delta table should appear after debounce + API response
+  await expect(page.getByText('Original')).toBeVisible({ timeout: 3000 })
+  await expect(page.getByText('Tweaked')).toBeVisible()
+  await expect(page.getByText('Delta')).toBeVisible()
+
+  // Monthly installment delta cell should show a negative (green) delta
+  const deltaCell = page.locator('[data-testid="whatif-delta-Monthly installment"]')
+  await expect(deltaCell).toBeVisible()
+  await expect(deltaCell).toHaveClass(/text-green/)
+})
+
+test('what-if reset restores original values and hides delta table', async ({ page }) => {
+  await goToResults(page)
+
+  await page.locator('#whatif-rate').fill('3.00')
+  await expect(page.getByText('Original')).toBeVisible({ timeout: 3000 })
+
+  await page.getByText('Reset').click()
+
+  await expect(page.locator('#whatif-rate')).toHaveValue('3.45')
+  await expect(page.getByText('Original')).not.toBeVisible()
 })
