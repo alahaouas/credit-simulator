@@ -13,6 +13,8 @@ import {
   type ProfileQuality,
 } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
+import { useTour } from '@/hooks/useTour'
+import TourTooltip from '@/components/TourTooltip'
 
 const PREFERENCE_LABEL_KEY: Record<(typeof OPTIMIZATION_PREFERENCES)[number], TranslationKey> = {
   balanced: 'pref.balanced',
@@ -28,6 +30,7 @@ const selectClass = 'border dark:border-gray-600 rounded px-3 py-2 bg-white dark
 export default function SimulatorForm() {
   const router = useRouter()
   const { t } = useI18n()
+  const { step, totalSteps, next, skip, restart, done } = useTour()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -91,86 +94,106 @@ export default function SimulatorForm() {
     }
   }
 
+  const tourProps = (tourStep: number) => ({
+    active: step === tourStep,
+    step: tourStep,
+    total: totalSteps,
+    nextLabel: tourStep === totalSteps - 1 ? t('tour.done') : t('tour.next'),
+    skipLabel: t('tour.skip'),
+    onNext: next,
+    onSkip: skip,
+  })
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full max-w-lg">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="property_price" className="text-sm font-medium">{t('form.property_price')}</label>
-        <input
-          id="property_price"
-          type="number" min="0" step="any" required
-          placeholder="300000"
-          value={form.property_price}
-          onChange={e => set('property_price', e.target.value)}
-          className={inputClass}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="monthly_net_income" className="text-sm font-medium">{t('form.monthly_net_income')}</label>
-        <input
-          id="monthly_net_income"
-          type="number" min="0" step="any" required
-          placeholder="3500"
-          value={form.monthly_net_income}
-          onChange={e => set('monthly_net_income', e.target.value)}
-          className={inputClass}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="available_savings" className="text-sm font-medium">{t('form.available_savings')}</label>
-        <input
-          id="available_savings"
-          type="number" min="0" step="any" required
-          placeholder="60000"
-          value={form.available_savings}
-          onChange={e => set('available_savings', e.target.value)}
-          className={inputClass}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+      <TourTooltip title={t('tour.step1_title')} description={t('tour.step1_desc')} {...tourProps(0)}>
         <div className="flex flex-col gap-1">
-          <label htmlFor="country" className="text-sm font-medium">{t('form.country')}</label>
+          <label htmlFor="property_price" className="text-sm font-medium">{t('form.property_price')}</label>
+          <input
+            id="property_price"
+            type="number" min="0" step="any" required
+            placeholder="300000"
+            value={form.property_price}
+            onChange={e => set('property_price', e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      </TourTooltip>
+
+      <TourTooltip title={t('tour.step2_title')} description={t('tour.step2_desc')} {...tourProps(1)}>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="monthly_net_income" className="text-sm font-medium">{t('form.monthly_net_income')}</label>
+          <input
+            id="monthly_net_income"
+            type="number" min="0" step="any" required
+            placeholder="3500"
+            value={form.monthly_net_income}
+            onChange={e => set('monthly_net_income', e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      </TourTooltip>
+
+      <TourTooltip title={t('tour.step3_title')} description={t('tour.step3_desc')} {...tourProps(2)}>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="available_savings" className="text-sm font-medium">{t('form.available_savings')}</label>
+          <input
+            id="available_savings"
+            type="number" min="0" step="any" required
+            placeholder="60000"
+            value={form.available_savings}
+            onChange={e => set('available_savings', e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      </TourTooltip>
+
+      <TourTooltip title={t('tour.step4_title')} description={t('tour.step4_desc')} {...tourProps(3)}>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="country" className="text-sm font-medium">{t('form.country')}</label>
+            <select
+              id="country"
+              value={form.country}
+              onChange={e => set('country', e.target.value)}
+              className={selectClass}
+            >
+              <option value="">{t('form.country_auto')}</option>
+              {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="profile_quality" className="text-sm font-medium">{t('form.profile_quality')}</label>
+            <select
+              id="profile_quality"
+              value={form.profile_quality}
+              onChange={e => set('profile_quality', e.target.value)}
+              className={selectClass}
+            >
+              <option value="">{t('form.profile_default')}</option>
+              <option value="average">{t('form.profile_average')}</option>
+              <option value="best">{t('form.profile_best')}</option>
+            </select>
+          </div>
+        </div>
+      </TourTooltip>
+
+      <TourTooltip title={t('tour.step5_title')} description={t('tour.step5_desc')} {...tourProps(4)}>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="optimization_preference" className="text-sm font-medium">{t('form.optimization_preference')}</label>
           <select
-            id="country"
-            value={form.country}
-            onChange={e => set('country', e.target.value)}
+            id="optimization_preference"
+            value={form.optimization_preference}
+            onChange={e => set('optimization_preference', e.target.value)}
             className={selectClass}
           >
-            <option value="">{t('form.country_auto')}</option>
-            {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {OPTIMIZATION_PREFERENCES.map(p => (
+              <option key={p} value={p}>{t(PREFERENCE_LABEL_KEY[p])}</option>
+            ))}
           </select>
         </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="profile_quality" className="text-sm font-medium">{t('form.profile_quality')}</label>
-          <select
-            id="profile_quality"
-            value={form.profile_quality}
-            onChange={e => set('profile_quality', e.target.value)}
-            className={selectClass}
-          >
-            <option value="">{t('form.profile_default')}</option>
-            <option value="average">{t('form.profile_average')}</option>
-            <option value="best">{t('form.profile_best')}</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="optimization_preference" className="text-sm font-medium">{t('form.optimization_preference')}</label>
-        <select
-          id="optimization_preference"
-          value={form.optimization_preference}
-          onChange={e => set('optimization_preference', e.target.value)}
-          className={selectClass}
-        >
-          {OPTIMIZATION_PREFERENCES.map(p => (
-            <option key={p} value={p}>{t(PREFERENCE_LABEL_KEY[p])}</option>
-          ))}
-        </select>
-      </div>
+      </TourTooltip>
 
       <label className="flex items-center gap-2 text-sm">
         <input
@@ -190,6 +213,16 @@ export default function SimulatorForm() {
       >
         {loading ? t('form.submitting') : t('form.submit')}
       </button>
+
+      {done && (
+        <button
+          type="button"
+          onClick={restart}
+          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-center"
+        >
+          {t('tour.restart')}
+        </button>
+      )}
     </form>
   )
 }
