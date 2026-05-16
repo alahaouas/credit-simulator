@@ -106,8 +106,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "status.fetching_rate": "  Fetching latest average annual rate for {country}…",
 
         # === Error messages ===
-        "error.no_result": "No simulation result available yet.",
-        "error.run_first": "Run a simulation first.",
+        "error.no_result": "No simulation result available yet. Type 'update' to adjust parameters.",
+        "error.run_first": "Run a simulation first. Type 'update' to adjust parameters.",
         "error.fetch_failed": "  Fetch failed: {exc}",
         "error.sweet_spot_failed": "Sweet-spot analysis failed: {exc}",
         "error.param_error": "Parameter error: {exc}",
@@ -393,8 +393,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "status.fetching_rate": "  Récupération du taux moyen pour {country}…",
 
         # === Error messages ===
-        "error.no_result": "Aucun résultat de simulation disponible.",
-        "error.run_first": "Lancez d'abord une simulation.",
+        "error.no_result": "Aucun résultat de simulation disponible. Tapez 'update' pour ajuster les paramètres.",
+        "error.run_first": "Lancez d'abord une simulation. Tapez 'update' pour ajuster les paramètres.",
         "error.fetch_failed": "  Récupération échouée : {exc}",
         "error.sweet_spot_failed": "Analyse du point optimal échouée : {exc}",
         "error.param_error": "Erreur de paramètre : {exc}",
