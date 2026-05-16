@@ -146,6 +146,26 @@ const TRANSLATIONS = {
     'whatif.monthly': 'Monthly installment',
     'whatif.total_interest': 'Total interest',
     'whatif.total_cost': 'Total cost',
+    // History — compare
+    'history.compare': 'Compare',
+    'history.compare_hint': 'Select 2–3 simulations to compare',
+    // Compare page
+    'compare.title': 'Scenario comparison',
+    'compare.loading': 'Loading simulations…',
+    'compare.no_data': 'No simulations selected. Go to history and pick 2–3.',
+    'compare.error': 'Failed to load one or more simulations.',
+    'compare.sim_col': 'Simulation',
+    'compare.metric_col': 'Metric',
+    'compare.down_payment': 'Down payment',
+    'compare.loan_principal': 'Loan principal',
+    'compare.duration': 'Duration',
+    'compare.monthly': 'Monthly installment',
+    'compare.rate': 'Interest rate',
+    'compare.total_interest': 'Total interest',
+    'compare.total_cost': 'Total cost',
+    'compare.apr': 'APR',
+    'compare.ltv': 'LTV',
+    'compare.preference': 'Preference',
   },
   fr: {
     // Navigation
@@ -290,6 +310,26 @@ const TRANSLATIONS = {
     'whatif.monthly': 'Mensualité',
     'whatif.total_interest': 'Intérêts totaux',
     'whatif.total_cost': 'Coût total',
+    // History — compare
+    'history.compare': 'Comparer',
+    'history.compare_hint': 'Sélectionnez 2 à 3 simulations à comparer',
+    // Compare page
+    'compare.title': 'Comparaison de scénarios',
+    'compare.loading': 'Chargement des simulations…',
+    'compare.no_data': 'Aucune simulation sélectionnée. Allez dans l\'historique et choisissez-en 2 à 3.',
+    'compare.error': 'Impossible de charger une ou plusieurs simulations.',
+    'compare.sim_col': 'Simulation',
+    'compare.metric_col': 'Métrique',
+    'compare.down_payment': 'Apport initial',
+    'compare.loan_principal': 'Capital emprunté',
+    'compare.duration': 'Durée',
+    'compare.monthly': 'Mensualité',
+    'compare.rate': "Taux d'intérêt",
+    'compare.total_interest': 'Intérêts totaux',
+    'compare.total_cost': 'Coût total du crédit',
+    'compare.apr': 'TAEG',
+    'compare.ltv': 'LTV',
+    'compare.preference': 'Préférence',
   },
 } satisfies Record<Locale, Record<string, string>>
 

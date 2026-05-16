@@ -176,7 +176,7 @@ export async function getSimulation(id: string, accessToken: string) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new ApiError(res.status, err.detail ?? res.statusText)
   }
-  return res.json() as Promise<{ id: string; created_at: string; inputs: SimulateRequest; result: SimulateResponse }>
+  return res.json() as Promise<{ id: string; created_at: string; name?: string | null; inputs: SimulateRequest; result: SimulateResponse }>
 }
 
 export async function deleteSimulation(id: string, accessToken: string) {

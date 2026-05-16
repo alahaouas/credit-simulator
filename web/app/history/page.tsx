@@ -74,6 +74,19 @@ export default function HistoryPage() {
   const [editName, setEditName] = useState('')
   const [editTags, setEditTags] = useState('')
   const [saving, setSaving] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  function toggleSelect(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else if (next.size < 3) {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -186,6 +199,14 @@ export default function HistoryPage() {
         <div className="flex items-center gap-3">
           <DarkModeToggle />
           <LocaleToggle />
+          {selected.size >= 2 && (
+            <Link
+              href={`/compare?ids=${Array.from(selected).join(',')}`}
+              className="text-sm rounded-lg px-4 py-2 bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+            >
+              {t('history.compare')} ({selected.size})
+            </Link>
+          )}
           <Link href="/simulate" className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             {t('history.new')}
           </Link>
@@ -204,6 +225,7 @@ export default function HistoryPage() {
           </Link>
         </div>
       ) : (
+        <>
         <ul className="divide-y dark:divide-gray-700 border dark:border-gray-700 rounded-lg overflow-hidden">
           {items.map(sim => (
             <li key={sim.id} className="px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -241,7 +263,15 @@ export default function HistoryPage() {
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(sim.id)}
+                    onChange={() => toggleSelect(sim.id)}
+                    disabled={!selected.has(sim.id) && selected.size >= 3}
+                    aria-label={t('history.compare')}
+                    className="shrink-0 h-4 w-4 rounded border-gray-300 dark:border-gray-600 accent-black dark:accent-white disabled:opacity-40 cursor-pointer disabled:cursor-default"
+                  />
+                  <div className="min-w-0 flex-1">
                     {sim.name ? (
                       <>
                         <p className="font-medium truncate">{sim.name}</p>
@@ -293,6 +323,10 @@ export default function HistoryPage() {
             </li>
           ))}
         </ul>
+        {items.length >= 2 && selected.size === 0 && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 text-center">{t('history.compare_hint')}</p>
+        )}
+        </>
       )}
 
       <div className="mt-6 text-center">
