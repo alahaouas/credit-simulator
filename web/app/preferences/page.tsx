@@ -15,6 +15,7 @@ import {
 } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { LocaleToggle } from '@/components/LocaleToggle'
+import { DarkModeToggle } from '@/components/DarkModeToggle'
 
 const PREFERENCE_LABEL_KEY: Record<(typeof OPTIMIZATION_PREFERENCES)[number], TranslationKey> = {
   balanced: 'pref.balanced',
@@ -74,7 +75,7 @@ export default function PreferencesPage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">{t('prefs.loading')}</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('prefs.loading')}</p>
       </main>
     )
   }
@@ -83,20 +84,23 @@ export default function PreferencesPage() {
     <main className="min-h-screen p-8 max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold tracking-tight">{t('prefs.title')}</h1>
-        <LocaleToggle />
+        <div className="flex items-center gap-3">
+          <DarkModeToggle />
+          <LocaleToggle />
+        </div>
       </div>
 
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
       <form onSubmit={handleSave} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {t('prefs.country')}
           </label>
           <select
             value={form.default_country}
             onChange={e => setForm(f => ({ ...f, default_country: e.target.value }))}
-            className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-lg border dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400"
           >
             {COUNTRIES.map(c => (
               <option key={c} value={c}>{c}</option>
@@ -105,13 +109,13 @@ export default function PreferencesPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {t('prefs.preference')}
           </label>
           <select
             value={form.default_optimization_preference}
             onChange={e => setForm(f => ({ ...f, default_optimization_preference: e.target.value }))}
-            className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-lg border dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400"
           >
             {OPTIMIZATION_PREFERENCES.map(p => (
               <option key={p} value={p}>{t(PREFERENCE_LABEL_KEY[p])}</option>
@@ -120,7 +124,7 @@ export default function PreferencesPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {t('prefs.currency_display')}
           </label>
           <div className="flex gap-4">
@@ -132,7 +136,7 @@ export default function PreferencesPage() {
                   value={opt}
                   checked={form.currency_display === opt}
                   onChange={() => setForm(f => ({ ...f, currency_display: opt }))}
-                  className="accent-black"
+                  className="accent-black dark:accent-white"
                 />
                 <span className="text-sm">{t(opt === 'symbol' ? 'prefs.symbol' : 'prefs.code')}</span>
               </label>
@@ -143,14 +147,14 @@ export default function PreferencesPage() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-lg bg-black text-white py-2.5 font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+          className="w-full rounded-lg bg-black text-white dark:bg-white dark:text-black py-2.5 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
         >
           {saved ? t('prefs.saved') : saving ? '…' : t('prefs.save')}
         </button>
       </form>
 
       <div className="mt-8 text-center">
-        <Link href="/" className="text-sm text-gray-400 hover:text-gray-600">{t('nav.home')}</Link>
+        <Link href="/" className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">{t('nav.home')}</Link>
       </div>
     </main>
   )

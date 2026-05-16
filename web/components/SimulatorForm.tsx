@@ -20,6 +20,9 @@ const PREFERENCE_LABEL_KEY: Record<(typeof OPTIMIZATION_PREFERENCES)[number], Tr
   minimize_down_payment: 'pref.minimize_down_payment',
 }
 
+const inputClass = 'border dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400'
+const selectClass = 'border dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400'
+
 export default function SimulatorForm() {
   const router = useRouter()
   const { t } = useI18n()
@@ -74,7 +77,7 @@ export default function SimulatorForm() {
           placeholder="300000"
           value={form.property_price}
           onChange={e => set('property_price', e.target.value)}
-          className="border rounded px-3 py-2"
+          className={inputClass}
         />
       </div>
 
@@ -86,7 +89,7 @@ export default function SimulatorForm() {
           placeholder="3500"
           value={form.monthly_net_income}
           onChange={e => set('monthly_net_income', e.target.value)}
-          className="border rounded px-3 py-2"
+          className={inputClass}
         />
       </div>
 
@@ -98,7 +101,7 @@ export default function SimulatorForm() {
           placeholder="60000"
           value={form.available_savings}
           onChange={e => set('available_savings', e.target.value)}
-          className="border rounded px-3 py-2"
+          className={inputClass}
         />
       </div>
 
@@ -109,7 +112,7 @@ export default function SimulatorForm() {
             id="country"
             value={form.country}
             onChange={e => set('country', e.target.value)}
-            className="border rounded px-3 py-2 bg-white"
+            className={selectClass}
           >
             <option value="">{t('form.country_auto')}</option>
             {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -122,7 +125,7 @@ export default function SimulatorForm() {
             id="profile_quality"
             value={form.profile_quality}
             onChange={e => set('profile_quality', e.target.value)}
-            className="border rounded px-3 py-2 bg-white"
+            className={selectClass}
           >
             <option value="">{t('form.profile_default')}</option>
             <option value="average">{t('form.profile_average')}</option>
@@ -137,7 +140,7 @@ export default function SimulatorForm() {
           id="optimization_preference"
           value={form.optimization_preference}
           onChange={e => set('optimization_preference', e.target.value)}
-          className="border rounded px-3 py-2 bg-white"
+          className={selectClass}
         >
           {OPTIMIZATION_PREFERENCES.map(p => (
             <option key={p} value={p}>{t(PREFERENCE_LABEL_KEY[p])}</option>
@@ -159,7 +162,7 @@ export default function SimulatorForm() {
       <button
         type="submit"
         disabled={loading}
-        className="rounded-lg bg-black text-white px-6 py-3 font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+        className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
       >
         {loading ? t('form.submitting') : t('form.submit')}
       </button>

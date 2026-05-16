@@ -11,6 +11,7 @@ import {
 import { DEFAULT_COUNTRY, SESSION_RESULT_KEY } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { LocaleToggle } from '@/components/LocaleToggle'
+import { DarkModeToggle } from '@/components/DarkModeToggle'
 
 type SimulationSummary = {
   id: string
@@ -56,8 +57,8 @@ function StatsCards({ stats, t }: { stats: SimulationStats; t: (k: TranslationKe
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
       {cards.map(c => (
-        <div key={c.label} className="rounded-lg border p-4">
-          <p className="text-xs text-gray-400 mb-1">{c.label}</p>
+        <div key={c.label} className="rounded-lg border dark:border-gray-700 p-4">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{c.label}</p>
           <p className="text-lg font-semibold">{c.value}</p>
         </div>
       ))}
@@ -126,7 +127,7 @@ export default function HistoryPage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">{t('history.loading')}</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('history.loading')}</p>
       </main>
     )
   }
@@ -136,8 +137,9 @@ export default function HistoryPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold tracking-tight">{t('history.title')}</h1>
         <div className="flex items-center gap-3">
+          <DarkModeToggle />
           <LocaleToggle />
-          <Link href="/simulate" className="text-sm border rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors">
+          <Link href="/simulate" className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             {t('history.new')}
           </Link>
         </div>
@@ -148,31 +150,31 @@ export default function HistoryPage() {
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
       {items.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <p className="mb-4">{t('history.empty')}</p>
-          <Link href="/simulate" className="rounded-lg bg-black text-white px-6 py-3 font-medium hover:bg-gray-800 transition-colors">
+          <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
             {t('history.first')}
           </Link>
         </div>
       ) : (
-        <ul className="divide-y border rounded-lg overflow-hidden">
+        <ul className="divide-y dark:divide-gray-700 border dark:border-gray-700 rounded-lg overflow-hidden">
           {items.map(sim => (
-            <li key={sim.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-gray-50">
+            <li key={sim.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800">
               <div className="min-w-0">
                 <p className="font-medium truncate">{inputSummary(sim.inputs, t)}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{formatDate(sim.created_at)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(sim.created_at)}</p>
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => handleView(sim.id)}
-                  className="text-sm px-3 py-1.5 rounded border hover:bg-gray-100 transition-colors"
+                  className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   {t('history.view')}
                 </button>
                 <button
                   onClick={() => handleDelete(sim.id)}
                   disabled={deleting === sim.id}
-                  className="text-sm px-3 py-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+                  className="text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
                 >
                   {deleting === sim.id ? '…' : t('history.delete')}
                 </button>
@@ -183,7 +185,7 @@ export default function HistoryPage() {
       )}
 
       <div className="mt-6 text-center">
-        <Link href="/" className="text-sm text-gray-400 hover:text-gray-600">{t('nav.home')}</Link>
+        <Link href="/" className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">{t('nav.home')}</Link>
       </div>
     </main>
   )
