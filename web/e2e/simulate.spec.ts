@@ -75,7 +75,7 @@ test('simulator happy path: form → results page', async ({ page }) => {
 
   await page.locator('form button[type=submit]').click()
 
-  await expect(page).toHaveURL(/\/results$/)
+  await page.waitForURL(/\/results$/)
   await expect(page.locator('h1')).toBeVisible()
 
   // Monthly installment shown formatted as en-US
