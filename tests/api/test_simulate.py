@@ -314,3 +314,86 @@ class TestSimulateWithAuth:
             headers={"Authorization": "Bearer some-token"},
         )
         assert resp.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# POST /api/simulate/all (B1)
+# ---------------------------------------------------------------------------
+
+ALL_PREFS = {
+    "balanced",
+    "minimize_total_cost",
+    "minimize_monthly_payment",
+    "minimize_duration",
+    "minimize_down_payment",
+}
+
+
+class TestSimulateAll:
+    def test_returns_200(self):
+        resp = client.post("/api/simulate/all", json=BASE)
+        assert resp.status_code == 200
+
+    def test_response_has_results_key(self):
+        data = client.post("/api/simulate/all", json=BASE).json()
+        assert "results" in data
+
+    def test_results_contains_all_five_preferences(self):
+        results = client.post("/api/simulate/all", json=BASE).json()["results"]
+        assert set(results.keys()) == ALL_PREFS
+
+    def test_each_result_is_dict_or_null(self):
+        results = client.post("/api/simulate/all", json=BASE).json()["results"]
+        for pref, val in results.items():
+            assert val is None or isinstance(val, dict), f"{pref}: expected dict or null, got {type(val)}"
+
+    def test_feasible_results_have_required_fields(self):
+        results = client.post("/api/simulate/all", json=BASE).json()["results"]
+        for pref, val in results.items():
+            if val is None:
+                continue
+            for field in ("down_payment", "loan_principal", "loan_duration_months", "plan"):
+                assert field in val, f"{pref}: missing field {field!r}"
+
+    def test_decimal_fields_are_strings(self):
+        results = client.post("/api/simulate/all", json=BASE).json()["results"]
+        for pref, val in results.items():
+            if val is None:
+                continue
+            assert isinstance(val["down_payment"], str), f"{pref}: down_payment not a string"
+            assert isinstance(val["plan"]["monthly_installment"], str), (
+                f"{pref}: plan.monthly_installment not a string"
+            )
+
+    def test_optimization_preference_field_ignored(self):
+        """Passing optimization_preference does not limit results to that preference."""
+        results = client.post(
+            "/api/simulate/all", json={**BASE, "optimization_preference": "balanced"}
+        ).json()["results"]
+        assert set(results.keys()) == ALL_PREFS
+
+    def test_each_result_carries_correct_preference_label(self):
+        results = client.post("/api/simulate/all", json=BASE).json()["results"]
+        for pref, val in results.items():
+            if val is None:
+                continue
+            assert val["optimization_preference"] == pref
+
+    def test_missing_mandatory_field_returns_422(self):
+        payload = {"property_price": "300000", "monthly_net_income": "4000"}
+        assert client.post("/api/simulate/all", json=payload).status_code == 422
+
+    def test_infeasible_base_inputs_return_422(self):
+        payload = {
+            "property_price": "500000",
+            "monthly_net_income": "1000",
+            "available_savings": "1000",
+        }
+        assert client.post("/api/simulate/all", json=payload).status_code == 422
+
+    def test_country_propagated_to_all_results(self):
+        results = client.post("/api/simulate/all", json={**BASE, "country": "FR"}).json()["results"]
+        for pref, val in results.items():
+            if val is None:
+                continue
+            assert val["country"] == "FR", f"{pref}: expected country FR"

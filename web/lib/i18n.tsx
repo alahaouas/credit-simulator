@@ -109,6 +109,10 @@ const TRANSLATIONS = {
     'results.sweet_spot_title': 'Down-payment sweet-spot',
     'results.no_results': 'No results yet.',
     'results.export_csv': 'Export schedule (CSV)',
+    'results.compare_all': 'Compare all preferences',
+    'results.all_prefs_title': 'All-preferences comparison',
+    'results.all_prefs_loading': 'Running all preferences…',
+    'results.all_prefs_error': 'Infeasible',
     // Sweet-spot table headers
     'sweet.down_payment': 'Down payment',
     'sweet.label': 'Label',
@@ -307,6 +311,10 @@ const TRANSLATIONS = {
     'results.sweet_spot_title': 'Apport optimal',
     'results.no_results': 'Aucun résultat pour le moment.',
     'results.export_csv': 'Exporter le tableau (CSV)',
+    'results.compare_all': 'Comparer toutes les préférences',
+    'results.all_prefs_title': 'Comparaison toutes préférences',
+    'results.all_prefs_loading': 'Calcul en cours…',
+    'results.all_prefs_error': 'Infaisable',
     // Sweet-spot table headers
     'sweet.down_payment': 'Apport',
     'sweet.label': 'Libellé',
