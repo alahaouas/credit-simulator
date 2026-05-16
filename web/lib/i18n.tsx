@@ -146,9 +146,24 @@ const TRANSLATIONS = {
     'whatif.monthly': 'Monthly installment',
     'whatif.total_interest': 'Total interest',
     'whatif.total_cost': 'Total cost',
+    // History — share
+    'history.share': 'Share',
+    'history.share_generate': 'Generate public link',
+    'history.share_generating': 'Generating…',
+    'history.share_copy': 'Copy link',
+    'history.share_copied': 'Copied!',
+    'history.share_revoke': 'Revoke',
+    'history.share_revoking': 'Revoking…',
+    'history.share_hint': 'Anyone with this link can view the simulation without signing in.',
     // History — compare
     'history.compare': 'Compare',
     'history.compare_hint': 'Select 2–3 simulations to compare',
+    // Share page (public)
+    'share.title': 'Shared simulation',
+    'share.loading': 'Loading…',
+    'share.not_found': 'This link is invalid or has been revoked.',
+    'share.badge': 'Read-only · shared by owner',
+    'share.cta': 'Run your own simulation',
     // Compare page
     'compare.title': 'Scenario comparison',
     'compare.loading': 'Loading simulations…',
@@ -310,9 +325,24 @@ const TRANSLATIONS = {
     'whatif.monthly': 'Mensualité',
     'whatif.total_interest': 'Intérêts totaux',
     'whatif.total_cost': 'Coût total',
+    // History — share
+    'history.share': 'Partager',
+    'history.share_generate': 'Générer un lien public',
+    'history.share_generating': 'Génération…',
+    'history.share_copy': 'Copier le lien',
+    'history.share_copied': 'Copié !',
+    'history.share_revoke': 'Révoquer',
+    'history.share_revoking': 'Révocation…',
+    'history.share_hint': 'Toute personne ayant ce lien peut voir la simulation sans se connecter.',
     // History — compare
     'history.compare': 'Comparer',
     'history.compare_hint': 'Sélectionnez 2 à 3 simulations à comparer',
+    // Share page (public)
+    'share.title': 'Simulation partagée',
+    'share.loading': 'Chargement…',
+    'share.not_found': 'Ce lien est invalide ou a été révoqué.',
+    'share.badge': 'Lecture seule · partagé par le propriétaire',
+    'share.cta': 'Lancer votre propre simulation',
     // Compare page
     'compare.title': 'Comparaison de scénarios',
     'compare.loading': 'Chargement des simulations…',

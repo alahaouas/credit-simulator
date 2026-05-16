@@ -138,6 +138,7 @@ export interface SavedSimulation {
   inputs: SimulateRequest
   name?: string | null
   tags?: string[] | null
+  share_token?: string | null
 }
 
 export async function listSimulations(accessToken: string) {
@@ -188,6 +189,46 @@ export async function deleteSimulation(id: string, accessToken: string) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new ApiError(res.status, err.detail ?? res.statusText)
   }
+}
+
+// --- Share tokens (A5) ---
+
+export async function generateShareToken(id: string, accessToken: string): Promise<string> {
+  const res = await fetch(`${API_BASE}/api/simulations/${id}/share`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  const data = await res.json()
+  return data.share_token as string
+}
+
+export async function revokeShareToken(id: string, accessToken: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/simulations/${id}/share`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+}
+
+export async function getSharedSimulation(token: string): Promise<{
+  id: string
+  created_at: string
+  name?: string | null
+  result: SimulateResponse
+}> {
+  const res = await fetch(`${API_BASE}/api/share/${token}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json()
 }
 
 // --- Simulation stats (E4) ---
