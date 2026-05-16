@@ -169,12 +169,15 @@ List the authenticated user's saved simulations, newest first.
     "id": "22222222-...",
     "created_at": "2026-05-11T10:00:00+00:00",
     "inputs": { "property_price": "300000", ... },
-    "result": { "down_payment": "60000.00", ... }
+    "result": { "down_payment": "60000.00", ... },
+    "name": "Brussels apartment",
+    "tags": ["primary", "2026"]
   }
 ]
 ```
 
-Schedule is not included in the list view.
+Schedule is not included in the list view. `name` is `null` and `tags` is `[]`
+until set via `PATCH /api/simulations/{id}`.
 
 ### Error responses
 
@@ -199,6 +202,37 @@ Same shape as the list item plus `"schedule": [...]` or `null`.
 |---|---|
 | `401 Unauthorized` | Missing or invalid token |
 | `404 Not Found` | Simulation does not exist or belongs to another user |
+
+---
+
+## PATCH /api/simulations/{id}
+
+Rename or re-tag a saved simulation (A1). Only the fields present in the
+request body are updated; omitted fields are left unchanged.
+
+### Request body
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `string \| null` | Human-readable label, ≤ 120 chars. Empty/whitespace string or `null` clears it. |
+| `tags` | `string[]` | Up to 20 tags, each ≤ 40 chars. Blank tags and duplicates are dropped. |
+
+```json
+{ "name": "Brussels apartment", "tags": ["primary", "2026"] }
+```
+
+### Response
+
+The updated simulation row (same shape as a list item).
+
+### Error responses
+
+| HTTP status | Cause |
+|---|---|
+| `400 Bad Request` | Empty body — no fields to update |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Simulation does not exist or belongs to another user |
+| `422 Unprocessable Entity` | `name` too long, or too many / oversized tags |
 
 ---
 

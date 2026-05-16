@@ -47,6 +47,47 @@ class UserPreferencesModel(BaseModel):
         return str(v)
 
 
+class SimulationMetaUpdate(BaseModel):
+    """Body model for PATCH /api/simulations/{id} (A1 — naming & tagging).
+
+    Both fields are optional; only fields present in the request are applied.
+    Sending ``name: null`` (or an empty/whitespace string) clears the name.
+    """
+
+    name: str | None = None
+    tags: list[str] | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def validate_name(cls, v: object) -> str | None:
+        if v is None:
+            return None
+        s = str(v).strip()
+        if len(s) > 120:
+            raise ValueError("name must be 120 characters or fewer")
+        return s or None
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def validate_tags(cls, v: object) -> list[str] | None:
+        if v is None:
+            return None
+        if not isinstance(v, list):
+            raise ValueError("tags must be a list of strings")
+        cleaned: list[str] = []
+        for tag in v:
+            s = str(tag).strip()
+            if not s:
+                continue
+            if len(s) > 40:
+                raise ValueError("each tag must be 40 characters or fewer")
+            if s not in cleaned:
+                cleaned.append(s)
+        if len(cleaned) > 20:
+            raise ValueError("a simulation can have at most 20 tags")
+        return cleaned
+
+
 class SimulateRequest(BaseModel):
     # --- Mandatory ---
     property_price: str

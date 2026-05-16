@@ -132,6 +132,14 @@ export async function simulate(
   return res.json() as Promise<SimulateResponse>
 }
 
+export interface SavedSimulation {
+  id: string
+  created_at: string
+  inputs: SimulateRequest
+  name?: string | null
+  tags?: string[] | null
+}
+
 export async function listSimulations(accessToken: string) {
   const res = await fetch(`${API_BASE}/api/simulations`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -140,7 +148,24 @@ export async function listSimulations(accessToken: string) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new ApiError(res.status, err.detail ?? res.statusText)
   }
-  return res.json() as Promise<Array<{ id: string; created_at: string; inputs: SimulateRequest }>>
+  return res.json() as Promise<SavedSimulation[]>
+}
+
+export async function updateSimulationMeta(
+  id: string,
+  meta: { name?: string | null; tags?: string[] },
+  accessToken: string
+) {
+  const res = await fetch(`${API_BASE}/api/simulations/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(meta),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json() as Promise<SavedSimulation>
 }
 
 export async function getSimulation(id: string, accessToken: string) {
