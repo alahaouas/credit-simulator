@@ -214,7 +214,7 @@ Features are grouped by theme. Each can be picked independently or bundled into 
 | # | Feature | Description |
 |---|---|---|
 | A1 | **Simulation naming & tagging** ✅ | Users can give each saved simulation a human-readable name and optional tags; editable inline from the history page. `name` + `tags` columns added in `004_simulation_naming.sql`. API: `PATCH /api/simulations/{id}` (`SimulationMetaUpdate` model). Frontend: inline edit in `web/app/history/page.tsx`. |
-| A2 | **Simulation duplication** | "Clone" button on history — opens the simulator pre-filled with the saved inputs; lets users tweak one variable at a time. |
+| A2 | **Simulation duplication** ✅ | "Clone" button on history — opens the simulator pre-filled with the saved inputs; lets users tweak one variable at a time. Inputs written to `SESSION_CLONE_KEY` in sessionStorage; `SimulatorForm` hydrates on mount then clears the key. |
 | A3 | **What-if inline tweaking** ✅ | On the results page, change one parameter (rate, duration, down payment) without leaving; re-simulate on the fly and show the delta vs the original run. `WhatIfPanel` component with 600 ms debounce; original request stored in `SESSION_INPUTS_KEY`; delta table with green/red colouring per metric. |
 | A4 | **Scenario comparison view** | Select 2–3 simulations from history and view them side-by-side; each metric column highlights the best value in green. Implements the §3.3 multi-scenario output. |
 | A5 | **Shareable read-only link** | Generate a signed public URL for a simulation (e.g. `/share/<token>`); viewable without login — useful for sharing with a partner or broker. Requires a `share_token` column + public RLS policy. |

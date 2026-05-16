@@ -5,6 +5,7 @@ export const API_BASE: string = process.env.NEXT_PUBLIC_API_URL ?? 'http://local
 
 export const SESSION_RESULT_KEY = 'simulator_result'
 export const SESSION_INPUTS_KEY = 'simulator_inputs'
+export const SESSION_CLONE_KEY = 'simulator_clone'
 export const LOCALE_STORAGE_KEY = 'locale'
 
 export const COUNTRIES = ['BE', 'FR', 'DE', 'ES', 'IT', 'PT', 'GB', 'US'] as const
