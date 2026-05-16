@@ -163,6 +163,7 @@ def rates_clear(country: str, field: str | None, yes: bool) -> None:
     overrides = store._overrides.get(code, {})
     if not overrides:
         _console.print(f"No overrides set for {code}.")
+        _console.print("Use [bold cyan]credit-simulator rates set <COUNTRY> <FIELD> <VALUE>[/bold cyan] to add one.")
         return
 
     if not yes:
