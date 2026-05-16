@@ -135,6 +135,7 @@ All `Decimal` fields stored as JSON strings to preserve precision.
 | `POST` | `/api/simulate` | 1 | Run simulation; saves to DB if auth header present (Layer 2) |
 | `GET` | `/api/simulations` | 2 | List authenticated user's saved simulations |
 | `GET` | `/api/simulations/{id}` | 2 | Fetch one simulation with full schedule |
+| `PATCH` | `/api/simulations/{id}` | 6 (A1) | Rename / re-tag a saved simulation |
 | `DELETE` | `/api/simulations/{id}` | 2 | Delete (RLS enforces ownership) |
 | `GET` | `/api/profiles/{country}` | future | Return country profile rates |
 
@@ -212,7 +213,7 @@ Features are grouped by theme. Each can be picked independently or bundled into 
 
 | # | Feature | Description |
 |---|---|---|
-| A1 | **Simulation naming & tagging** | Users can give each saved simulation a human-readable name (e.g. "Brussels apartment") and optional tags; editable inline from the history page. Requires a `name` + `tags` column in `simulations`. |
+| A1 | **Simulation naming & tagging** ✅ | Users can give each saved simulation a human-readable name and optional tags; editable inline from the history page. `name` + `tags` columns added in `004_simulation_naming.sql`. API: `PATCH /api/simulations/{id}` (`SimulationMetaUpdate` model). Frontend: inline edit in `web/app/history/page.tsx`. |
 | A2 | **Simulation duplication** | "Clone" button on history — opens the simulator pre-filled with the saved inputs; lets users tweak one variable at a time. |
 | A3 | **What-if inline tweaking** | On the results page, change one parameter (rate, duration, down payment) without leaving; re-simulate on the fly and show the delta vs the original run. |
 | A4 | **Scenario comparison view** | Select 2–3 simulations from history and view them side-by-side; each metric column highlights the best value in green. Implements the §3.3 multi-scenario output. |

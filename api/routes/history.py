@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth import require_user
 from ..db import get_db
+from ..models import SimulationMetaUpdate
 
 router = APIRouter()
 
@@ -80,7 +81,7 @@ def list_simulations(
 ) -> list[dict]:
     resp = (
         db.table("simulations")
-        .select("id,created_at,inputs,result")
+        .select("id,created_at,inputs,result,name,tags")
         .eq("user_id", user_id)
         .order("created_at", desc=True)
         .execute()
@@ -97,6 +98,33 @@ def get_simulation(
     resp = (
         db.table("simulations")
         .select("*")
+        .eq("id", sim_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not resp.data:
+        raise HTTPException(status_code=404, detail="Simulation not found")
+    return resp.data[0]
+
+
+@router.patch("/simulations/{sim_id}", summary="Rename or re-tag a saved simulation")
+def update_simulation_meta(
+    sim_id: str,
+    meta: SimulationMetaUpdate,
+    user_id: str = Depends(require_user),
+    db=Depends(get_db),
+) -> dict:
+    patch: dict = {}
+    if "name" in meta.model_fields_set:
+        patch["name"] = meta.name
+    if "tags" in meta.model_fields_set:
+        patch["tags"] = meta.tags or []
+    if not patch:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    resp = (
+        db.table("simulations")
+        .update(patch)
         .eq("id", sim_id)
         .eq("user_id", user_id)
         .execute()

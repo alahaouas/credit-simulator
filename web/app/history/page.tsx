@@ -5,18 +5,14 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import {
-  listSimulations, deleteSimulation, getSimulation,
-  getSimulationStats, ApiError, SimulateRequest, SimulationStats,
+  listSimulations, deleteSimulation, getSimulation, updateSimulationMeta,
+  getSimulationStats, ApiError, SimulateRequest, SimulationStats, SavedSimulation,
 } from '@/lib/api'
 import { DEFAULT_COUNTRY, SESSION_RESULT_KEY } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { LocaleToggle } from '@/components/LocaleToggle'
 
-type SimulationSummary = {
-  id: string
-  created_at: string
-  inputs: SimulateRequest
-}
+type SimulationSummary = SavedSimulation
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
@@ -73,6 +69,10 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editTags, setEditTags] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -123,6 +123,40 @@ export default function HistoryPage() {
     }
   }
 
+  function startEdit(sim: SimulationSummary) {
+    setEditing(sim.id)
+    setEditName(sim.name ?? '')
+    setEditTags((sim.tags ?? []).join(', '))
+    setError(null)
+  }
+
+  function cancelEdit() {
+    setEditing(null)
+    setEditName('')
+    setEditTags('')
+  }
+
+  async function saveEdit(id: string) {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const tags = editTags.split(',').map(s => s.trim()).filter(Boolean)
+    setSaving(true)
+    try {
+      const updated = await updateSimulationMeta(
+        id, { name: editName.trim() || null, tags }, session.access_token,
+      )
+      setItems(prev => prev.map(s =>
+        s.id === id ? { ...s, name: updated.name, tags: updated.tags } : s,
+      ))
+      cancelEdit()
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t('error.generic'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
@@ -157,26 +191,84 @@ export default function HistoryPage() {
       ) : (
         <ul className="divide-y border rounded-lg overflow-hidden">
           {items.map(sim => (
-            <li key={sim.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-gray-50">
-              <div className="min-w-0">
-                <p className="font-medium truncate">{inputSummary(sim.inputs, t)}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{formatDate(sim.created_at)}</p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <button
-                  onClick={() => handleView(sim.id)}
-                  className="text-sm px-3 py-1.5 rounded border hover:bg-gray-100 transition-colors"
-                >
-                  {t('history.view')}
-                </button>
-                <button
-                  onClick={() => handleDelete(sim.id)}
-                  disabled={deleting === sim.id}
-                  className="text-sm px-3 py-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
-                >
-                  {deleting === sim.id ? '…' : t('history.delete')}
-                </button>
-              </div>
+            <li key={sim.id} className="px-5 py-4 hover:bg-gray-50">
+              {editing === sim.id ? (
+                <div className="flex flex-col gap-2">
+                  <input
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    maxLength={120}
+                    placeholder={t('history.name_placeholder')}
+                    className="w-full text-sm border rounded px-3 py-1.5"
+                  />
+                  <input
+                    value={editTags}
+                    onChange={e => setEditTags(e.target.value)}
+                    placeholder={t('history.tags_placeholder')}
+                    className="w-full text-sm border rounded px-3 py-1.5"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => saveEdit(sim.id)}
+                      disabled={saving}
+                      className="text-sm px-3 py-1.5 rounded bg-black text-white hover:bg-gray-800 transition-colors disabled:opacity-40"
+                    >
+                      {saving ? '…' : t('history.save')}
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      disabled={saving}
+                      className="text-sm px-3 py-1.5 rounded border hover:bg-gray-100 transition-colors disabled:opacity-40"
+                    >
+                      {t('history.cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    {sim.name ? (
+                      <>
+                        <p className="font-medium truncate">{sim.name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">{inputSummary(sim.inputs, t)}</p>
+                      </>
+                    ) : (
+                      <p className="font-medium truncate">{inputSummary(sim.inputs, t)}</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-0.5">{formatDate(sim.created_at)}</p>
+                    {sim.tags && sim.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {sim.tags.map(tag => (
+                          <span key={tag} className="text-xs bg-gray-100 text-gray-600 rounded px-2 py-0.5">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      onClick={() => startEdit(sim)}
+                      className="text-sm px-3 py-1.5 rounded border hover:bg-gray-100 transition-colors"
+                    >
+                      {t('history.edit')}
+                    </button>
+                    <button
+                      onClick={() => handleView(sim.id)}
+                      className="text-sm px-3 py-1.5 rounded border hover:bg-gray-100 transition-colors"
+                    >
+                      {t('history.view')}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(sim.id)}
+                      disabled={deleting === sim.id}
+                      className="text-sm px-3 py-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+                    >
+                      {deleting === sim.id ? '…' : t('history.delete')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
