@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase'
 import { useI18n } from '@/lib/i18n'
 import { API_BASE } from '@/lib/constants'
 import { LocaleToggle } from '@/components/LocaleToggle'
+import { DarkModeToggle } from '@/components/DarkModeToggle'
 
 export default function Home() {
   const { t } = useI18n()
@@ -22,31 +23,32 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-3">
+        <DarkModeToggle />
         <LocaleToggle />
       </div>
 
       <h1 className="text-4xl font-bold tracking-tight">{t('nav.title')}</h1>
-      <p className="text-gray-500 text-center max-w-md">{t('home.tagline')}</p>
+      <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">{t('home.tagline')}</p>
 
       <div className="flex gap-4">
         <Link
           href="/simulate"
-          className="rounded-lg bg-black text-white px-6 py-3 font-medium hover:bg-gray-800 transition-colors"
+          className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
         >
           {t('nav.run')}
         </Link>
         {user ? (
           <Link
             href="/history"
-            className="rounded-lg border px-6 py-3 font-medium hover:bg-gray-50 transition-colors"
+            className="rounded-lg border dark:border-gray-700 px-6 py-3 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             {t('nav.history')}
           </Link>
         ) : (
           <Link
             href="/auth"
-            className="rounded-lg border px-6 py-3 font-medium hover:bg-gray-50 transition-colors"
+            className="rounded-lg border dark:border-gray-700 px-6 py-3 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             {t('nav.signin')}
           </Link>
@@ -54,23 +56,23 @@ export default function Home() {
       </div>
 
       {user && (
-        <div className="flex gap-4 text-sm text-gray-500">
-          <Link href="/preferences" className="hover:text-gray-800 transition-colors">
+        <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
+          <Link href="/preferences" className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
             {t('nav.preferences')}
           </Link>
           <span>·</span>
-          <Link href="/settings" className="hover:text-gray-800 transition-colors">
+          <Link href="/settings" className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
             {t('nav.settings')}
           </Link>
         </div>
       )}
 
-      <div className="mt-4 text-xs text-gray-300">
+      <div className="mt-4 text-xs text-gray-300 dark:text-gray-600">
         <a
           href={`${API_BASE}/api/docs`}
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-gray-500 transition-colors"
+          className="hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
         >
           {t('nav.api_docs')} ↗
         </a>

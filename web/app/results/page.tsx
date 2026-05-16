@@ -7,6 +7,7 @@ import { DEFAULT_CURRENCY_SYMBOL, SESSION_RESULT_KEY } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
 import dynamic from 'next/dynamic'
 import AmortizationTable from '@/components/AmortizationTable'
+import { DarkModeToggle } from '@/components/DarkModeToggle'
 
 const LoanChart = dynamic(() => import('@/components/LoanChart'), { ssr: false })
 
@@ -42,8 +43,8 @@ function exportScheduleToCsv(rows: SimulateResponse['schedule'], currency: strin
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border p-4 flex flex-col gap-1">
-      <span className="text-xs text-gray-500 uppercase tracking-wide">{label}</span>
+    <div className="rounded-lg border dark:border-gray-700 p-4 flex flex-col gap-1">
+      <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</span>
       <span className="text-lg font-semibold">{value}</span>
     </div>
   )
@@ -62,8 +63,8 @@ export default function ResultsPage() {
     return (
       <main className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 mb-4">{t('results.no_results')}</p>
-          <Link href="/simulate" className="rounded-lg bg-black text-white px-6 py-3 font-medium hover:bg-gray-800 transition-colors">
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{t('results.no_results')}</p>
+          <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
             {t('nav.run')}
           </Link>
         </div>
@@ -81,14 +82,17 @@ export default function ResultsPage() {
     <main className="min-h-screen p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold tracking-tight">{t('results.title')}</h1>
-        <Link href="/simulate" className="text-sm border rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors">
-          {t('results.new')}
-        </Link>
+        <div className="flex items-center gap-3">
+          <DarkModeToggle />
+          <Link href="/simulate" className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            {t('results.new')}
+          </Link>
+        </div>
       </div>
 
       <section className="mb-8">
         <h2 className="text-lg font-semibold mb-3">{t('results.optimal_plan')}</h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           {result.country} · {result.profile_quality} {t('results.profile_suffix')} · {prefLabel}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -107,13 +111,13 @@ export default function ResultsPage() {
       {sweet_spot && sweet_spot.milestones.length > 0 && (
         <section className="mb-8">
           <h2 className="text-lg font-semibold mb-1">{t('results.sweet_spot_title')}</h2>
-          <p className="text-sm text-gray-500 mb-3">{sweet_spot.sweet_spot_reason}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{sweet_spot.sweet_spot_reason}</p>
           {sweet_spot.reserve_warning && (
-            <p className="text-sm text-amber-600 mb-3">{sweet_spot.reserve_warning}</p>
+            <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">{sweet_spot.reserve_warning}</p>
           )}
-          <div className="overflow-x-auto rounded-lg border text-sm">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto rounded-lg border dark:border-gray-700 text-sm">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   {(
                     [
@@ -126,18 +130,18 @@ export default function ResultsPage() {
                       'sweet.rate',
                     ] as TranslationKey[]
                   ).map(k => (
-                    <th key={k} className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">{t(k)}</th>
+                    <th key={k} className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{t(k)}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {sweet_spot.milestones.map((m, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
+                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="px-3 py-2 font-medium">{fmt(m.down_payment, c)}</td>
-                    <td className="px-3 py-2 text-gray-500">{m.label}</td>
+                    <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{m.label}</td>
                     <td className="px-3 py-2">{fmt(m.monthly_installment, c)}</td>
                     <td className="px-3 py-2">{fmt(m.total_cost_of_credit, c)}</td>
-                    <td className="px-3 py-2 text-green-600">{fmt(m.net_saving_vs_previous, c)}</td>
+                    <td className="px-3 py-2 text-green-600 dark:text-green-400">{fmt(m.net_saving_vs_previous, c)}</td>
                     <td className="px-3 py-2">{(parseFloat(m.ltv_ratio) * 100).toFixed(1)}%</td>
                     <td className="px-3 py-2">{(parseFloat(m.rate) * 100).toFixed(2)}%</td>
                   </tr>
@@ -154,7 +158,7 @@ export default function ResultsPage() {
             <span />
             <button
               onClick={() => exportScheduleToCsv(schedule, c)}
-              className="text-sm border rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors"
+              className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               {t('results.export_csv')}
             </button>
