@@ -48,7 +48,6 @@ export default function WhatIfPanel({ original, originalRequest, currency }: Pro
     setError(null)
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
 
@@ -92,7 +91,7 @@ export default function WhatIfPanel({ original, originalRequest, currency }: Pro
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [tweaks]) // origRate/origDuration/origDownPayment are stable (derived from immutable result prop)
+  }, [tweaks])
 
   const ref = result.plan
   const twk = tweaked?.result.plan
