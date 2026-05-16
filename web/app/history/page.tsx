@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import {
   listSimulations, deleteSimulation, getSimulation, updateSimulationMeta,
-  getSimulationStats, ApiError, SimulateRequest, SimulationStats, SavedSimulation,
+  getSimulationStats, generateShareToken, revokeShareToken,
+  ApiError, SimulateRequest, SimulationStats, SavedSimulation,
 } from '@/lib/api'
 import { DEFAULT_COUNTRY, SESSION_RESULT_KEY, SESSION_CLONE_KEY } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
@@ -75,6 +76,52 @@ export default function HistoryPage() {
   const [editTags, setEditTags] = useState('')
   const [saving, setSaving] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [sharing, setSharing] = useState<string | null>(null)
+  const [shareTokens, setShareTokens] = useState<Record<string, string | null>>({})
+  const [shareLoading, setShareLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  function shareUrl(token: string) {
+    return `${window.location.origin}/share/${token}`
+  }
+
+  async function handleGenerateToken(id: string) {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    setShareLoading(true)
+    try {
+      const token = await generateShareToken(id, session.access_token)
+      setShareTokens(prev => ({ ...prev, [id]: token }))
+      setItems(prev => prev.map(s => s.id === id ? { ...s, share_token: token } : s))
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t('error.generic'))
+    } finally {
+      setShareLoading(false)
+    }
+  }
+
+  async function handleRevokeToken(id: string) {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    setShareLoading(true)
+    try {
+      await revokeShareToken(id, session.access_token)
+      setShareTokens(prev => ({ ...prev, [id]: null }))
+      setItems(prev => prev.map(s => s.id === id ? { ...s, share_token: null } : s))
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t('error.generic'))
+    } finally {
+      setShareLoading(false)
+    }
+  }
+
+  async function handleCopy(token: string) {
+    await navigator.clipboard.writeText(shareUrl(token))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   function toggleSelect(id: string) {
     setSelected(prev => {
@@ -261,6 +308,61 @@ export default function HistoryPage() {
                     </button>
                   </div>
                 </div>
+              ) : sharing === sim.id ? (
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('history.share_hint')}</p>
+                  {(() => {
+                    const token = shareTokens[sim.id] ?? sim.share_token ?? null
+                    return token ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2 items-center">
+                          <input
+                            readOnly
+                            value={shareUrl(token)}
+                            className="flex-1 text-xs border dark:border-gray-600 rounded px-3 py-1.5 bg-gray-50 dark:bg-gray-900 dark:text-gray-300 truncate"
+                          />
+                          <button
+                            onClick={() => handleCopy(token)}
+                            className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
+                          >
+                            {copied ? t('history.share_copied') : t('history.share_copy')}
+                          </button>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleRevokeToken(sim.id)}
+                            disabled={shareLoading}
+                            className="text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                          >
+                            {shareLoading ? t('history.share_revoking') : t('history.share_revoke')}
+                          </button>
+                          <button
+                            onClick={() => setSharing(null)}
+                            className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            {t('history.cancel')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleGenerateToken(sim.id)}
+                          disabled={shareLoading}
+                          className="text-sm px-3 py-1.5 rounded bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-40"
+                        >
+                          {shareLoading ? t('history.share_generating') : t('history.share_generate')}
+                        </button>
+                        <button
+                          onClick={() => setSharing(null)}
+                          className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          {t('history.cancel')}
+                        </button>
+                      </div>
+                    )
+                  })()}
+                </div>
               ) : (
                 <div className="flex items-center justify-between gap-4">
                   <input
@@ -303,6 +405,12 @@ export default function HistoryPage() {
                       className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       {t('history.clone')}
+                    </button>
+                    <button
+                      onClick={() => { setSharing(sim.id); setError(null) }}
+                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      {t('history.share')}
                     </button>
                     <button
                       onClick={() => handleView(sim.id)}

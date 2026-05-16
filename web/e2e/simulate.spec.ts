@@ -57,7 +57,7 @@ const MOCK_RESPONSE = {
 }
 
 test('simulator happy path: form → results page', async ({ page }) => {
-  await page.route('**/api/simulate', async (route) => {
+  await page.route(/\/api\/simulate/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -81,7 +81,7 @@ test('simulator happy path: form → results page', async ({ page }) => {
 })
 
 test('simulator surfaces backend validation error', async ({ page }) => {
-  await page.route('**/api/simulate', async (route) => {
+  await page.route(/\/api\/simulate/, async (route) => {
     await route.fulfill({
       status: 422,
       contentType: 'application/json',
@@ -118,7 +118,7 @@ const MOCK_TWEAKED_RESPONSE = {
 
 async function goToResults(page: Page) {
   let callCount = 0
-  await page.route('**/api/simulate', async (route) => {
+  await page.route(/\/api\/simulate/, async (route) => {
     callCount++
     await route.fulfill({
       status: 200,
@@ -135,7 +135,7 @@ async function goToResults(page: Page) {
 }
 
 test('what-if panel is visible on results page with original values', async ({ page }) => {
-  await page.route('**/api/simulate', async (route) => {
+  await page.route(/\/api\/simulate/, async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_RESPONSE) })
   })
   await page.goto('/simulate')
@@ -181,4 +181,44 @@ test('what-if reset restores original values and hides delta table', async ({ pa
 
   await expect(page.locator('#whatif-rate')).toHaveValue('3.45')
   await expect(page.getByText('Original')).not.toBeVisible()
+})
+
+// ---------------------------------------------------------------------------
+// A2: Clone pre-fill (SESSION_CLONE_KEY → SimulatorForm hydration)
+// ---------------------------------------------------------------------------
+
+test('simulator form pre-fills from SESSION_CLONE_KEY (A2)', async ({ page }) => {
+  // Land on any page to get a sessionStorage context, then write the clone key
+  await page.goto('/')
+  await page.evaluate(() => {
+    window.sessionStorage.setItem('simulator_clone', JSON.stringify({
+      property_price: '450000',
+      monthly_net_income: '5500',
+      available_savings: '100000',
+      optimization_preference: 'minimize_total_cost',
+    }))
+  })
+
+  // Navigate to /simulate — useEffect fires on mount, reads and removes the key
+  await page.goto('/simulate')
+
+  await expect(page.locator('#property_price')).toHaveValue('450000')
+  await expect(page.locator('#monthly_net_income')).toHaveValue('5500')
+  await expect(page.locator('#available_savings')).toHaveValue('100000')
+})
+
+test('SESSION_CLONE_KEY is removed after form hydration (A2)', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(() => {
+    window.sessionStorage.setItem('simulator_clone', JSON.stringify({
+      property_price: '450000',
+      monthly_net_income: '5500',
+      available_savings: '100000',
+    }))
+  })
+
+  await page.goto('/simulate')
+  // After hydration the key must be gone so a subsequent reload starts fresh
+  const remaining = await page.evaluate(() => window.sessionStorage.getItem('simulator_clone'))
+  expect(remaining).toBeNull()
 })
