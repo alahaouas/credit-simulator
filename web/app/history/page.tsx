@@ -8,7 +8,7 @@ import {
   listSimulations, deleteSimulation, getSimulation, updateSimulationMeta,
   getSimulationStats, ApiError, SimulateRequest, SimulationStats, SavedSimulation,
 } from '@/lib/api'
-import { DEFAULT_COUNTRY, SESSION_RESULT_KEY } from '@/lib/constants'
+import { DEFAULT_COUNTRY, SESSION_RESULT_KEY, SESSION_CLONE_KEY } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { LocaleToggle } from '@/components/LocaleToggle'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
@@ -119,6 +119,19 @@ export default function HistoryPage() {
       const sim = await getSimulation(id, session.access_token)
       sessionStorage.setItem(SESSION_RESULT_KEY, JSON.stringify(sim.result))
       router.push('/results')
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t('error.generic'))
+    }
+  }
+
+  async function handleClone(id: string) {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    try {
+      const sim = await getSimulation(id, session.access_token)
+      sessionStorage.setItem(SESSION_CLONE_KEY, JSON.stringify(sim.inputs))
+      router.push('/simulate')
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('error.generic'))
     }
@@ -254,6 +267,12 @@ export default function HistoryPage() {
                       className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       {t('history.edit')}
+                    </button>
+                    <button
+                      onClick={() => handleClone(sim.id)}
+                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      {t('history.clone')}
                     </button>
                     <button
                       onClick={() => handleView(sim.id)}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { simulate, SimulateRequest, ApiError } from '@/lib/api'
 import {
@@ -9,6 +9,7 @@ import {
   DEFAULT_OPTIMIZATION_PREFERENCE,
   SESSION_RESULT_KEY,
   SESSION_INPUTS_KEY,
+  SESSION_CLONE_KEY,
   type ProfileQuality,
 } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
@@ -38,6 +39,27 @@ export default function SimulatorForm() {
     optimization_preference: DEFAULT_OPTIMIZATION_PREFERENCE as string,
     include_schedule: false,
   })
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem(SESSION_CLONE_KEY)
+    if (!raw) return
+    sessionStorage.removeItem(SESSION_CLONE_KEY)
+    try {
+      const inputs = JSON.parse(raw)
+      setForm(f => ({
+        ...f,
+        property_price: inputs.property_price ?? f.property_price,
+        monthly_net_income: inputs.monthly_net_income ?? f.monthly_net_income,
+        available_savings: inputs.available_savings ?? f.available_savings,
+        country: inputs.country ?? f.country,
+        profile_quality: inputs.profile_quality ?? f.profile_quality,
+        optimization_preference: inputs.optimization_preference ?? f.optimization_preference,
+        include_schedule: inputs.include_schedule ?? f.include_schedule,
+      }))
+    } catch {
+      // ignore malformed clone data
+    }
+  }, [])
 
   function set(field: string, value: string | boolean) {
     setForm(f => ({ ...f, [field]: value }))

@@ -30,6 +30,7 @@ const TRANSLATIONS = {
     'history.edit': 'Edit',
     'history.save': 'Save',
     'history.cancel': 'Cancel',
+    'history.clone': 'Clone',
     'history.name_placeholder': 'Simulation name',
     'history.tags_placeholder': 'Tags (comma-separated)',
     // Stats cards
@@ -172,6 +173,7 @@ const TRANSLATIONS = {
     'history.edit': 'Modifier',
     'history.save': 'Enregistrer',
     'history.cancel': 'Annuler',
+    'history.clone': 'Dupliquer',
     'history.name_placeholder': 'Nom de la simulation',
     'history.tags_placeholder': 'Étiquettes (séparées par des virgules)',
     // Stats cards
