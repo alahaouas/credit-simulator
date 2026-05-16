@@ -1,9 +1,11 @@
 import { test, expect, type Page } from '@playwright/test'
 
-// Pin the UI locale so tests don't depend on the host system language.
+// Pin the UI locale and mark the onboarding tour as done so it doesn't
+// auto-start and interfere with form interactions.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.setItem('locale', 'en')
+    window.localStorage.setItem('credit_simulator_tour_done', '1')
   })
 })
 
