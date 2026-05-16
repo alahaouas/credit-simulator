@@ -104,6 +104,73 @@ class TestDeleteSimulation:
 
 
 # ---------------------------------------------------------------------------
+# Update simulation metadata — name & tags (A1)
+# ---------------------------------------------------------------------------
+
+class TestUpdateSimulationMeta:
+    def test_patch_no_auth_returns_401(self):
+        resp = client.patch(f"/api/simulations/{SIM_ID}", json={"name": "x"})
+        assert resp.status_code == 401
+
+    def test_patch_without_supabase_returns_503(self):
+        resp = client.patch(
+            f"/api/simulations/{SIM_ID}", json={"name": "x"},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 503
+
+    def test_rename_existing_returns_200(self, mock_db_with_sim):
+        resp = client.patch(
+            f"/api/simulations/{SIM_ID}", json={"name": "Brussels apartment"},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["id"] == SIM_ID
+
+    def test_update_tags(self, mock_db_with_sim):
+        resp = client.patch(
+            f"/api/simulations/{SIM_ID}", json={"tags": ["primary", "2026"]},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 200
+
+    def test_patch_nonexistent_returns_404(self, mock_db):
+        resp = client.patch(
+            f"/api/simulations/{SIM_ID}", json={"name": "x"},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 404
+
+    def test_empty_body_returns_400(self, mock_db_with_sim):
+        resp = client.patch(
+            f"/api/simulations/{SIM_ID}", json={},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 400
+
+    def test_name_too_long_returns_422(self, mock_db_with_sim):
+        resp = client.patch(
+            f"/api/simulations/{SIM_ID}", json={"name": "x" * 121},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 422
+
+    def test_too_many_tags_returns_422(self, mock_db_with_sim):
+        resp = client.patch(
+            f"/api/simulations/{SIM_ID}", json={"tags": [f"t{i}" for i in range(21)]},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 422
+
+    def test_patch_uses_update_on_simulations_table(self, mock_db_with_sim):
+        client.patch(
+            f"/api/simulations/{SIM_ID}", json={"name": "x"},
+            headers={"Authorization": BEARER},
+        )
+        mock_db_with_sim.table.assert_called_with("simulations")
+
+
+# ---------------------------------------------------------------------------
 # Simulation stats (E4)
 # ---------------------------------------------------------------------------
 

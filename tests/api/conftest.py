@@ -19,6 +19,8 @@ SAMPLE_SIM = {
     "inputs": {"property_price": "300000", "monthly_net_income": "4000", "available_savings": "80000"},
     "result": {"down_payment": "60000.00", "loan_principal": "268800.00"},
     "schedule": None,
+    "name": "Brussels apartment",
+    "tags": ["primary", "2026"],
 }
 
 
@@ -70,6 +72,13 @@ def make_db_mock(
     # delete().eq().eq().execute()
     (db.table.return_value
         .delete.return_value
+        .eq.return_value
+        .eq.return_value
+        .execute.return_value) = execute_result
+
+    # update().eq().eq().execute() — PATCH metadata (A1)
+    (db.table.return_value
+        .update.return_value
         .eq.return_value
         .eq.return_value
         .execute.return_value) = execute_result

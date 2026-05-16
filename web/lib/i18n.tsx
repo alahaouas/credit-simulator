@@ -27,6 +27,11 @@ const TRANSLATIONS = {
     'history.delete': 'Delete',
     'history.loading': 'Loading…',
     'history.duration_auto': 'auto',
+    'history.edit': 'Edit',
+    'history.save': 'Save',
+    'history.cancel': 'Cancel',
+    'history.name_placeholder': 'Simulation name',
+    'history.tags_placeholder': 'Tags (comma-separated)',
     // Stats cards
     'stats.total': 'Total simulations',
     'stats.avg_monthly': 'Avg. monthly payment',
@@ -150,6 +155,11 @@ const TRANSLATIONS = {
     'history.delete': 'Supprimer',
     'history.loading': 'Chargement…',
     'history.duration_auto': 'auto',
+    'history.edit': 'Modifier',
+    'history.save': 'Enregistrer',
+    'history.cancel': 'Annuler',
+    'history.name_placeholder': 'Nom de la simulation',
+    'history.tags_placeholder': 'Étiquettes (séparées par des virgules)',
     // Stats cards
     'stats.total': 'Simulations totales',
     'stats.avg_monthly': 'Mensualité moy.',
