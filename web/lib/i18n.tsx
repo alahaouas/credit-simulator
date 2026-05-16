@@ -155,6 +155,10 @@ const TRANSLATIONS = {
     'history.share_revoke': 'Revoke',
     'history.share_revoking': 'Revoking…',
     'history.share_hint': 'Anyone with this link can view the simulation without signing in.',
+    // History — search & pagination (A6)
+    'history.search_placeholder': 'Search by name or tag',
+    'history.load_more': 'Load more',
+    'history.no_results': 'No simulations match your search.',
     // History — compare
     'history.compare': 'Compare',
     'history.compare_hint': 'Select 2–3 simulations to compare',
@@ -334,6 +338,10 @@ const TRANSLATIONS = {
     'history.share_revoke': 'Révoquer',
     'history.share_revoking': 'Révocation…',
     'history.share_hint': 'Toute personne ayant ce lien peut voir la simulation sans se connecter.',
+    // History — search & pagination (A6)
+    'history.search_placeholder': 'Rechercher par nom ou étiquette',
+    'history.load_more': 'Charger plus',
+    'history.no_results': 'Aucune simulation ne correspond à votre recherche.',
     // History — compare
     'history.compare': 'Comparer',
     'history.compare_hint': 'Sélectionnez 2 à 3 simulations à comparer',

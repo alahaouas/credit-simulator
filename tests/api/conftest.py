@@ -60,45 +60,18 @@ def make_db_mock(
     execute_result = MagicMock()
     execute_result.data = rows if rows is not None else []
 
-    # select().eq().order().execute()  — list query
-    (db.table.return_value
-        .select.return_value
-        .eq.return_value
-        .order.return_value
-        .execute.return_value) = execute_result
+    # Fluent chain: every query builder method returns the same chain object
+    # so any sequence of .select/.eq/.or_/.lt/.order/.limit/.update/... works.
+    chain = MagicMock()
+    for method in (
+        "select", "eq", "or_", "lt", "order", "limit",
+        "update", "delete", "upsert",
+    ):
+        getattr(chain, method).return_value = chain
+    chain.execute.return_value = execute_result
+    chain.insert.return_value.execute.return_value = MagicMock()
 
-    # select().eq().eq().execute()  — get / delete query
-    (db.table.return_value
-        .select.return_value
-        .eq.return_value
-        .eq.return_value
-        .execute.return_value) = execute_result
-
-    # insert().execute()
-    db.table.return_value.insert.return_value.execute.return_value = MagicMock()
-
-    # delete().eq().eq().execute()
-    (db.table.return_value
-        .delete.return_value
-        .eq.return_value
-        .eq.return_value
-        .execute.return_value) = execute_result
-
-    # update().eq().eq().execute() — PATCH metadata (A1)
-    (db.table.return_value
-        .update.return_value
-        .eq.return_value
-        .eq.return_value
-        .execute.return_value) = execute_result
-
-    # select().eq().execute() — single-eq queries (stats, preferences GET, api_key lookup)
-    (db.table.return_value
-        .select.return_value
-        .eq.return_value
-        .execute.return_value) = execute_result
-
-    # upsert().execute() — preferences PUT
-    db.table.return_value.upsert.return_value.execute.return_value = execute_result
+    db.table.return_value = chain
 
     return db
 

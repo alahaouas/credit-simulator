@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
@@ -80,6 +80,10 @@ export default function HistoryPage() {
   const [shareTokens, setShareTokens] = useState<Record<string, string | null>>({})
   const [shareLoading, setShareLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [search, setSearch] = useState('')
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function shareUrl(token: string) {
     return `${window.location.origin}/share/${token}`
@@ -135,16 +139,17 @@ export default function HistoryPage() {
     })
   }
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (query: string) => {
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { router.replace('/auth'); return }
     try {
-      const [simulations, statsData] = await Promise.all([
-        listSimulations(session.access_token),
+      const [page, statsData] = await Promise.all([
+        listSimulations(session.access_token, query ? { search: query } : undefined),
         getSimulationStats(session.access_token),
       ])
-      setItems(simulations)
+      setItems(page.items)
+      setNextCursor(page.next_cursor)
       setStats(statsData)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t('error.generic'))
@@ -153,7 +158,37 @@ export default function HistoryPage() {
     }
   }, [router, t])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load('') }, [load])
+
+  function handleSearchChange(value: string) {
+    setSearch(value)
+    if (searchDebounce.current) clearTimeout(searchDebounce.current)
+    searchDebounce.current = setTimeout(async () => {
+      setLoading(true)
+      setError(null)
+      await load(value)
+    }, 400)
+  }
+
+  async function handleLoadMore() {
+    if (!nextCursor) return
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    setLoadingMore(true)
+    try {
+      const page = await listSimulations(session.access_token, {
+        ...(search ? { search } : {}),
+        cursor: nextCursor,
+      })
+      setItems(prev => [...prev, ...page.items])
+      setNextCursor(page.next_cursor)
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t('error.generic'))
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   async function handleDelete(id: string) {
     const supabase = createClient()
@@ -262,14 +297,30 @@ export default function HistoryPage() {
 
       {stats && <StatsCards stats={stats} t={t} />}
 
+      <div className="mb-6">
+        <input
+          type="search"
+          value={search}
+          onChange={e => handleSearchChange(e.target.value)}
+          placeholder={t('history.search_placeholder')}
+          className="w-full text-sm border dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-600"
+        />
+      </div>
+
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-      {items.length === 0 ? (
+      {items.length === 0 && !loading ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <p className="mb-4">{t('history.empty')}</p>
-          <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
-            {t('history.first')}
-          </Link>
+          {search ? (
+            <p className="mb-4">{t('history.no_results')}</p>
+          ) : (
+            <>
+              <p className="mb-4">{t('history.empty')}</p>
+              <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+                {t('history.first')}
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <>
@@ -433,6 +484,17 @@ export default function HistoryPage() {
         </ul>
         {items.length >= 2 && selected.size === 0 && (
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 text-center">{t('history.compare_hint')}</p>
+        )}
+        {nextCursor && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="text-sm border dark:border-gray-700 rounded-lg px-6 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-40"
+            >
+              {loadingMore ? t('history.loading') : t('history.load_more')}
+            </button>
+          </div>
         )}
         </>
       )}

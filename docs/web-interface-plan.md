@@ -218,9 +218,9 @@ Features are grouped by theme. Each can be picked independently or bundled into 
 | A3 | **What-if inline tweaking** ✅ | On the results page, change one parameter (rate, duration, down payment) without leaving; re-simulate on the fly and show the delta vs the original run. `WhatIfPanel` component with 600 ms debounce; original request stored in `SESSION_INPUTS_KEY`; delta table with green/red colouring per metric. |
 | A4 | **Scenario comparison view** ✅ | Select 2–3 simulations from history and view them side-by-side; each metric column highlights the best value in green. Checkboxes on history rows; Compare (N) button navigates to `/compare?ids=...`; `web/app/compare/page.tsx` fetches simulations in parallel and renders a metric table with green highlighting for lower-is-better values. |
 | A5 | **Shareable read-only link** ✅ | Generate a public URL for a simulation (`/share/<token>`); viewable without login. `005_share_token.sql` adds `share_token text` + unique index. API: `POST /api/simulations/{id}/share` (generate), `DELETE /api/simulations/{id}/share` (revoke), `GET /api/share/{token}` (no auth). History page: "Share" button opens inline panel — shows "Generate link" or existing URL + copy + revoke. Public page `web/app/share/[token]/page.tsx` shows read-only metrics + CTA. |
-| A6 | **History search & pagination** | Search history by name/tag/date; paginate with cursor-based loading. Currently the list is unbounded. |
+| A6 | **History search & pagination** ✅ | Search input (400 ms debounce) filters by name (ilike) or tag (cs). Cursor-based pagination via `cursor` + `limit` query params on `GET /api/simulations`; response envelope `{items, next_cursor}`. "Load more" button appends next page. Empty-search state shows distinct "no results" message. Unit tests in `tests/api/test_history.py`; e2e in `web/e2e/history.spec.ts`. |
 | A7 | **Onboarding tooltip tour** | First-time user walkthrough of the simulator form; purely frontend state + Tailwind, no external tour library. |
-| A8 | **Dark mode** | Tailwind `dark:` variant toggle; persisted to `localStorage`. |
+| A8 | **Dark mode** ✅ | Tailwind `dark:` variant toggle; persisted to `localStorage`. `DarkModeToggle` component on all pages. |
 
 ### B. Financial Depth
 

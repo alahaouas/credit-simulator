@@ -47,23 +47,90 @@ class TestHistoryRequiresAuth:
 # ---------------------------------------------------------------------------
 
 class TestListSimulations:
-    def test_empty_history_returns_empty_list(self, mock_db):
+    def test_empty_history_returns_empty_items(self, mock_db):
         resp = client.get("/api/simulations", headers={"Authorization": BEARER})
         assert resp.status_code == 200
-        assert resp.json() == []
+        body = resp.json()
+        assert body["items"] == []
+        assert body["next_cursor"] is None
 
     def test_returns_saved_simulations(self, mock_db_with_sim):
         resp = client.get("/api/simulations", headers={"Authorization": BEARER})
         assert resp.status_code == 200
-        data = resp.json()
-        assert len(data) == 1
-        assert data[0]["id"] == SIM_ID
+        body = resp.json()
+        assert len(body["items"]) == 1
+        assert body["items"][0]["id"] == SIM_ID
 
     def test_result_has_expected_fields(self, mock_db_with_sim):
-        data = client.get("/api/simulations", headers={"Authorization": BEARER}).json()
-        row = data[0]
+        body = client.get("/api/simulations", headers={"Authorization": BEARER}).json()
+        row = body["items"][0]
         for field in ("id", "created_at", "inputs", "result"):
             assert field in row, f"missing field: {field}"
+
+    def test_response_envelope_has_next_cursor_key(self, mock_db_with_sim):
+        body = client.get("/api/simulations", headers={"Authorization": BEARER}).json()
+        assert "next_cursor" in body
+
+    def test_search_param_accepted(self, mock_db_with_sim):
+        resp = client.get(
+            "/api/simulations?search=brussels",
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 200
+
+    def test_cursor_param_accepted(self, mock_db_with_sim):
+        resp = client.get(
+            "/api/simulations?cursor=2026-01-01T00:00:00+00:00",
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 200
+
+    def test_limit_param_accepted(self, mock_db_with_sim):
+        resp = client.get(
+            "/api/simulations?limit=5",
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 200
+
+    def test_limit_too_large_returns_422(self, mock_db):
+        resp = client.get(
+            "/api/simulations?limit=999",
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 422
+
+    def test_search_too_long_returns_422(self, mock_db):
+        resp = client.get(
+            f"/api/simulations?search={'x' * 101}",
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 422
+
+    def test_next_cursor_set_when_more_pages_exist(self):
+        # Return limit+1 rows; backend should set next_cursor and trim to limit
+        from tests.api.conftest import make_db_mock, SAMPLE_SIM
+        rows = [
+            {**SAMPLE_SIM, "id": f"id-{i}", "created_at": f"2026-01-{i+1:02d}T00:00:00+00:00"}
+            for i in range(6)
+        ]
+        db = make_db_mock(rows=rows)
+        app.dependency_overrides[get_db] = lambda: db
+        try:
+            body = client.get(
+                "/api/simulations?limit=5",
+                headers={"Authorization": BEARER},
+            ).json()
+            assert len(body["items"]) == 5
+            assert body["next_cursor"] is not None
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_no_next_cursor_on_last_page(self, mock_db_with_sim):
+        body = client.get(
+            "/api/simulations?limit=20",
+            headers={"Authorization": BEARER},
+        ).json()
+        assert body["next_cursor"] is None
 
 
 # ---------------------------------------------------------------------------

@@ -141,15 +141,27 @@ export interface SavedSimulation {
   share_token?: string | null
 }
 
-export async function listSimulations(accessToken: string) {
-  const res = await fetch(`${API_BASE}/api/simulations`, {
+export interface SimulationsPage {
+  items: SavedSimulation[]
+  next_cursor: string | null
+}
+
+export async function listSimulations(
+  accessToken: string,
+  params?: { search?: string; cursor?: string; limit?: number },
+): Promise<SimulationsPage> {
+  const url = new URL(`${API_BASE}/api/simulations`)
+  if (params?.search) url.searchParams.set('search', params.search)
+  if (params?.cursor) url.searchParams.set('cursor', params.cursor)
+  if (params?.limit) url.searchParams.set('limit', String(params.limit))
+  const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new ApiError(res.status, err.detail ?? res.statusText)
   }
-  return res.json() as Promise<SavedSimulation[]>
+  return res.json()
 }
 
 export async function updateSimulationMeta(

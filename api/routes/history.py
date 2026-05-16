@@ -1,9 +1,10 @@
 """GET/DELETE /api/simulations — simulation history for authenticated users."""
 from __future__ import annotations
 
+import re
 from decimal import Decimal, InvalidOperation
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..auth import require_user
 from ..db import get_db
@@ -78,15 +79,28 @@ def simulation_stats(
 def list_simulations(
     user_id: str = Depends(require_user),
     db=Depends(get_db),
-) -> list[dict]:
-    resp = (
+    search: str | None = Query(None, max_length=100),
+    cursor: str | None = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+) -> dict:
+    safe = re.sub(r"[%{},]", "", search.strip()) if search else None
+    query = (
         db.table("simulations")
         .select("id,created_at,inputs,result,name,tags")
         .eq("user_id", user_id)
-        .order("created_at", desc=True)
-        .execute()
     )
-    return resp.data or []
+    if safe:
+        query = query.or_(f"name.ilike.%{safe}%,tags.cs.{{{safe}}}")
+    if cursor:
+        query = query.lt("created_at", cursor)
+    resp = query.order("created_at", desc=True).limit(limit + 1).execute()
+    rows = list(resp.data or [])
+    if len(rows) > limit:
+        next_cursor = rows[limit - 1]["created_at"]
+        rows = rows[:limit]
+    else:
+        next_cursor = None
+    return {"items": rows, "next_cursor": next_cursor}
 
 
 @router.get("/simulations/{sim_id}", summary="Get a saved simulation")
