@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { SimulateResponse } from '@/lib/api'
-import { DEFAULT_CURRENCY_SYMBOL, SESSION_RESULT_KEY } from '@/lib/constants'
+import { SimulateRequest, SimulateResponse } from '@/lib/api'
+import { DEFAULT_CURRENCY_SYMBOL, SESSION_INPUTS_KEY, SESSION_RESULT_KEY } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
 import dynamic from 'next/dynamic'
 import AmortizationTable from '@/components/AmortizationTable'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
+import WhatIfPanel from '@/components/WhatIfPanel'
 
 const LoanChart = dynamic(() => import('@/components/LoanChart'), { ssr: false })
 
@@ -53,10 +54,13 @@ function StatCard({ label, value }: { label: string; value: string }) {
 export default function ResultsPage() {
   const { t } = useI18n()
   const [data, setData] = useState<SimulateResponse | null>(null)
+  const [inputs, setInputs] = useState<SimulateRequest | null>(null)
 
   useEffect(() => {
     const raw = sessionStorage.getItem(SESSION_RESULT_KEY)
     if (raw) setData(JSON.parse(raw))
+    const rawInputs = sessionStorage.getItem(SESSION_INPUTS_KEY)
+    if (rawInputs) setInputs(JSON.parse(rawInputs))
   }, [])
 
   if (!data) {
@@ -107,6 +111,10 @@ export default function ResultsPage() {
           <StatCard label={t('results.total_cost')} value={fmt(plan.total_cost_of_credit, c)} />
         </div>
       </section>
+
+      {inputs && (
+        <WhatIfPanel original={data} originalRequest={inputs} currency={c} />
+      )}
 
       {sweet_spot && sweet_spot.milestones.length > 0 && (
         <section className="mb-8">

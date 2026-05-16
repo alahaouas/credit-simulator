@@ -131,6 +131,20 @@ const TRANSLATIONS = {
     'chart.month_axis': 'Month',
     // Errors
     'error.generic': 'Something went wrong.',
+    // What-if panel
+    'whatif.title': 'What-if tweaking',
+    'whatif.rate': 'Interest rate',
+    'whatif.duration': 'Duration (months)',
+    'whatif.down_payment': 'Down payment',
+    'whatif.loading': 'Recalculating…',
+    'whatif.error': 'Could not recalculate — check your inputs.',
+    'whatif.reset': 'Reset',
+    'whatif.original': 'Original',
+    'whatif.tweaked': 'Tweaked',
+    'whatif.delta': 'Delta',
+    'whatif.monthly': 'Monthly installment',
+    'whatif.total_interest': 'Total interest',
+    'whatif.total_cost': 'Total cost',
   },
   fr: {
     // Navigation
@@ -260,6 +274,20 @@ const TRANSLATIONS = {
     'chart.month_axis': 'Mois',
     // Errors
     'error.generic': "Une erreur s'est produite.",
+    // What-if panel
+    'whatif.title': 'Simulation what-if',
+    'whatif.rate': "Taux d'intérêt",
+    'whatif.duration': 'Durée (mois)',
+    'whatif.down_payment': 'Apport',
+    'whatif.loading': 'Recalcul en cours…',
+    'whatif.error': 'Impossible de recalculer — vérifiez vos valeurs.',
+    'whatif.reset': 'Réinitialiser',
+    'whatif.original': 'Original',
+    'whatif.tweaked': 'Modifié',
+    'whatif.delta': 'Delta',
+    'whatif.monthly': 'Mensualité',
+    'whatif.total_interest': 'Intérêts totaux',
+    'whatif.total_cost': 'Coût total',
   },
 } satisfies Record<Locale, Record<string, string>>
 
