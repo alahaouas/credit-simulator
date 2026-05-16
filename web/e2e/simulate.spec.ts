@@ -57,7 +57,7 @@ const MOCK_RESPONSE = {
 }
 
 test('simulator happy path: form → results page', async ({ page }) => {
-  await page.route('**/api/simulate', async (route) => {
+  await page.route(/\/api\/simulate/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -81,7 +81,7 @@ test('simulator happy path: form → results page', async ({ page }) => {
 })
 
 test('simulator surfaces backend validation error', async ({ page }) => {
-  await page.route('**/api/simulate', async (route) => {
+  await page.route(/\/api\/simulate/, async (route) => {
     await route.fulfill({
       status: 422,
       contentType: 'application/json',
@@ -118,7 +118,7 @@ const MOCK_TWEAKED_RESPONSE = {
 
 async function goToResults(page: Page) {
   let callCount = 0
-  await page.route('**/api/simulate', async (route) => {
+  await page.route(/\/api\/simulate/, async (route) => {
     callCount++
     await route.fulfill({
       status: 200,
@@ -135,7 +135,7 @@ async function goToResults(page: Page) {
 }
 
 test('what-if panel is visible on results page with original values', async ({ page }) => {
-  await page.route('**/api/simulate', async (route) => {
+  await page.route(/\/api\/simulate/, async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_RESPONSE) })
   })
   await page.goto('/simulate')

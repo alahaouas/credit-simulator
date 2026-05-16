@@ -9,9 +9,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from api.db import get_db
 from api.main import app
-from tests.api.conftest import BEARER, SHARE_TOKEN, SIM_ID, make_db_mock
+from tests.api.conftest import BEARER, SHARE_TOKEN, SIM_ID
 
 client = TestClient(app)
 
