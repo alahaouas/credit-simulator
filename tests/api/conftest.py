@@ -12,6 +12,8 @@ USER_ID = "11111111-1111-1111-1111-111111111111"
 SIM_ID = "22222222-2222-2222-2222-222222222222"
 BEARER = "Bearer test-token-abc"
 
+SHARE_TOKEN = "test-share-token-abc123"
+
 SAMPLE_SIM = {
     "id": SIM_ID,
     "user_id": USER_ID,
@@ -21,6 +23,12 @@ SAMPLE_SIM = {
     "schedule": None,
     "name": "Brussels apartment",
     "tags": ["primary", "2026"],
+    "share_token": None,
+}
+
+SAMPLE_SIM_WITH_TOKEN = {
+    **SAMPLE_SIM,
+    "share_token": SHARE_TOKEN,
 }
 
 
@@ -106,6 +114,15 @@ def mock_db():
 @pytest.fixture
 def mock_db_with_sim():
     db = make_db_mock(rows=[SAMPLE_SIM])
+    app.dependency_overrides[get_db] = lambda: db
+    yield db
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def mock_db_with_token_sim():
+    """Simulation that already has a share_token set."""
+    db = make_db_mock(rows=[SAMPLE_SIM_WITH_TOKEN])
     app.dependency_overrides[get_db] = lambda: db
     yield db
     app.dependency_overrides.clear()
