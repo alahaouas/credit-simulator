@@ -1,10 +1,15 @@
 import { test, expect } from '@playwright/test'
 
-// Pin locale and start every test in light mode so behaviour is deterministic.
+// Pin locale and initialise theme to light on the FIRST page load of each test.
+// The conditional guard is critical: addInitScript re-runs on every full-page
+// load including page.reload(), so an unconditional setItem would overwrite a
+// theme that was toggled mid-test and break the "persists after reload" test.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.setItem('locale', 'en')
-    window.localStorage.setItem('theme', 'light')
+    if (!window.localStorage.getItem('theme')) {
+      window.localStorage.setItem('theme', 'light')
+    }
   })
 })
 
