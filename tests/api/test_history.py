@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 
 from api.db import get_db
 from api.main import app
-from tests.api.conftest import BEARER, SIM_ID, make_db_mock
+from tests.api.conftest import BEARER, SAMPLE_SIM, SIM_ID, make_db_mock
 
 client = TestClient(app)
 
@@ -108,7 +108,6 @@ class TestListSimulations:
 
     def test_next_cursor_set_when_more_pages_exist(self):
         # Return limit+1 rows; backend should set next_cursor and trim to limit
-        from tests.api.conftest import make_db_mock, SAMPLE_SIM
         rows = [
             {**SAMPLE_SIM, "id": f"id-{i}", "created_at": f"2026-01-{i+1:02d}T00:00:00+00:00"}
             for i in range(6)

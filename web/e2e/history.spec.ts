@@ -1,15 +1,48 @@
+import * as fs from 'fs'
+import * as path from 'path'
 import { test, expect, type Page } from '@playwright/test'
 
-// Fake Supabase session — expires_at is far in the future so Supabase won't try
-// to refresh the token (which would make a real network request).
-const FAKE_SESSION = JSON.stringify({
+// ---------------------------------------------------------------------------
+// Supabase cookie name — computed once at module load in Node.js context.
+// @supabase/ssr derives the cookie name as `sb-{hostname-first-segment}-auth-token`
+// from NEXT_PUBLIC_SUPABASE_URL. We read it from the test process env first,
+// then fall back to parsing .env.local, then fall back to the local Supabase
+// default so CI and worktrees without .env.local still work.
+// ---------------------------------------------------------------------------
+function resolveSupabaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL) return process.env.NEXT_PUBLIC_SUPABASE_URL
+  try {
+    const envPath = path.join(__dirname, '..', '.env.local')
+    const content = fs.readFileSync(envPath, 'utf8')
+    const match = content.match(/^NEXT_PUBLIC_SUPABASE_URL=(.+)$/m)
+    if (match) return match[1].trim()
+  } catch { /* no .env.local */ }
+  return 'http://localhost:54321'
+}
+
+const SUPABASE_URL = resolveSupabaseUrl()
+const SUPABASE_REF = new URL(SUPABASE_URL).hostname.split('.')[0]
+const SESSION_COOKIE_NAME = `sb-${SUPABASE_REF}-auth-token`
+
+const FAKE_SESSION = {
   access_token: 'fake-access-token',
   token_type: 'bearer',
   expires_in: 3600,
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
+  // Far-future expiry so auth-js never tries to refresh
+  expires_at: Math.floor(Date.now() / 1000) + 86400,
   refresh_token: 'fake-refresh-token',
   user: { id: 'test-user-id', email: 'test@example.com', role: 'authenticated' },
-})
+}
+
+// @supabase/ssr v0.10 stores sessions as `base64-{base64url(JSON.stringify(session))}` in cookies.
+// Using Node.js Buffer to produce the same encoding.
+const SESSION_COOKIE_VALUE =
+  'base64-' +
+  Buffer.from(JSON.stringify(FAKE_SESSION))
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
 
 const MOCK_STATS = {
   total_count: 2,
@@ -44,19 +77,21 @@ const SIM_B = makeSim('id-b', 'Paris investment', ['rental'], '2026-05-09T10:00:
 // Matches /api/simulations and /api/simulations?... but not /api/simulations/{id} or /stats
 const LIST_ROUTE = /\/api\/simulations(?![\w/])(\?|$)/
 
-test.beforeEach(async ({ page }) => {
-  await page.addInitScript((fakeSession) => {
-    window.localStorage.setItem('locale', 'en')
-    // Patch localStorage.getItem so Supabase finds a valid session regardless of
-    // the project ref in the key (sb-*-auth-token pattern).
-    const original = window.localStorage.getItem.bind(window.localStorage)
-    window.localStorage.getItem = (key: string) => {
-      if (key.startsWith('sb-') && key.endsWith('-auth-token')) return fakeSession
-      return original(key)
-    }
-  }, FAKE_SESSION)
+// Cookie name and value are fully computed in Node.js — no page navigation needed.
+async function injectSession(page: Page) {
+  await page.context().addCookies([
+    { name: SESSION_COOKIE_NAME, value: SESSION_COOKIE_VALUE, domain: 'localhost', path: '/' },
+  ])
+}
 
-  // Intercept Supabase auth refresh if triggered
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('locale', 'en')
+  })
+
+  await injectSession(page)
+
+  // Intercept Supabase token-refresh calls that the middleware or auth-js may make
   await page.route('**/auth/v1/**', async (route) => {
     await route.fulfill({
       status: 200,
@@ -152,6 +187,7 @@ test.describe('history page (A6)', () => {
     await mockStats(page)
     await mockList(page, [SIM_A, SIM_B], null)
     await page.goto('/history')
+    await expect(page.getByText('Brussels apartment')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Load more' })).not.toBeVisible()
   })
 

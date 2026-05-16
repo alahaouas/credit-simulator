@@ -150,11 +150,12 @@ export async function listSimulations(
   accessToken: string,
   params?: { search?: string; cursor?: string; limit?: number },
 ): Promise<SimulationsPage> {
-  const url = new URL(`${API_BASE}/api/simulations`)
-  if (params?.search) url.searchParams.set('search', params.search)
-  if (params?.cursor) url.searchParams.set('cursor', params.cursor)
-  if (params?.limit) url.searchParams.set('limit', String(params.limit))
-  const res = await fetch(url.toString(), {
+  const qs = new URLSearchParams()
+  if (params?.search) qs.set('search', params.search)
+  if (params?.cursor) qs.set('cursor', params.cursor)
+  if (params?.limit) qs.set('limit', String(params.limit))
+  const qStr = qs.toString()
+  const res = await fetch(`${API_BASE}/api/simulations${qStr ? `?${qStr}` : ''}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
