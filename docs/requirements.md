@@ -159,6 +159,24 @@ For each monthly period from 1 to `loan_duration_months`:
 
 When multiple optimization preferences are evaluated, the system shall return one recommended plan per preference, formatted for side-by-side comparison.
 
+**Web API — `POST /api/simulate/all` (B1 — implemented)**
+
+Accepts the same body as `POST /api/simulate` (the `optimization_preference` field is ignored). Resolves and checks feasibility once, then runs the optimizer for all five preferences (`balanced`, `minimize_total_cost`, `minimize_monthly_payment`, `minimize_duration`, `minimize_down_payment`). Returns:
+
+```json
+{
+  "results": {
+    "balanced": { /* OptimizedResult */ },
+    "minimize_total_cost": { /* OptimizedResult */ },
+    "minimize_monthly_payment": null,
+    "minimize_duration": { /* OptimizedResult */ },
+    "minimize_down_payment": { /* OptimizedResult */ }
+  }
+}
+```
+
+A preference whose `optimize()` call raises `InfeasibleError` or `ValueError` is represented as `null` rather than aborting the entire request. The frontend results page exposes a "Compare all preferences" button that calls this endpoint, caches the matrix in `sessionStorage`, and renders a tab strip with a 6-metric summary card grid per preference.
+
 ---
 
 ## 4. Optimization Logic

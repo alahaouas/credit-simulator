@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { SimulateRequest, SimulateResponse } from '@/lib/api'
-import { DEFAULT_CURRENCY_SYMBOL, SESSION_INPUTS_KEY, SESSION_RESULT_KEY } from '@/lib/constants'
+import { SimulateRequest, SimulateResponse, SimulateAllResponse, simulateAll, ApiError, OptimizedResult } from '@/lib/api'
+import { DEFAULT_CURRENCY_SYMBOL, SESSION_INPUTS_KEY, SESSION_RESULT_KEY, SESSION_ALL_PREFS_KEY } from '@/lib/constants'
+import { OPTIMIZATION_PREFERENCES } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
 import dynamic from 'next/dynamic'
 import AmortizationTable from '@/components/AmortizationTable'
@@ -55,13 +56,34 @@ export default function ResultsPage() {
   const { t } = useI18n()
   const [data, setData] = useState<SimulateResponse | null>(null)
   const [inputs, setInputs] = useState<SimulateRequest | null>(null)
+  const [allPrefs, setAllPrefs] = useState<SimulateAllResponse | null>(null)
+  const [allPrefsLoading, setAllPrefsLoading] = useState(false)
+  const [allPrefsError, setAllPrefsError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<string>('balanced')
 
   useEffect(() => {
     const raw = sessionStorage.getItem(SESSION_RESULT_KEY)
     if (raw) setData(JSON.parse(raw))
     const rawInputs = sessionStorage.getItem(SESSION_INPUTS_KEY)
     if (rawInputs) setInputs(JSON.parse(rawInputs))
+    const rawAll = sessionStorage.getItem(SESSION_ALL_PREFS_KEY)
+    if (rawAll) setAllPrefs(JSON.parse(rawAll))
   }, [])
+
+  async function handleCompareAll() {
+    if (!inputs) return
+    setAllPrefsLoading(true)
+    setAllPrefsError(null)
+    try {
+      const resp = await simulateAll(inputs)
+      setAllPrefs(resp)
+      sessionStorage.setItem(SESSION_ALL_PREFS_KEY, JSON.stringify(resp))
+    } catch (err) {
+      setAllPrefsError(err instanceof ApiError ? err.message : String(err))
+    } finally {
+      setAllPrefsLoading(false)
+    }
+  }
 
   if (!data) {
     return (
@@ -88,6 +110,15 @@ export default function ResultsPage() {
         <h1 className="text-3xl font-bold tracking-tight">{t('results.title')}</h1>
         <div className="flex items-center gap-3">
           <DarkModeToggle />
+          {inputs && (
+            <button
+              onClick={handleCompareAll}
+              disabled={allPrefsLoading}
+              className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+            >
+              {allPrefsLoading ? t('results.all_prefs_loading') : t('results.compare_all')}
+            </button>
+          )}
           <Link href="/simulate" className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             {t('results.new')}
           </Link>
@@ -114,6 +145,54 @@ export default function ResultsPage() {
 
       {inputs && (
         <WhatIfPanel original={data} originalRequest={inputs} currency={c} />
+      )}
+
+      {allPrefsError && (
+        <p className="text-sm text-red-600 dark:text-red-400 mb-4">{allPrefsError}</p>
+      )}
+
+      {allPrefs && (
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold mb-3">{t('results.all_prefs_title')}</h2>
+          <div className="flex gap-1 mb-4 flex-wrap">
+            {OPTIMIZATION_PREFERENCES.map(pref => {
+              const prefKey = PREFERENCE_LABEL_KEY[pref]
+              const label = prefKey ? t(prefKey) : pref.replace(/_/g, ' ')
+              const isNull = allPrefs.results[pref] === null
+              return (
+                <button
+                  key={pref}
+                  onClick={() => setActiveTab(pref)}
+                  className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                    activeTab === pref
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  } ${isNull ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  disabled={isNull}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+          {(() => {
+            const r = allPrefs.results[activeTab] as OptimizedResult | null
+            if (!r) {
+              return <p className="text-sm text-gray-500 dark:text-gray-400">{t('results.all_prefs_error')}</p>
+            }
+            const rc = r.currency || c
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <StatCard label={t('results.down_payment')} value={fmt(r.down_payment, rc)} />
+                <StatCard label={t('results.loan_principal')} value={fmt(r.loan_principal, rc)} />
+                <StatCard label={t('results.duration')} value={`${r.loan_duration_months} ${t('stats.months')}`} />
+                <StatCard label={t('results.monthly_installment')} value={fmt(r.plan.monthly_installment, rc)} />
+                <StatCard label={t('results.interest_rate')} value={`${(parseFloat(r.plan.annual_interest_rate) * 100).toFixed(2)}%`} />
+                <StatCard label={t('results.total_cost')} value={fmt(r.plan.total_cost_of_credit, rc)} />
+              </div>
+            )
+          })()}
+        </section>
       )}
 
       {sweet_spot && sweet_spot.milestones.length > 0 && (

@@ -104,6 +104,10 @@ export interface SimulateResponse {
   schedule: AmortizationRow[] | null
 }
 
+export interface SimulateAllResponse {
+  results: Record<string, OptimizedResult | null>
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message)
@@ -130,6 +134,27 @@ export async function simulate(
   }
 
   return res.json() as Promise<SimulateResponse>
+}
+
+export async function simulateAll(
+  body: SimulateRequest,
+  accessToken?: string
+): Promise<SimulateAllResponse> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+
+  const res = await fetch(`${API_BASE}/api/simulate/all`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+
+  return res.json() as Promise<SimulateAllResponse>
 }
 
 export interface SavedSimulation {

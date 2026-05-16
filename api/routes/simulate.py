@@ -1,11 +1,13 @@
 """POST /api/simulate — run a credit simulation and return the result."""
 from __future__ import annotations
 
+import dataclasses
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from credit_simulator.calculator import build_amortization_schedule
+from credit_simulator.config import VALID_PREFERENCES
 from credit_simulator.optimizer import analyze_sweet_spot, optimize
 from credit_simulator.profiles import SessionProfileStore
 from credit_simulator.resolver import InfeasibleError, UserInputs, check_feasibility, resolve
@@ -98,3 +100,56 @@ def run_simulate(
         }).execute()
 
     return response
+
+
+@router.post("/simulate/all", summary="Run all optimization preferences in one call")
+def run_simulate_all(
+    req: SimulateRequest,
+    user_id: str | None = Depends(optional_user),
+    db=Depends(get_db),
+) -> dict:
+    """Run the simulation for all 5 optimization preferences in one request.
+
+    Returns a JSON object with a single key:
+    - ``results`` — dict keyed by preference name; each value is the optimised
+      result for that preference, or ``null`` if that preference is infeasible
+      given the supplied inputs.
+    """
+    inputs = UserInputs(
+        property_price=Decimal(req.property_price),
+        monthly_net_income=Decimal(req.monthly_net_income),
+        available_savings=Decimal(req.available_savings),
+        country=req.country,
+        profile_quality=req.profile_quality,  # type: ignore[arg-type]
+        purchase_taxes=_d(req.purchase_taxes),
+        annual_interest_rate=_d(req.annual_interest_rate),
+        insurance_rate=_d(req.insurance_rate),
+        min_down_payment_ratio=_d(req.min_down_payment_ratio),
+        max_loan_duration_months=req.max_loan_duration_months,
+        fixed_loan_duration_months=req.fixed_loan_duration_months,
+        max_debt_ratio=_d(req.max_debt_ratio),
+        max_monthly_payment=_d(req.max_monthly_payment),
+        preferred_down_payment=_d(req.preferred_down_payment),
+        optimization_preference="balanced",
+        opportunity_cost_rate=_d(req.opportunity_cost_rate),
+    )
+
+    store = SessionProfileStore()
+
+    try:
+        base_params = resolve(inputs, store)
+        check_feasibility(base_params)
+    except InfeasibleError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    results: dict[str, object] = {}
+    for pref in VALID_PREFERENCES:
+        pref_params = dataclasses.replace(base_params, optimization_preference=pref)
+        try:
+            results[pref] = to_json_safe(optimize(pref_params))
+        except (InfeasibleError, ValueError):
+            results[pref] = None
+
+    return {"results": results}

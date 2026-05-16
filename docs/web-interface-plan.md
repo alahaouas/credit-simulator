@@ -133,6 +133,7 @@ All `Decimal` fields stored as JSON strings to preserve precision.
 | Method | Path | Layer | Description |
 |---|---|---|---|
 | `POST` | `/api/simulate` | 1 | Run simulation; saves to DB if auth header present (Layer 2) |
+| `POST` | `/api/simulate/all` | B1 | Run all 5 optimization preferences; returns `{results: {pref: result_or_null}}` |
 | `GET` | `/api/simulations` | 2 | List authenticated user's saved simulations |
 | `GET` | `/api/simulations/{id}` | 2 | Fetch one simulation with full schedule |
 | `PATCH` | `/api/simulations/{id}` | 6 (A1) | Rename / re-tag a saved simulation |
@@ -226,7 +227,7 @@ Features are grouped by theme. Each can be picked independently or bundled into 
 
 | # | Feature | Description |
 |---|---|---|
-| B1 | **All-preferences scenario run** | Run all 5 optimization preferences in one call; return a results matrix; display in a tabbed or stacked comparison on the results page. Already specced in §3.3. |
+| B1 | **All-preferences scenario run** ✅ | `POST /api/simulate/all` runs all 5 preferences in one request (`dataclasses.replace` per preference on shared resolved params); returns `{"results": {pref: result_or_null}}`. Frontend: "Compare all preferences" button on results page fetches the matrix, caches in `SESSION_ALL_PREFS_KEY`, renders a tab strip + 6-metric `StatCard` grid per tab. Infeasible preferences shown as disabled tabs. |
 | B2 | **Early repayment calculator** | From the results page, input a lump-sum at month N; show the revised amortization schedule, new end date, and total interest saved. Pure frontend math using the existing schedule JSONB. |
 | B3 | **Refinancing break-even** | Input a new (lower) interest rate; compute the break-even month at which the total savings from refinancing exceed the closing costs. |
 | B4 | **Rent-vs-buy comparison** | Input a monthly rent; chart the cumulative cost of renting vs owning over the loan period (accounting for equity build-up). |
