@@ -7,10 +7,12 @@ from __future__ import annotations
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
+import requests
 from fastapi.testclient import TestClient
 
 from api.db import get_db
 from api.main import app
+from credit_simulator.fetcher import fetch_rate as _fetch_rate
 from tests.api.conftest import BEARER, make_db_mock
 
 client = TestClient(app)
@@ -91,8 +93,7 @@ class TestRefreshRate:
         assert "no online" in resp.json()["detail"].lower() or "manually" in resp.json()["detail"].lower()
 
     def test_fr_returns_rate(self):
-        from credit_simulator.fetcher import fetch_rate as _fr
-        _fr.cache_clear()
+        _fetch_rate.cache_clear()
         ecb_json = {
             "dataSets": [{"series": {"0:0:0:0:0:0:0:0:0:0:0": {"observations": {"0": [3.52, 0]}}}}]
         }
@@ -107,11 +108,9 @@ class TestRefreshRate:
         assert Decimal(body["annual_rate_average"]) == Decimal("0.0352")
 
     def test_fetch_error_returns_422(self):
-        import requests as _requests
-        from credit_simulator.fetcher import fetch_rate as _fr
-        _fr.cache_clear()
+        _fetch_rate.cache_clear()
         with patch("credit_simulator.fetcher.requests.get") as mock_get:
-            mock_get.side_effect = _requests.RequestException("network timeout")
+            mock_get.side_effect = requests.RequestException("network timeout")
             resp = client.post("/api/profiles/FR/refresh")
         assert resp.status_code == 422
         assert "network timeout" in resp.json()["detail"]
