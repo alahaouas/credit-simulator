@@ -113,7 +113,7 @@ export default function SimulatorForm() {
     // Try sessionStorage first
     const stored = sessionStorage.getItem(overridesKey(form.country))
     if (stored) {
-      try { setOverrides(JSON.parse(stored)); return } catch {}
+      try { setOverrides(JSON.parse(stored)); return } catch { /* ignore malformed */ }
     }
     // Fetch profile defaults
     setLoadingProfile(true)
@@ -129,7 +129,7 @@ export default function SimulatorForm() {
         setOverrides(next)
         sessionStorage.setItem(overridesKey(form.country), JSON.stringify(next))
       })
-      .catch(() => {})
+      .catch(() => { /* ignore fetch errors */ })
       .finally(() => setLoadingProfile(false))
   }, [form.country])
 
@@ -163,7 +163,7 @@ export default function SimulatorForm() {
         setOverrides(next)
         sessionStorage.setItem(overridesKey(form.country), JSON.stringify(next))
       })
-      .catch(() => {})
+      .catch(() => { /* ignore fetch errors */ })
       .finally(() => setLoadingProfile(false))
   }
 
