@@ -239,7 +239,7 @@ Features are grouped by theme. Each can be picked independently or bundled into 
 
 | # | Feature | Description |
 |---|---|---|
-| C1 | **`GET /api/profiles/{country}` endpoint** | Already listed as "future" in the API table. Return the full country profile (rates, regulatory fields, currency). |
+| C1 | **`GET /api/profiles/{country}` endpoint** ✅ | `GET /api/profiles` lists all supported country codes; `GET /api/profiles/{country}` returns the full country profile (rates, regulatory fields, currency, LTV tiers). No auth required. `api/routes/profiles.py`; 10 tests in `tests/api/test_profiles.py`. |
 | C2 | **Rates reference page** | Frontend page rendering all country profiles from C1 in a sortable table — useful for quick country comparison before running a simulation. |
 | C3 | **Live rate refresh** | Button on the simulator form to fetch current rates for the selected country via `fetcher.py` (ECB / BoE / FRED). Calls a new `POST /api/profiles/{country}/refresh` endpoint. |
 | C4 | **Session-scoped custom profile** | Let users override any country profile field (rate, tax, max duration) for a single session — mirrors the CLI's session update loop. Stored in frontend state only, never persisted. |
