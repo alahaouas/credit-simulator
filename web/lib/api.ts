@@ -349,6 +349,112 @@ export async function updatePreferences(
   return res.json() as Promise<UserPreferences>
 }
 
+// --- Country profiles (C1) ---
+
+export interface LtvRateTier {
+  ltv_max: string
+  rate_delta: string
+}
+
+export interface CountryProfile {
+  code: string
+  currency: string
+  annual_rate_average: string
+  annual_rate_best: string
+  insurance_rate_average: string
+  insurance_rate_best: string
+  purchase_tax_rate: string
+  taxes_financeable: boolean
+  min_down_payment_ratio: string
+  max_debt_ratio: string
+  max_loan_duration_months: number
+  last_updated_date: string
+  ltv_rate_tiers: LtvRateTier[]
+}
+
+export interface ProfilesResponse {
+  profiles: Record<string, CountryProfile>
+}
+
+export async function listProfiles(): Promise<ProfilesResponse> {
+  const res = await fetch(`${API_BASE}/api/profiles`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json() as Promise<ProfilesResponse>
+}
+
+export async function getProfile(country: string): Promise<CountryProfile> {
+  const res = await fetch(`${API_BASE}/api/profiles/${country}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json() as Promise<CountryProfile>
+}
+
+export async function refreshRate(
+  country: string,
+): Promise<{ country: string; annual_rate_average: string }> {
+  const res = await fetch(`${API_BASE}/api/profiles/${country}/refresh`, { method: 'POST' })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json()
+}
+
+// --- Rate alerts (C5) ---
+
+export interface RateAlert {
+  id: string
+  country: string
+  target_rate: string
+  active: boolean
+  created_at: string
+  last_notified_at: string | null
+}
+
+export async function listAlerts(accessToken: string): Promise<{ alerts: RateAlert[] }> {
+  const res = await fetch(`${API_BASE}/api/alerts`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json()
+}
+
+export async function createAlert(
+  country: string,
+  target_rate: string,
+  accessToken: string,
+): Promise<RateAlert> {
+  const res = await fetch(`${API_BASE}/api/alerts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ country, target_rate }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json()
+}
+
+export async function deleteAlert(id: string, accessToken: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/alerts/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+}
+
 // --- API keys (E3) ---
 
 export interface ApiKey {
