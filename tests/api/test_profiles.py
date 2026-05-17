@@ -5,7 +5,7 @@ GET/POST/DELETE /api/alerts (C5).
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -91,8 +91,15 @@ class TestRefreshRate:
         assert "no online" in resp.json()["detail"].lower() or "manually" in resp.json()["detail"].lower()
 
     def test_fr_returns_rate(self):
-        with patch("api.routes.profiles.fetch_rate", return_value=Decimal("0.0352")) as mock_fetch:
-            mock_fetch.cache_clear = lambda: None
+        from credit_simulator.fetcher import fetch_rate as _fr
+        _fr.cache_clear()
+        ecb_json = {
+            "dataSets": [{"series": {"0:0:0:0:0:0:0:0:0:0:0": {"observations": {"0": [3.52, 0]}}}}]
+        }
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = ecb_json
+        mock_resp.raise_for_status = MagicMock()
+        with patch("credit_simulator.fetcher.requests.get", return_value=mock_resp):
             resp = client.post("/api/profiles/FR/refresh")
         assert resp.status_code == 200
         body = resp.json()
@@ -100,13 +107,11 @@ class TestRefreshRate:
         assert Decimal(body["annual_rate_average"]) == Decimal("0.0352")
 
     def test_fetch_error_returns_422(self):
-        from credit_simulator.fetcher import FetchError
-
-        def _fail(country: str):
-            raise FetchError("network timeout")
-
-        _fail.cache_clear = lambda: None  # type: ignore[attr-defined]
-        with patch("api.routes.profiles.fetch_rate", _fail):
+        import requests as _requests
+        from credit_simulator.fetcher import fetch_rate as _fr
+        _fr.cache_clear()
+        with patch("credit_simulator.fetcher.requests.get") as mock_get:
+            mock_get.side_effect = _requests.RequestException("network timeout")
             resp = client.post("/api/profiles/FR/refresh")
         assert resp.status_code == 422
         assert "network timeout" in resp.json()["detail"]

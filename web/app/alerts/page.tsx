@@ -18,7 +18,7 @@ export default function AlertsPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [alerts, setAlerts] = useState<RateAlert[]>([])
   const [loading, setLoading] = useState(true)
-  const [country, setCountry] = useState(COUNTRIES[0])
+  const [country, setCountry] = useState<string>(COUNTRIES[0])
   const [targetRatePct, setTargetRatePct] = useState('')
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
