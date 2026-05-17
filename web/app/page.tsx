@@ -67,7 +67,21 @@ export default function Home() {
         </div>
       )}
 
-      <div className="mt-4 text-xs text-gray-300 dark:text-gray-600">
+      <div className="flex gap-4 text-sm text-gray-400 dark:text-gray-500">
+        <Link href="/rates" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+          {t('nav.rates')}
+        </Link>
+        {user && (
+          <>
+            <span>·</span>
+            <Link href="/alerts" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+              {t('nav.alerts')}
+            </Link>
+          </>
+        )}
+      </div>
+
+      <div className="mt-2 text-xs text-gray-300 dark:text-gray-600">
         <a
           href={`${API_BASE}/api/docs`}
           target="_blank"
