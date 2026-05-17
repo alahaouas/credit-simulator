@@ -188,6 +188,59 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
     )
 
 
+# ── Heatmap grid ──────────────────────────────────────────────────────────────
+
+HEATMAP_MAX_DP: int = 15
+HEATMAP_MAX_DUR: int = 12
+
+
+@dataclass(frozen=True)
+class HeatmapCell:
+    down_payment: Decimal
+    duration_months: int
+    total_cost: Decimal | None          # None = infeasible
+    monthly_installment: Decimal | None
+
+
+def _subsample(items: list, max_n: int) -> list:
+    """Return at most max_n evenly spaced items, always including first and last."""
+    if len(items) <= max_n:
+        return items
+    indices = sorted({round(i * (len(items) - 1) / (max_n - 1)) for i in range(max_n)})
+    return [items[i] for i in indices]
+
+
+def build_heatmap_grid(params: ResolvedParams) -> list[HeatmapCell]:
+    """Return a subsampled 2D grid of (down_payment × duration) → metrics."""
+    effective_cap = min(
+        params.monthly_net_income * params.max_debt_ratio,
+        params.max_monthly_payment,
+    )
+
+    dp_candidates = _subsample(_build_dp_candidates(params), HEATMAP_MAX_DP)
+    dur_candidates = _subsample(_build_duration_candidates(params), HEATMAP_MAX_DUR)
+
+    cells: list[HeatmapCell] = []
+    for dp in dp_candidates:
+        principal = params.total_acquisition_cost - dp
+        if principal <= ZERO:
+            for dur in dur_candidates:
+                cells.append(HeatmapCell(dp, dur, None, None))
+            continue
+
+        ltv = principal / params.property_price
+        effective_rate = params.rate_for_ltv(ltv)
+
+        for dur in dur_candidates:
+            plan = compute_loan_plan(principal, effective_rate, params.insurance_rate, dur)
+            if plan.monthly_installment > effective_cap:
+                cells.append(HeatmapCell(dp, dur, None, None))
+            else:
+                cells.append(HeatmapCell(dp, dur, plan.total_cost_of_credit, plan.monthly_installment))
+
+    return cells
+
+
 # ── Sweet-spot analysis ────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)

@@ -7,6 +7,7 @@ export const SESSION_RESULT_KEY = 'simulator_result'
 export const SESSION_INPUTS_KEY = 'simulator_inputs'
 export const SESSION_CLONE_KEY = 'simulator_clone'
 export const SESSION_ALL_PREFS_KEY = 'simulator_all_prefs'
+export const SESSION_HEATMAP_KEY = 'simulator_heatmap'
 export const LOCALE_STORAGE_KEY = 'locale'
 export const TOUR_DONE_KEY = 'credit_simulator_tour_done'
 
