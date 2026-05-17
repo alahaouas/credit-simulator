@@ -2,7 +2,7 @@
 
 ## Current Status (2026-05-14)
 
-**Layers 1–5 complete. Layer 6 Theme E complete (E1–E5).** All shipped layers as of 2026-05-14.
+**Layers 1–5 complete. Layer 6 Theme B (B1, B2) and Theme E (E1–E5) complete.** All shipped layers as of 2026-05-17.
 
 **Also completed (2026-05-14, outside web plan):**
 - CLI `rates` subcommand (runtime BE rate refresh) — see `docs/runtime-rates.md`

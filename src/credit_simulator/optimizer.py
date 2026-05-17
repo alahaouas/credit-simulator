@@ -62,8 +62,7 @@ def _score(
     elif preference == "minimize_monthly_payment":
         return (mp, tc, -dp)
     elif preference == "minimize_duration":
-        # Duration is constant across all candidates (grid-search not yet enabled).
-        # Falls back to minimize_total_cost ordering.
+        # Duration grid-search is active; sort by duration first, then total cost.
         return (duration, tc, mp)
     elif preference == "minimize_down_payment":
         return (dp, tc, mp)

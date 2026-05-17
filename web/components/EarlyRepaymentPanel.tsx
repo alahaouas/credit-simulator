@@ -129,6 +129,8 @@ export default function EarlyRepaymentPanel({ result, currency }: Props) {
   const { t } = useI18n()
   const c = currency
 
+  // parseFloat is intentional: this is display-only math with no round-trip to the backend.
+  // Sub-cent precision loss on typical mortgage amounts (< €1 M, rates 3–6 %) is negligible.
   const principal = parseFloat(result.loan_principal)
   const annualRate = parseFloat(result.plan.annual_interest_rate)
   const annualInsuranceRate = parseFloat(result.plan.annual_insurance_rate)
@@ -172,8 +174,9 @@ export default function EarlyRepaymentPanel({ result, currency }: Props) {
 
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex-1 min-w-[140px]">
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('early.month_label')}</label>
+          <label htmlFor="early-month" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('early.month_label')}</label>
           <input
+            id="early-month"
             type="number"
             min={1}
             max={durationMonths - 1}
@@ -184,8 +187,9 @@ export default function EarlyRepaymentPanel({ result, currency }: Props) {
           />
         </div>
         <div className="flex-1 min-w-[180px]">
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('early.amount_label')} ({c})</label>
+          <label htmlFor="early-lump-sum" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('early.amount_label')} ({c})</label>
           <input
+            id="early-lump-sum"
             type="number"
             min={1}
             value={lumpSum}

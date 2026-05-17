@@ -20,18 +20,19 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
 
 ---
 
-## Repository State (as of 2026-05-10)
+## Repository State (as of 2026-05-17)
 
 | Item | Status |
 |---|---|
-| Source code | **Complete** — all modules implemented and tested |
-| Framework / language | **Python 3.11+** |
+| CLI source | **Complete** — all modules implemented and tested |
+| Web stack | FastAPI (`api/`) + Next.js 14 (`web/`) + Supabase auth/DB — see [docs/web-interface-plan.md](docs/web-interface-plan.md) for layer status |
+| Framework / language | **Python 3.11+** (CLI + API); **TypeScript / Next.js 14** (web) |
 | Build system | `pyproject.toml` (PEP 517/518, `hatchling`) |
 | Tests | ~200 unit + integration tests; branch coverage gate ≥ 90% on core modules (actual: ~94%) |
 | CI/CD | Local coverage gate via `pytest-cov`; no remote CI pipeline yet |
 | Linting | `ruff` configured (rules E/F/W/I/UP/B/SIM, py311, 100-char line length) |
 | Documentation | Requirements doc complete (`docs/requirements.md`) |
-| BE mortgage rates | Manually maintained in `profiles.py` (May 2026 data; ECB MIR endpoint excluded — see `fetcher.py`). Refresh at runtime with `credit-simulator rates set ...` (see [docs/runtime-rates.md](docs/runtime-rates.md)). |
+| BE mortgage rates | Manually maintained in `profiles.py` (May 2026 data; Belgium excluded from ECB MIR endpoint — unreliable, see `fetcher.py:17`). Refresh at runtime with `credit-simulator rates set ...` (see [docs/runtime-rates.md](docs/runtime-rates.md)). |
 | Localisation | EN/FR via `i18n.py`; locale auto-detected from env/system; override with `--locale` flag |
 
 ---

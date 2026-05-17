@@ -12,6 +12,7 @@ Covers:
 from __future__ import annotations
 
 from decimal import Decimal
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -397,3 +398,22 @@ class TestSimulateAll:
             if val is None:
                 continue
             assert val["country"] == "FR", f"{pref}: expected country FR"
+
+    def test_partial_infeasibility_returns_null_for_failing_preference(self):
+        """If optimize raises InfeasibleError for one preference, that slot is null; others succeed."""
+        import api.routes.simulate as sim_module
+        from credit_simulator.resolver import InfeasibleError
+
+        original_optimize = sim_module.optimize
+
+        def mock_optimize(params):
+            if params.optimization_preference == "minimize_down_payment":
+                raise InfeasibleError("mocked: infeasible for min-dp preference")
+            return original_optimize(params)
+
+        with patch.object(sim_module, "optimize", mock_optimize):
+            results = client.post("/api/simulate/all", json=BASE).json()["results"]
+
+        assert results["minimize_down_payment"] is None
+        for pref in ALL_PREFS - {"minimize_down_payment"}:
+            assert isinstance(results[pref], dict), f"{pref}: expected non-null result"
