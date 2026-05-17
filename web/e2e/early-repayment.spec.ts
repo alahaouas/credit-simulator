@@ -67,9 +67,10 @@ test('early repayment panel is visible on results page (B2)', async ({ page }) =
 test('early repayment: compute shows summary cards', async ({ page }) => {
   await goToResults(page)
 
+  const panel = page.locator('section').filter({ hasText: 'Early repayment calculator' })
   await page.locator('#early-month').fill('60')
   await page.locator('#early-lump-sum').fill('50000')
-  await page.getByRole('button', { name: 'Calculate' }).click()
+  await panel.getByRole('button', { name: 'Calculate' }).click()
 
   await expect(page.getByText('Balance at repayment')).toBeVisible()
   await expect(page.getByText('New duration')).toBeVisible()
@@ -80,9 +81,10 @@ test('early repayment: compute shows summary cards', async ({ page }) => {
 test('early repayment: revised schedule toggle shows table', async ({ page }) => {
   await goToResults(page)
 
+  const panel = page.locator('section').filter({ hasText: 'Early repayment calculator' })
   await page.locator('#early-month').fill('60')
   await page.locator('#early-lump-sum').fill('50000')
-  await page.getByRole('button', { name: 'Calculate' }).click()
+  await panel.getByRole('button', { name: 'Calculate' }).click()
 
   await page.getByText('Show revised schedule').click()
   await expect(page.locator('table')).toBeVisible()
@@ -95,9 +97,10 @@ test('early repayment: revised schedule toggle shows table', async ({ page }) =>
 test('early repayment: invalid month shows error', async ({ page }) => {
   await goToResults(page)
 
+  const panel = page.locator('section').filter({ hasText: 'Early repayment calculator' })
   await page.locator('#early-month').fill('0')
   await page.locator('#early-lump-sum').fill('50000')
-  await page.getByRole('button', { name: 'Calculate' }).click()
+  await panel.getByRole('button', { name: 'Calculate' }).click()
 
   await expect(page.getByText(/Month must be between/i)).toBeVisible()
 })
@@ -105,9 +108,10 @@ test('early repayment: invalid month shows error', async ({ page }) => {
 test('early repayment: zero lump sum shows error', async ({ page }) => {
   await goToResults(page)
 
+  const panel = page.locator('section').filter({ hasText: 'Early repayment calculator' })
   await page.locator('#early-month').fill('60')
   await page.locator('#early-lump-sum').fill('0')
-  await page.getByRole('button', { name: 'Calculate' }).click()
+  await panel.getByRole('button', { name: 'Calculate' }).click()
 
   await expect(page.getByText(/Enter a positive lump-sum amount/i)).toBeVisible()
 })
