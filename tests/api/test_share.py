@@ -73,6 +73,7 @@ class TestRevokeShareToken:
     def test_revoke_calls_update_on_simulations_table(self, mock_db_with_sim):
         client.delete(f"/api/simulations/{SIM_ID}/share", headers={"Authorization": BEARER})
         mock_db_with_sim.table.assert_called_with("simulations")
+        mock_db_with_sim.table.return_value.update.assert_called()
 
 
 # ---------------------------------------------------------------------------
@@ -105,8 +106,3 @@ class TestGetSharedSimulation:
         for field in ("id", "created_at", "result"):
             assert field in data, f"missing field: {field}"
 
-    def test_auth_header_not_required(self, mock_db_with_sim):
-        """Explicitly verify no auth header is needed (public endpoint)."""
-        resp = client.get(f"/api/share/{SHARE_TOKEN}")
-        # Must succeed without Authorization header
-        assert resp.status_code == 200

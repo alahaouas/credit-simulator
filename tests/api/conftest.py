@@ -10,7 +10,14 @@ from api.main import app
 
 USER_ID = "11111111-1111-1111-1111-111111111111"
 SIM_ID = "22222222-2222-2222-2222-222222222222"
+KEY_ID = "33333333-3333-3333-3333-333333333333"
 BEARER = "Bearer test-token-abc"
+
+BASE = {
+    "property_price": "300000",
+    "monthly_net_income": "4000",
+    "available_savings": "80000",
+}
 
 SHARE_TOKEN = "test-share-token-abc123"
 
@@ -96,6 +103,23 @@ def mock_db_with_sim():
 def mock_db_with_token_sim():
     """Simulation that already has a share_token set."""
     db = make_db_mock(rows=[SAMPLE_SIM_WITH_TOKEN])
+    app.dependency_overrides[get_db] = lambda: db
+    yield db
+    app.dependency_overrides.clear()
+
+
+SAMPLE_KEY_ROW = {
+    "id": KEY_ID,
+    "name": "my-script",
+    "key_prefix": "csim_ab12cd",
+    "created_at": "2026-05-14T10:00:00+00:00",
+    "last_used_at": None,
+}
+
+
+@pytest.fixture
+def mock_db_with_key():
+    db = make_db_mock(rows=[SAMPLE_KEY_ROW])
     app.dependency_overrides[get_db] = lambda: db
     yield db
     app.dependency_overrides.clear()

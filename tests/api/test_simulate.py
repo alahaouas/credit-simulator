@@ -12,11 +12,12 @@ Covers:
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from api.db import get_db
 from api.main import app
+from tests.api.conftest import BASE, BEARER, make_db_mock
 
 client = TestClient(app)
 
@@ -24,10 +25,10 @@ client = TestClient(app)
 # Shared fixtures
 # ---------------------------------------------------------------------------
 
-BASE = {
-    "property_price": "300000",
-    "monthly_net_income": "4000",
-    "available_savings": "80000",
+INFEASIBLE_PAYLOAD = {
+    "property_price": "500000",
+    "monthly_net_income": "1000",
+    "available_savings": "1000",
 }
 
 
@@ -242,22 +243,10 @@ class TestDomainErrors:
         assert client.post("/api/simulate", json={**BASE, "country": "XX"}).status_code == 422
 
     def test_infeasible_savings_returns_422(self):
-        payload = {
-            "property_price": "500000",
-            "monthly_net_income": "1000",
-            "available_savings": "1000",
-        }
-        resp = client.post("/api/simulate", json=payload)
-        assert resp.status_code == 422
+        assert client.post("/api/simulate", json=INFEASIBLE_PAYLOAD).status_code == 422
 
     def test_infeasible_response_contains_detail(self):
-        payload = {
-            "property_price": "500000",
-            "monthly_net_income": "1000",
-            "available_savings": "1000",
-        }
-        resp = client.post("/api/simulate", json=payload)
-        assert "detail" in resp.json()
+        assert "detail" in client.post("/api/simulate", json=INFEASIBLE_PAYLOAD).json()
 
 
 # ---------------------------------------------------------------------------
@@ -270,20 +259,15 @@ class TestSimulateWithAuth:
         assert resp.status_code == 200
 
     def test_authenticated_simulate_returns_200(self, mock_db):
-        from tests.api.conftest import BEARER
         resp = client.post("/api/simulate", json=BASE, headers={"Authorization": BEARER})
         assert resp.status_code == 200
 
     def test_authenticated_simulate_saves_to_db(self, mock_db):
-        from tests.api.conftest import BEARER
         client.post("/api/simulate", json=BASE, headers={"Authorization": BEARER})
         mock_db.table.assert_called_with("simulations")
         mock_db.table.return_value.insert.assert_called_once()
 
     def test_invalid_token_treated_as_anonymous(self, mock_db):
-        from api.db import get_db
-        from api.main import app
-        from tests.api.conftest import make_db_mock
         db = make_db_mock(invalid_token=True)
         app.dependency_overrides[get_db] = lambda: db
         try:
@@ -295,9 +279,6 @@ class TestSimulateWithAuth:
 
     def test_auth_backend_error_returns_503(self):
         """Per security-controls rule: auth check that can't resolve must reject."""
-        from api.db import get_db
-        from api.main import app
-        from tests.api.conftest import make_db_mock
         db = make_db_mock(auth_fail=True)
         app.dependency_overrides[get_db] = lambda: db
         try:
@@ -385,12 +366,7 @@ class TestSimulateAll:
         assert client.post("/api/simulate/all", json=payload).status_code == 422
 
     def test_infeasible_base_inputs_return_422(self):
-        payload = {
-            "property_price": "500000",
-            "monthly_net_income": "1000",
-            "available_savings": "1000",
-        }
-        assert client.post("/api/simulate/all", json=payload).status_code == 422
+        assert client.post("/api/simulate/all", json=INFEASIBLE_PAYLOAD).status_code == 422
 
     def test_country_propagated_to_all_results(self):
         results = client.post("/api/simulate/all", json={**BASE, "country": "FR"}).json()["results"]
@@ -400,20 +376,32 @@ class TestSimulateAll:
             assert val["country"] == "FR", f"{pref}: expected country FR"
 
     def test_partial_infeasibility_returns_null_for_failing_preference(self):
-        """If optimize raises InfeasibleError for one preference, that slot is null; others succeed."""
-        import api.routes.simulate as sim_module
-        from credit_simulator.resolver import InfeasibleError
+        """If optimize raises for one preference, that slot is null; others succeed."""
+        from api.routes.simulate import run_simulate_all
+        from api.models import SimulateRequest
 
-        original_optimize = sim_module.optimize
+        req = SimulateRequest(**BASE)
+
+        fn_globals = run_simulate_all.__globals__
+        original = fn_globals["optimize"]
+        called_with: list[str] = []
 
         def mock_optimize(params):
+            called_with.append(params.optimization_preference)
             if params.optimization_preference == "minimize_down_payment":
-                raise InfeasibleError("mocked: infeasible for min-dp preference")
-            return original_optimize(params)
+                raise ValueError("mocked: forced infeasibility")
+            return original(params)
 
-        with patch.object(sim_module, "optimize", mock_optimize):
-            results = client.post("/api/simulate/all", json=BASE).json()["results"]
+        fn_globals["optimize"] = mock_optimize
+        try:
+            # Call the function directly (same thread) to avoid Python 3.11's
+            # LOAD_GLOBAL_MODULE bytecode cache, which ignores __globals__ mutations
+            # when the route executes in FastAPI's thread-pool executor.
+            response = run_simulate_all(req=req, user_id=None, db=None)
+        finally:
+            fn_globals["optimize"] = original
 
-        assert results["minimize_down_payment"] is None
+        assert called_with, "mock was never invoked — route not using expected globals"
+        assert response["results"]["minimize_down_payment"] is None
         for pref in ALL_PREFS - {"minimize_down_payment"}:
-            assert isinstance(results[pref], dict), f"{pref}: expected non-null result"
+            assert isinstance(response["results"][pref], dict), f"{pref}: expected non-null result"

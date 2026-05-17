@@ -18,18 +18,10 @@ from fastapi.testclient import TestClient
 from api.auth import hash_api_key
 from api.db import get_db
 from api.main import app
-from tests.api.conftest import BEARER, USER_ID, make_db_mock
+from tests.api.conftest import BASE, BEARER, KEY_ID, SAMPLE_KEY_ROW, USER_ID, make_db_mock
 
 client = TestClient(app)
 
-KEY_ID = "33333333-3333-3333-3333-333333333333"
-SAMPLE_KEY_ROW = {
-    "id": KEY_ID,
-    "name": "my-script",
-    "key_prefix": "csim_ab12cd",
-    "created_at": "2026-05-14T10:00:00+00:00",
-    "last_used_at": None,
-}
 # Full key row as stored (includes key_hash, not returned to clients)
 FULL_KEY_ROW = {**SAMPLE_KEY_ROW, "user_id": USER_ID, "key_hash": "fakehash"}
 
@@ -86,37 +78,21 @@ class TestListApiKeys:
         assert resp.status_code == 200
         assert resp.json() == []
 
-    def test_returns_keys(self):
-        db = make_db_mock(rows=[SAMPLE_KEY_ROW])
-        app.dependency_overrides[get_db] = lambda: db
-        try:
-            resp = client.get("/api/keys", headers={"Authorization": BEARER})
-            assert resp.status_code == 200
-            data = resp.json()
-            assert len(data) == 1
-            assert data[0]["id"] == KEY_ID
-        finally:
-            app.dependency_overrides.clear()
+    def test_returns_keys(self, mock_db_with_key):
+        resp = client.get("/api/keys", headers={"Authorization": BEARER})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["id"] == KEY_ID
 
-    def test_response_has_expected_fields(self):
-        db = make_db_mock(rows=[SAMPLE_KEY_ROW])
-        app.dependency_overrides[get_db] = lambda: db
-        try:
-            data = client.get("/api/keys", headers={"Authorization": BEARER}).json()
-            row = data[0]
-            for field in ("id", "name", "key_prefix", "created_at"):
-                assert field in row
-        finally:
-            app.dependency_overrides.clear()
+    def test_response_has_expected_fields(self, mock_db_with_key):
+        data = client.get("/api/keys", headers={"Authorization": BEARER}).json()
+        for field in ("id", "name", "key_prefix", "created_at"):
+            assert field in data[0]
 
-    def test_key_hash_not_in_response(self):
-        db = make_db_mock(rows=[SAMPLE_KEY_ROW])
-        app.dependency_overrides[get_db] = lambda: db
-        try:
-            data = client.get("/api/keys", headers={"Authorization": BEARER}).json()
-            assert "key_hash" not in data[0]
-        finally:
-            app.dependency_overrides.clear()
+    def test_key_hash_not_in_response(self, mock_db_with_key):
+        data = client.get("/api/keys", headers={"Authorization": BEARER}).json()
+        assert "key_hash" not in data[0]
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +149,7 @@ class TestDeleteApiKey:
         finally:
             app.dependency_overrides.clear()
 
+
     def test_delete_nonexistent_returns_404(self, mock_db):
         resp = client.delete(f"/api/keys/{KEY_ID}", headers={"Authorization": BEARER})
         assert resp.status_code == 404
@@ -206,12 +183,7 @@ class TestApiKeyAuth:
             resp = client.post(
                 "/api/simulate",
                 headers={"X-Api-Key": test_key},
-                json={
-                    "property_price": "300000",
-                    "monthly_net_income": "4000",
-                    "available_savings": "80000",
-                    "include_sweet_spot": False,
-                },
+                json={**BASE, "include_sweet_spot": False},
             )
             assert resp.status_code == 200
             # Verify insert was called (user was identified → simulation was saved)
@@ -236,12 +208,7 @@ class TestApiKeyAuth:
             resp = client.post(
                 "/api/simulate",
                 headers={"X-Api-Key": "csim_invalid"},
-                json={
-                    "property_price": "300000",
-                    "monthly_net_income": "4000",
-                    "available_savings": "80000",
-                    "include_sweet_spot": False,
-                },
+                json={**BASE, "include_sweet_spot": False},
             )
             # simulate works anonymously — result is returned, nothing persisted
             assert resp.status_code == 200

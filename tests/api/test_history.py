@@ -167,6 +167,7 @@ class TestDeleteSimulation:
     def test_delete_calls_db(self, mock_db_with_sim):
         client.delete(f"/api/simulations/{SIM_ID}", headers={"Authorization": BEARER})
         mock_db_with_sim.table.assert_called_with("simulations")
+        mock_db_with_sim.table.return_value.delete.assert_called()
 
 
 # ---------------------------------------------------------------------------
@@ -234,6 +235,7 @@ class TestUpdateSimulationMeta:
             headers={"Authorization": BEARER},
         )
         mock_db_with_sim.table.assert_called_with("simulations")
+        mock_db_with_sim.table.return_value.update.assert_called()
 
 
 # ---------------------------------------------------------------------------
