@@ -108,6 +108,17 @@ export interface SimulateAllResponse {
   results: Record<string, OptimizedResult | null>
 }
 
+export interface HeatmapCell {
+  down_payment: string
+  duration_months: number
+  total_cost: string | null
+  monthly_installment: string | null
+}
+
+export interface HeatmapResponse {
+  cells: HeatmapCell[]
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message)
@@ -134,6 +145,19 @@ export async function simulate(
   }
 
   return res.json() as Promise<SimulateResponse>
+}
+
+export async function simulateHeatmap(body: SimulateRequest): Promise<HeatmapResponse> {
+  const res = await fetch(`${API_BASE}/api/simulate/heatmap`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(res.status, err.detail ?? res.statusText)
+  }
+  return res.json() as Promise<HeatmapResponse>
 }
 
 export async function simulateAll(

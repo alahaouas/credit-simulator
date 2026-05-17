@@ -12,6 +12,7 @@ import { DarkModeToggle } from '@/components/DarkModeToggle'
 import WhatIfPanel from '@/components/WhatIfPanel'
 import EarlyRepaymentPanel from '@/components/EarlyRepaymentPanel'
 import RefinancingBreakEvenPanel from '@/components/RefinancingBreakEvenPanel'
+import SweetSpotHeatmap from '@/components/SweetSpotHeatmap'
 
 const LoanChart = dynamic(() => import('@/components/LoanChart'), { ssr: false })
 
@@ -151,6 +152,10 @@ export default function ResultsPage() {
 
       <EarlyRepaymentPanel result={result} currency={c} />
       <RefinancingBreakEvenPanel result={result} currency={c} />
+
+      {inputs && (
+        <SweetSpotHeatmap result={result} inputs={inputs} currency={c} />
+      )}
 
       {allPrefsError && (
         <p className="text-sm text-red-600 dark:text-red-400 mb-4">{allPrefsError}</p>

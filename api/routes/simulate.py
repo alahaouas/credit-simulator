@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from credit_simulator.calculator import build_amortization_schedule
 from credit_simulator.config import VALID_PREFERENCES
-from credit_simulator.optimizer import analyze_sweet_spot, optimize
+from credit_simulator.optimizer import analyze_sweet_spot, build_heatmap_grid, optimize
 from credit_simulator.profiles import SessionProfileStore
 from credit_simulator.resolver import InfeasibleError, UserInputs, check_feasibility, resolve
 
@@ -153,3 +153,45 @@ def run_simulate_all(
             results[pref] = None
 
     return {"results": results}
+
+
+@router.post("/simulate/heatmap", summary="Build a 2D heatmap grid for the optimizer search space")
+def run_heatmap(req: SimulateRequest) -> dict:
+    """Return a subsampled 2D grid of down_payment × duration → metrics.
+
+    Each cell contains ``total_cost`` and ``monthly_installment`` (decimal
+    strings), or ``null`` for infeasible combinations::
+
+        {"cells": [{down_payment, duration_months, total_cost, monthly_installment}, ...]}
+    """
+    inputs = UserInputs(
+        property_price=Decimal(req.property_price),
+        monthly_net_income=Decimal(req.monthly_net_income),
+        available_savings=Decimal(req.available_savings),
+        country=req.country,
+        profile_quality=req.profile_quality,  # type: ignore[arg-type]
+        purchase_taxes=_d(req.purchase_taxes),
+        annual_interest_rate=_d(req.annual_interest_rate),
+        insurance_rate=_d(req.insurance_rate),
+        min_down_payment_ratio=_d(req.min_down_payment_ratio),
+        max_loan_duration_months=req.max_loan_duration_months,
+        fixed_loan_duration_months=req.fixed_loan_duration_months,
+        max_debt_ratio=_d(req.max_debt_ratio),
+        max_monthly_payment=_d(req.max_monthly_payment),
+        preferred_down_payment=_d(req.preferred_down_payment),
+        optimization_preference=req.optimization_preference or "balanced",
+        opportunity_cost_rate=_d(req.opportunity_cost_rate),
+    )
+
+    store = SessionProfileStore()
+
+    try:
+        params = resolve(inputs, store)
+        check_feasibility(params)
+    except InfeasibleError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    cells = build_heatmap_grid(params)
+    return {"cells": [to_json_safe(c) for c in cells]}
