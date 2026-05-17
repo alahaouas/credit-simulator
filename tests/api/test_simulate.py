@@ -377,8 +377,8 @@ class TestSimulateAll:
 
     def test_partial_infeasibility_returns_null_for_failing_preference(self):
         """If optimize raises for one preference, that slot is null; others succeed."""
-        from api.routes.simulate import run_simulate_all
         from api.models import SimulateRequest
+        from api.routes.simulate import run_simulate_all
 
         req = SimulateRequest(**BASE)
 
