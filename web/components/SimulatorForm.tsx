@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { simulate, SimulateRequest, ApiError } from '@/lib/api'
+import { simulate, getProfile, refreshRate, SimulateRequest, ApiError } from '@/lib/api'
 import {
   COUNTRIES,
   OPTIMIZATION_PREFERENCES,
@@ -27,6 +27,33 @@ const PREFERENCE_LABEL_KEY: Record<(typeof OPTIMIZATION_PREFERENCES)[number], Tr
 const inputClass = 'border dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400'
 const selectClass = 'border dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400'
 
+interface ProfileOverrides {
+  annual_interest_rate_pct: string
+  insurance_rate_pct: string
+  min_down_pct: string
+  max_debt_pct: string
+  max_duration_months: string
+}
+
+const EMPTY_OVERRIDES: ProfileOverrides = {
+  annual_interest_rate_pct: '',
+  insurance_rate_pct: '',
+  min_down_pct: '',
+  max_debt_pct: '',
+  max_duration_months: '',
+}
+
+function pctToFraction(pct: string): string | undefined {
+  if (!pct.trim()) return undefined
+  const n = parseFloat(pct)
+  if (isNaN(n)) return undefined
+  return String(n / 100)
+}
+
+function overridesKey(country: string) {
+  return `profile_overrides_${country}`
+}
+
 export default function SimulatorForm() {
   const router = useRouter()
   const { t } = useI18n()
@@ -43,6 +70,17 @@ export default function SimulatorForm() {
     include_schedule: false,
   })
 
+  // C4 — custom profile overrides
+  const [overrides, setOverrides] = useState<ProfileOverrides>(EMPTY_OVERRIDES)
+  const [showCustomProfile, setShowCustomProfile] = useState(false)
+  const [loadingProfile, setLoadingProfile] = useState(false)
+
+  // C3 — live rate
+  const [liveRatePct, setLiveRatePct] = useState<string | null>(null)
+  const [refreshingRate, setRefreshingRate] = useState(false)
+  const [refreshRateError, setRefreshRateError] = useState(false)
+
+  // Restore clone data
   useEffect(() => {
     const raw = sessionStorage.getItem(SESSION_CLONE_KEY)
     if (!raw) return
@@ -64,8 +102,87 @@ export default function SimulatorForm() {
     }
   }, [])
 
+  // C4 — load profile when country changes
+  useEffect(() => {
+    setLiveRatePct(null)
+    setRefreshRateError(false)
+    if (!form.country) {
+      setOverrides(EMPTY_OVERRIDES)
+      return
+    }
+    // Try sessionStorage first
+    const stored = sessionStorage.getItem(overridesKey(form.country))
+    if (stored) {
+      try { setOverrides(JSON.parse(stored)); return } catch { /* ignore malformed */ }
+    }
+    // Fetch profile defaults
+    setLoadingProfile(true)
+    getProfile(form.country)
+      .then(p => {
+        const next: ProfileOverrides = {
+          annual_interest_rate_pct: (parseFloat(p.annual_rate_average) * 100).toFixed(4),
+          insurance_rate_pct: (parseFloat(p.insurance_rate_average) * 100).toFixed(4),
+          min_down_pct: (parseFloat(p.min_down_payment_ratio) * 100).toFixed(2),
+          max_debt_pct: (parseFloat(p.max_debt_ratio) * 100).toFixed(2),
+          max_duration_months: String(p.max_loan_duration_months),
+        }
+        setOverrides(next)
+        sessionStorage.setItem(overridesKey(form.country), JSON.stringify(next))
+      })
+      .catch(() => { /* ignore fetch errors */ })
+      .finally(() => setLoadingProfile(false))
+  }, [form.country])
+
   function set(field: string, value: string | boolean) {
     setForm(f => ({ ...f, [field]: value }))
+  }
+
+  function setOverride(field: keyof ProfileOverrides, value: string) {
+    setOverrides(prev => {
+      const next = { ...prev, [field]: value }
+      if (form.country) sessionStorage.setItem(overridesKey(form.country), JSON.stringify(next))
+      return next
+    })
+  }
+
+  function resetOverrides() {
+    if (!form.country) return
+    sessionStorage.removeItem(overridesKey(form.country))
+    setOverrides(EMPTY_OVERRIDES)
+    // Re-trigger profile load
+    setLoadingProfile(true)
+    getProfile(form.country)
+      .then(p => {
+        const next: ProfileOverrides = {
+          annual_interest_rate_pct: (parseFloat(p.annual_rate_average) * 100).toFixed(4),
+          insurance_rate_pct: (parseFloat(p.insurance_rate_average) * 100).toFixed(4),
+          min_down_pct: (parseFloat(p.min_down_payment_ratio) * 100).toFixed(2),
+          max_debt_pct: (parseFloat(p.max_debt_ratio) * 100).toFixed(2),
+          max_duration_months: String(p.max_loan_duration_months),
+        }
+        setOverrides(next)
+        sessionStorage.setItem(overridesKey(form.country), JSON.stringify(next))
+      })
+      .catch(() => { /* ignore fetch errors */ })
+      .finally(() => setLoadingProfile(false))
+  }
+
+  // C3 — refresh live rate
+  async function handleRefreshRate() {
+    if (!form.country) return
+    setRefreshingRate(true)
+    setRefreshRateError(false)
+    setLiveRatePct(null)
+    try {
+      const res = await refreshRate(form.country)
+      const pct = (parseFloat(res.annual_rate_average) * 100).toFixed(4)
+      setLiveRatePct(pct)
+      setOverride('annual_interest_rate_pct', pct)
+    } catch {
+      setRefreshRateError(true)
+    } finally {
+      setRefreshingRate(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -82,6 +199,19 @@ export default function SimulatorForm() {
         include_schedule: form.include_schedule,
         ...(form.country && { country: form.country }),
         ...(form.profile_quality && { profile_quality: form.profile_quality as ProfileQuality }),
+      }
+      // C4 — apply non-default overrides only when a country is selected
+      if (form.country && showCustomProfile) {
+        const frac = pctToFraction(overrides.annual_interest_rate_pct)
+        if (frac) req.annual_interest_rate = frac
+        const ins = pctToFraction(overrides.insurance_rate_pct)
+        if (ins) req.insurance_rate = ins
+        const minDown = pctToFraction(overrides.min_down_pct)
+        if (minDown) req.min_down_payment_ratio = minDown
+        const maxDebt = pctToFraction(overrides.max_debt_pct)
+        if (maxDebt) req.max_debt_ratio = maxDebt
+        const dur = parseInt(overrides.max_duration_months)
+        if (!isNaN(dur) && dur > 0) req.max_loan_duration_months = dur
       }
       const result = await simulate(req)
       sessionStorage.setItem(SESSION_RESULT_KEY, JSON.stringify(result))
@@ -149,33 +279,132 @@ export default function SimulatorForm() {
       </TourTooltip>
 
       <TourTooltip title={t('tour.step4_title')} description={t('tour.step4_desc')} {...tourProps(3)}>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="country" className="text-sm font-medium">{t('form.country')}</label>
-            <select
-              id="country"
-              value={form.country}
-              onChange={e => set('country', e.target.value)}
-              className={selectClass}
-            >
-              <option value="">{t('form.country_auto')}</option>
-              {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="country" className="text-sm font-medium">{t('form.country')}</label>
+              <select
+                id="country"
+                value={form.country}
+                onChange={e => set('country', e.target.value)}
+                className={selectClass}
+              >
+                <option value="">{t('form.country_auto')}</option>
+                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="profile_quality" className="text-sm font-medium">{t('form.profile_quality')}</label>
+              <select
+                id="profile_quality"
+                value={form.profile_quality}
+                onChange={e => set('profile_quality', e.target.value)}
+                className={selectClass}
+              >
+                <option value="">{t('form.profile_default')}</option>
+                <option value="average">{t('form.profile_average')}</option>
+                <option value="best">{t('form.profile_best')}</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="profile_quality" className="text-sm font-medium">{t('form.profile_quality')}</label>
-            <select
-              id="profile_quality"
-              value={form.profile_quality}
-              onChange={e => set('profile_quality', e.target.value)}
-              className={selectClass}
+          {/* C3 — Live rate refresh */}
+          {form.country && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleRefreshRate}
+                disabled={refreshingRate}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white disabled:opacity-40 transition-colors border dark:border-gray-600 rounded px-2 py-1"
+              >
+                {refreshingRate ? t('profile.refreshing') : t('profile.refresh_rate')}
+              </button>
+              {liveRatePct && (
+                <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded px-2 py-0.5">
+                  {t('profile.live_badge')}: {liveRatePct}%
+                </span>
+              )}
+              {refreshRateError && (
+                <span className="text-xs text-red-500">{t('profile.refresh_error')}</span>
+              )}
+            </div>
+          )}
+
+          {/* C4 — Custom profile overrides */}
+          {form.country && (
+            <details
+              open={showCustomProfile}
+              onToggle={e => setShowCustomProfile((e.currentTarget as HTMLDetailsElement).open)}
             >
-              <option value="">{t('form.profile_default')}</option>
-              <option value="average">{t('form.profile_average')}</option>
-              <option value="best">{t('form.profile_best')}</option>
-            </select>
-          </div>
+              <summary className="text-sm font-medium cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 select-none">
+                {t('profile.customize')}
+                {showCustomProfile ? ' ▲' : ' ▼'}
+              </summary>
+              <div className="mt-3 flex flex-col gap-3">
+                {loadingProfile ? (
+                  <p className="text-xs text-gray-400">{t('profile.loading')}</p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.annual_rate')}</label>
+                        <input
+                          type="number" min="0" max="99" step="0.0001"
+                          value={overrides.annual_interest_rate_pct}
+                          onChange={e => setOverride('annual_interest_rate_pct', e.target.value)}
+                          className={`${inputClass} text-sm`}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.insurance_rate')}</label>
+                        <input
+                          type="number" min="0" max="99" step="0.0001"
+                          value={overrides.insurance_rate_pct}
+                          onChange={e => setOverride('insurance_rate_pct', e.target.value)}
+                          className={`${inputClass} text-sm`}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.min_down')}</label>
+                        <input
+                          type="number" min="0" max="100" step="0.01"
+                          value={overrides.min_down_pct}
+                          onChange={e => setOverride('min_down_pct', e.target.value)}
+                          className={`${inputClass} text-sm`}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.max_debt')}</label>
+                        <input
+                          type="number" min="0" max="100" step="0.01"
+                          value={overrides.max_debt_pct}
+                          onChange={e => setOverride('max_debt_pct', e.target.value)}
+                          className={`${inputClass} text-sm`}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.max_duration')}</label>
+                        <input
+                          type="number" min="1" max="600" step="1"
+                          value={overrides.max_duration_months}
+                          onChange={e => setOverride('max_duration_months', e.target.value)}
+                          className={`${inputClass} text-sm`}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={resetOverrides}
+                      className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-left"
+                    >
+                      {t('profile.reset')}
+                    </button>
+                  </>
+                )}
+              </div>
+            </details>
+          )}
         </div>
       </TourTooltip>
 

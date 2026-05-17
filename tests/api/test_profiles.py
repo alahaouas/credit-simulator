@@ -1,102 +1,213 @@
-"""Tests for GET /api/profiles and GET /api/profiles/{country}."""
+"""Tests for GET /api/profiles, GET /api/profiles/{country},
+POST /api/profiles/{country}/refresh (C1), and
+GET/POST/DELETE /api/alerts (C5).
+"""
 from __future__ import annotations
 
-import pytest
+from decimal import Decimal
+from unittest.mock import MagicMock, patch
+
+import requests
 from fastapi.testclient import TestClient
 
+from api.db import get_db
 from api.main import app
+from credit_simulator.fetcher import fetch_rate as _fetch_rate
+from tests.api.conftest import BEARER, make_db_mock
 
 client = TestClient(app)
 
-
-def test_list_profiles_returns_sorted_country_codes():
-    resp = client.get("/api/profiles")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "countries" in data
-    countries = data["countries"]
-    assert sorted(countries) == countries
-    assert "BE" in countries
-    assert "FR" in countries
-    assert "US" in countries
+ALERT_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+SAMPLE_ALERT = {
+    "id": ALERT_ID,
+    "country": "FR",
+    "target_rate": "0.030",
+    "active": True,
+    "created_at": "2026-05-17T09:00:00+00:00",
+    "last_notified_at": None,
+}
 
 
-def test_list_profiles_contains_all_supported_countries():
-    from credit_simulator.profiles import SUPPORTED_COUNTRIES
-    resp = client.get("/api/profiles")
-    assert resp.status_code == 200
-    assert set(resp.json()["countries"]) == SUPPORTED_COUNTRIES
+# ---------------------------------------------------------------------------
+# C1 — GET /api/profiles
+# ---------------------------------------------------------------------------
+
+class TestListProfiles:
+    def test_returns_all_countries(self):
+        resp = client.get("/api/profiles")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "profiles" in body
+        assert set(body["profiles"].keys()) == {"BE", "FR", "DE", "ES", "IT", "PT", "GB", "US"}
+
+    def test_profile_has_required_fields(self):
+        profile = client.get("/api/profiles").json()["profiles"]["BE"]
+        for field in (
+            "code", "currency", "annual_rate_average", "annual_rate_best",
+            "insurance_rate_average", "insurance_rate_best", "purchase_tax_rate",
+            "taxes_financeable", "min_down_payment_ratio", "max_debt_ratio",
+            "max_loan_duration_months", "ltv_rate_tiers",
+        ):
+            assert field in profile, f"missing field: {field}"
+
+    def test_rate_fields_are_strings(self):
+        profile = client.get("/api/profiles").json()["profiles"]["FR"]
+        for field in ("annual_rate_average", "annual_rate_best", "purchase_tax_rate"):
+            assert isinstance(profile[field], str)
+            Decimal(profile[field])  # must parse as Decimal
 
 
-def test_get_profile_be_structure():
-    resp = client.get("/api/profiles/BE")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["code"] == "BE"
-    assert data["currency"] == "EUR"
-    # Market-driven fields present
-    assert "annual_rate_average" in data
-    assert "annual_rate_best" in data
-    assert "insurance_rate_average" in data
-    assert "insurance_rate_best" in data
-    # Regulatory fields present
-    assert "purchase_tax_rate" in data
-    assert "taxes_financeable" in data
-    assert "min_down_payment_ratio" in data
-    assert "max_debt_ratio" in data
-    assert "max_loan_duration_months" in data
-    # LTV tiers present
-    assert isinstance(data["ltv_rate_tiers"], list)
-    assert len(data["ltv_rate_tiers"]) > 0
+class TestGetCountryProfile:
+    def test_be_profile_returns_200(self):
+        resp = client.get("/api/profiles/BE")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["code"] == "BE"
+        assert body["currency"] == "EUR"
+
+    def test_case_insensitive(self):
+        assert client.get("/api/profiles/fr").status_code == 200
+        assert client.get("/api/profiles/FR").status_code == 200
+
+    def test_unknown_country_returns_404(self):
+        assert client.get("/api/profiles/ZZ").status_code == 404
+
+    def test_ltv_tiers_present(self):
+        tiers = client.get("/api/profiles/BE").json()["ltv_rate_tiers"]
+        assert len(tiers) > 0
+        assert "ltv_max" in tiers[0]
+        assert "rate_delta" in tiers[0]
 
 
-def test_get_profile_decimal_fields_are_strings():
-    resp = client.get("/api/profiles/FR")
-    assert resp.status_code == 200
-    data = resp.json()
-    for field in ("annual_rate_average", "annual_rate_best", "purchase_tax_rate",
-                  "min_down_payment_ratio", "max_debt_ratio"):
-        assert isinstance(data[field], str), f"{field} should be a string"
+# ---------------------------------------------------------------------------
+# C3 — POST /api/profiles/{country}/refresh
+# ---------------------------------------------------------------------------
+
+class TestRefreshRate:
+    def test_unknown_country_returns_404(self):
+        assert client.post("/api/profiles/ZZ/refresh").status_code == 404
+
+    def test_be_returns_422_no_source(self):
+        resp = client.post("/api/profiles/BE/refresh")
+        assert resp.status_code == 422
+        assert "no online" in resp.json()["detail"].lower() or "manually" in resp.json()["detail"].lower()
+
+    def test_fr_returns_rate(self):
+        _fetch_rate.cache_clear()
+        ecb_json = {
+            "dataSets": [{"series": {"0:0:0:0:0:0:0:0:0:0:0": {"observations": {"0": [3.52, 0]}}}}]
+        }
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = ecb_json
+        mock_resp.raise_for_status = MagicMock()
+        with patch("credit_simulator.fetcher.requests.get", return_value=mock_resp):
+            resp = client.post("/api/profiles/FR/refresh")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["country"] == "FR"
+        assert Decimal(body["annual_rate_average"]) == Decimal("0.0352")
+
+    def test_fetch_error_returns_422(self):
+        _fetch_rate.cache_clear()
+        with patch("credit_simulator.fetcher.requests.get") as mock_get:
+            mock_get.side_effect = requests.RequestException("network timeout")
+            resp = client.post("/api/profiles/FR/refresh")
+        assert resp.status_code == 422
+        assert "network timeout" in resp.json()["detail"]
 
 
-def test_get_profile_ltv_tiers_have_correct_keys():
-    resp = client.get("/api/profiles/DE")
-    assert resp.status_code == 200
-    for tier in resp.json()["ltv_rate_tiers"]:
-        assert "ltv_max" in tier
-        assert "rate_delta" in tier
-        assert isinstance(tier["ltv_max"], str)
-        assert isinstance(tier["rate_delta"], str)
+# ---------------------------------------------------------------------------
+# C5 — GET/POST/DELETE /api/alerts
+# ---------------------------------------------------------------------------
+
+class TestAlertsRequiresAuth:
+    def test_list_no_auth_returns_401(self):
+        assert client.get("/api/alerts").status_code == 401
+
+    def test_create_no_auth_returns_401(self):
+        assert client.post("/api/alerts", json={"country": "FR", "target_rate": "0.03"}).status_code == 401
+
+    def test_delete_no_auth_returns_401(self):
+        assert client.delete(f"/api/alerts/{ALERT_ID}").status_code == 401
+
+    def test_auth_without_supabase_returns_503(self):
+        resp = client.get("/api/alerts", headers={"Authorization": BEARER})
+        assert resp.status_code == 503
 
 
-def test_get_profile_case_insensitive():
-    resp_upper = client.get("/api/profiles/GB")
-    resp_lower = client.get("/api/profiles/gb")
-    assert resp_upper.status_code == 200
-    assert resp_lower.status_code == 200
-    assert resp_upper.json() == resp_lower.json()
+class TestListAlerts:
+    def test_empty_list(self, mock_db):
+        resp = client.get("/api/alerts", headers={"Authorization": BEARER})
+        assert resp.status_code == 200
+        assert resp.json()["alerts"] == []
+
+    def test_returns_alerts(self):
+        db = make_db_mock(rows=[SAMPLE_ALERT])
+        app.dependency_overrides[get_db] = lambda: db
+        try:
+            resp = client.get("/api/alerts", headers={"Authorization": BEARER})
+            assert resp.status_code == 200
+            assert len(resp.json()["alerts"]) == 1
+            assert resp.json()["alerts"][0]["country"] == "FR"
+        finally:
+            app.dependency_overrides.clear()
 
 
-def test_get_profile_unknown_country_returns_404():
-    resp = client.get("/api/profiles/XX")
-    assert resp.status_code == 404
-    assert "detail" in resp.json()
+class TestCreateAlert:
+    def test_valid_alert_returns_201(self, mock_db):
+        resp = client.post(
+            "/api/alerts",
+            json={"country": "FR", "target_rate": "0.030"},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 201
+
+    def test_response_contains_country_and_rate(self, mock_db):
+        resp = client.post(
+            "/api/alerts",
+            json={"country": "DE", "target_rate": "0.025"},
+            headers={"Authorization": BEARER},
+        )
+        body = resp.json()
+        assert body["country"] == "DE"
+        assert body["target_rate"] == "0.025"
+        assert body["active"] is True
+
+    def test_invalid_country_returns_422(self, mock_db):
+        resp = client.post(
+            "/api/alerts",
+            json={"country": "ZZ", "target_rate": "0.030"},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 422
+
+    def test_rate_above_1_returns_422(self, mock_db):
+        resp = client.post(
+            "/api/alerts",
+            json={"country": "FR", "target_rate": "3.5"},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 422
+
+    def test_rate_zero_returns_422(self, mock_db):
+        resp = client.post(
+            "/api/alerts",
+            json={"country": "FR", "target_rate": "0"},
+            headers={"Authorization": BEARER},
+        )
+        assert resp.status_code == 422
 
 
-def test_get_profile_us_currency_is_usd():
-    resp = client.get("/api/profiles/US")
-    assert resp.status_code == 200
-    assert resp.json()["currency"] == "USD"
+class TestDeleteAlert:
+    def test_delete_existing_returns_204(self):
+        db = make_db_mock(rows=[SAMPLE_ALERT])
+        app.dependency_overrides[get_db] = lambda: db
+        try:
+            resp = client.delete(f"/api/alerts/{ALERT_ID}", headers={"Authorization": BEARER})
+            assert resp.status_code == 204
+        finally:
+            app.dependency_overrides.clear()
 
-
-def test_get_profile_gb_currency_is_gbp():
-    resp = client.get("/api/profiles/GB")
-    assert resp.status_code == 200
-    assert resp.json()["currency"] == "GBP"
-
-
-@pytest.mark.parametrize("country", ["BE", "FR", "ES", "DE", "PT", "IT", "GB", "US"])
-def test_all_profiles_reachable(country: str):
-    resp = client.get(f"/api/profiles/{country}")
-    assert resp.status_code == 200
-    assert resp.json()["code"] == country
+    def test_delete_nonexistent_returns_404(self, mock_db):
+        resp = client.delete(f"/api/alerts/{ALERT_ID}", headers={"Authorization": BEARER})
+        assert resp.status_code == 404

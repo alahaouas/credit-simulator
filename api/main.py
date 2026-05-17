@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .constants import DEFAULT_CORS_ORIGINS
-from .routes import api_keys, history, preferences, profiles, share, simulate
+from .routes import alerts, api_keys, history, preferences, profiles, share, simulate
 
 app = FastAPI(
     title="Credit Simulator API",
@@ -35,3 +35,4 @@ app.include_router(share.router, prefix="/api")
 app.include_router(preferences.router, prefix="/api")
 app.include_router(api_keys.router, prefix="/api")
 app.include_router(profiles.router, prefix="/api")
+app.include_router(alerts.router, prefix="/api")
