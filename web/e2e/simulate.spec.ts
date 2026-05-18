@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { MOCK_SIMULATE_RESPONSE as MOCK_RESPONSE } from './fixtures'
 
 // Pin the UI locale and mark the onboarding tour as done so it doesn't
 // auto-start and interfere with form interactions.
@@ -8,55 +9,6 @@ test.beforeEach(async ({ page }) => {
     window.localStorage.setItem('credit_simulator_tour_done', '1')
   })
 })
-
-// Mock backend payload — shape mirrors api.SimulateResponse so /results renders
-// without hitting the FastAPI service.
-const MOCK_RESPONSE = {
-  result: {
-    down_payment: '60000.00',
-    loan_principal: '268800.00',
-    loan_duration_months: 300,
-    ltv_ratio: '0.8960',
-    country: 'BE',
-    profile_quality: 'average',
-    currency: '€',
-    monthly_net_income: '4000',
-    property_price: '300000',
-    purchase_taxes: '36000.00',
-    total_acquisition_cost: '328800.00',
-    optimization_preference: 'balanced',
-    parameters_source: {},
-    plan: {
-      loan_principal: '268800.00',
-      annual_interest_rate: '0.0345',
-      annual_insurance_rate: '0.0030',
-      loan_duration_months: 300,
-      monthly_emi: '1340.50',
-      monthly_insurance: '67.20',
-      monthly_installment: '1407.70',
-      monthly_interest_first: '772.80',
-      total_interest_paid: '133350.00',
-      total_insurance_paid: '20160.00',
-      total_cost_of_credit: '153510.00',
-      total_repaid: '422310.00',
-      effective_annual_rate: '0.0387',
-    },
-  },
-  sweet_spot: {
-    milestones: [],
-    sweet_spot_reason: '',
-    reserve_warning: '',
-    duration_months: 300,
-    marginal_saving_per_1k: '0',
-    effective_annual_yield: '0',
-    opportunity_cost_rate: '0',
-    down_payment_is_efficient: true,
-    rate_floor_down_payment: '0',
-    tier_economics: [],
-    crossover_note: '',
-  },
-  schedule: null,
-}
 
 test('simulator happy path: form → results page', async ({ page }) => {
   await page.route(/\/api\/simulate/, async (route) => {
@@ -223,4 +175,71 @@ test('SESSION_CLONE_KEY is removed after form hydration (A2)', async ({ page }) 
   // After hydration the key must be gone so a subsequent reload starts fresh
   const remaining = await page.evaluate(() => window.sessionStorage.getItem('simulator_clone'))
   expect(remaining).toBeNull()
+})
+
+// ---------------------------------------------------------------------------
+// C4 — custom profile overrides
+// ---------------------------------------------------------------------------
+
+test('C4: custom profile overrides are included in the simulate request body', async ({ page }) => {
+  let capturedBody: Record<string, unknown> | null = null
+
+  await page.route(/\/api\/profiles\/BE/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'BE',
+        currency: '€',
+        annual_rate_average: '0.0345',
+        annual_rate_best: '0.0310',
+        insurance_rate_average: '0.0030',
+        insurance_rate_best: '0.0020',
+        purchase_tax_rate: '0.12',
+        taxes_financeable: false,
+        min_down_payment_ratio: '0.10',
+        max_debt_ratio: '0.33',
+        max_loan_duration_months: 360,
+        last_updated_date: '2026-05-01',
+        ltv_rate_tiers: [],
+      }),
+    })
+  })
+
+  await page.route(/\/api\/simulate/, async (route) => {
+    capturedBody = await route.request().postDataJSON()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(MOCK_RESPONSE),
+    })
+  })
+
+  await page.goto('/simulate')
+
+  // Select Belgium to reveal the custom profile section
+  await page.locator('#country').selectOption('BE')
+
+  // Open the details panel first — inputs inside a closed <details> are hidden
+  // by the browser regardless of DOM presence
+  await page.locator('details summary').click()
+
+  // Wait for profile loading to finish (spinner gone, inputs rendered)
+  await expect(page.locator('details input[type="number"]').first()).toBeVisible({ timeout: 5000 })
+
+  // Override the annual interest rate to 5 %
+  await page.locator('details input[type="number"]').first().fill('5')
+
+  // Fill mandatory form fields and submit
+  await page.locator('#property_price').fill('300000')
+  await page.locator('#monthly_net_income').fill('4000')
+  await page.locator('#available_savings').fill('80000')
+  await page.locator('form button[type=submit]').click()
+
+  await page.waitForURL(/\/results$/)
+
+  // pctToFraction('5') → '0.05'
+  expect(capturedBody).not.toBeNull()
+  expect((capturedBody as Record<string, unknown>).annual_interest_rate).toBe('0.05')
+  expect((capturedBody as Record<string, unknown>).country).toBe('BE')
 })

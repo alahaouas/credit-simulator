@@ -1,48 +1,5 @@
-import * as fs from 'fs'
-import * as path from 'path'
 import { test, expect, type Page } from '@playwright/test'
-
-// ---------------------------------------------------------------------------
-// Supabase cookie name — computed once at module load in Node.js context.
-// @supabase/ssr derives the cookie name as `sb-{hostname-first-segment}-auth-token`
-// from NEXT_PUBLIC_SUPABASE_URL. We read it from the test process env first,
-// then fall back to parsing .env.local, then fall back to the local Supabase
-// default so CI and worktrees without .env.local still work.
-// ---------------------------------------------------------------------------
-function resolveSupabaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL) return process.env.NEXT_PUBLIC_SUPABASE_URL
-  try {
-    const envPath = path.join(__dirname, '..', '.env.local')
-    const content = fs.readFileSync(envPath, 'utf8')
-    const match = content.match(/^NEXT_PUBLIC_SUPABASE_URL=(.+)$/m)
-    if (match) return match[1].trim()
-  } catch { /* no .env.local */ }
-  return 'http://localhost:54321'
-}
-
-const SUPABASE_URL = resolveSupabaseUrl()
-const SUPABASE_REF = new URL(SUPABASE_URL).hostname.split('.')[0]
-const SESSION_COOKIE_NAME = `sb-${SUPABASE_REF}-auth-token`
-
-const FAKE_SESSION = {
-  access_token: 'fake-access-token',
-  token_type: 'bearer',
-  expires_in: 3600,
-  // Far-future expiry so auth-js never tries to refresh
-  expires_at: Math.floor(Date.now() / 1000) + 86400,
-  refresh_token: 'fake-refresh-token',
-  user: { id: 'test-user-id', email: 'test@example.com', role: 'authenticated' },
-}
-
-// @supabase/ssr v0.10 stores sessions as `base64-{base64url(JSON.stringify(session))}` in cookies.
-// Using Node.js Buffer to produce the same encoding.
-const SESSION_COOKIE_VALUE =
-  'base64-' +
-  Buffer.from(JSON.stringify(FAKE_SESSION))
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '')
+import { injectSession, mockSupabaseAuth } from './fixtures'
 
 const MOCK_STATS = {
   total_count: 2,
@@ -77,33 +34,13 @@ const SIM_B = makeSim('id-b', 'Paris investment', ['rental'], '2026-05-09T10:00:
 // Matches /api/simulations and /api/simulations?... but not /api/simulations/{id} or /stats
 const LIST_ROUTE = /\/api\/simulations(?![\w/])(\?|$)/
 
-// Cookie name and value are fully computed in Node.js — no page navigation needed.
-async function injectSession(page: Page) {
-  await page.context().addCookies([
-    { name: SESSION_COOKIE_NAME, value: SESSION_COOKIE_VALUE, domain: 'localhost', path: '/' },
-  ])
-}
-
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.setItem('locale', 'en')
   })
 
   await injectSession(page)
-
-  // Intercept Supabase token-refresh calls that the middleware or auth-js may make
-  await page.route('**/auth/v1/**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        access_token: 'fake-access-token',
-        token_type: 'bearer',
-        expires_in: 3600,
-        user: { id: 'test-user-id', email: 'test@example.com' },
-      }),
-    })
-  })
+  await mockSupabaseAuth(page)
 })
 
 async function mockList(page: Page, items: object[], next_cursor: string | null = null) {
@@ -138,8 +75,10 @@ test.describe('history page (A6)', () => {
     await mockStats(page)
     await mockList(page, [SIM_A, SIM_B])
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
-    await expect(page.getByText('Paris investment')).toBeVisible()
+    // On narrow viewports the name <p> is CSS-truncated to 0-width; use
+    // toContainText to verify the text is in the DOM regardless of overflow.
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+    await expect(page.locator('ul li').nth(1)).toContainText('Paris investment')
   })
 
   // ---------------------------------------------------------------------------
@@ -171,7 +110,7 @@ test.describe('history page (A6)', () => {
     })
 
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
 
     await page.getByPlaceholder('Search by name or tag').fill('zzznomatch')
 
@@ -187,7 +126,7 @@ test.describe('history page (A6)', () => {
     await mockStats(page)
     await mockList(page, [SIM_A, SIM_B], null)
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
     await expect(page.getByRole('button', { name: 'Load more' })).not.toBeVisible()
   })
 
@@ -215,15 +154,195 @@ test.describe('history page (A6)', () => {
     })
 
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
     await expect(page.getByText('Paris investment')).not.toBeVisible()
 
     await page.getByRole('button', { name: 'Load more' }).click()
 
     // Both items visible (appended, not replaced)
-    await expect(page.getByText('Paris investment')).toBeVisible({ timeout: 3000 })
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').nth(1)).toContainText('Paris investment', { timeout: 3000 })
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
     // Button disappears on last page
     await expect(page.getByRole('button', { name: 'Load more' })).not.toBeVisible()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// A1 — inline name / tag edit
+// ---------------------------------------------------------------------------
+
+test.describe('history inline edit (A1)', () => {
+  test('Edit button shows name and tags pre-filled from the simulation', async ({ page }) => {
+    await mockStats(page)
+    await mockList(page, [SIM_A, SIM_B])
+    await page.goto('/history')
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+
+    await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
+
+    await expect(page.getByPlaceholder('Simulation name')).toHaveValue('Brussels apartment')
+    // tags joined with ', '
+    await expect(page.getByPlaceholder('Tags (comma-separated)')).toHaveValue('primary, 2026')
+  })
+
+  test('Cancel restores the row without changes', async ({ page }) => {
+    await mockStats(page)
+    await mockList(page, [SIM_A, SIM_B])
+    await page.goto('/history')
+
+    await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
+    await expect(page.getByPlaceholder('Simulation name')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Cancel' }).first().click()
+
+    await expect(page.getByPlaceholder('Simulation name')).not.toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+  })
+
+  test('Save sends PATCH and reflects updated name and tag in the list', async ({ page }) => {
+    await mockStats(page)
+    await mockList(page, [SIM_A, SIM_B])
+    await page.route(/\/api\/simulations\/id-a$/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...SIM_A, name: 'Brussels HQ', tags: ['office'] }),
+      })
+    })
+
+    await page.goto('/history')
+    await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
+
+    await page.getByPlaceholder('Simulation name').fill('Brussels HQ')
+    await page.getByPlaceholder('Tags (comma-separated)').fill('office')
+    await page.getByRole('button', { name: 'Save' }).click()
+
+    await expect(page.locator('ul li').first()).toContainText('Brussels HQ', { timeout: 3000 })
+    await expect(page.getByPlaceholder('Simulation name')).not.toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('office')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// A2 — clone from history list
+// ---------------------------------------------------------------------------
+
+test.describe('history clone (A2)', () => {
+  test('Clone navigates to /simulate with form pre-filled from saved inputs', async ({ page }) => {
+    // Prevent tour from blocking form interactions on /simulate
+    await page.addInitScript(() => {
+      window.localStorage.setItem('credit_simulator_tour_done', '1')
+    })
+    await mockStats(page)
+    await mockList(page, [SIM_A, SIM_B])
+    await page.route(/\/api\/simulations\/id-a$/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(SIM_A),
+      })
+    })
+
+    await page.goto('/history')
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+
+    await page.locator('ul li').first().getByRole('button', { name: 'Clone' }).click()
+
+    await page.waitForURL(/\/simulate/)
+    await expect(page.locator('#property_price')).toHaveValue('300000')
+    await expect(page.locator('#monthly_net_income')).toHaveValue('4000')
+    await expect(page.locator('#available_savings')).toHaveValue('80000')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// A5 — share generate / revoke panel
+// ---------------------------------------------------------------------------
+
+test.describe('history share panel (A5)', () => {
+  test('Share button opens the panel with generate-link option when no token exists', async ({ page }) => {
+    await mockStats(page)
+    await mockList(page, [SIM_A])
+    await page.goto('/history')
+
+    await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+
+    await expect(page.getByText('Anyone with this link can view the simulation without signing in.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Generate public link' })).toBeVisible()
+  })
+
+  test('Generate public link shows the share URL and action buttons', async ({ page }) => {
+    await mockStats(page)
+    await mockList(page, [SIM_A])
+    await page.route(/\/api\/simulations\/id-a\/share/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ share_token: 'tok123' }),
+      })
+    })
+
+    await page.goto('/history')
+    await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+    await page.getByRole('button', { name: 'Generate public link' }).click()
+
+    await expect(page.locator('input[readonly]')).toHaveValue(/\/share\/tok123/, { timeout: 3000 })
+    await expect(page.getByRole('button', { name: 'Copy link' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Revoke' })).toBeVisible()
+  })
+
+  test('Copy link shows "Copied!" feedback', async ({ page }) => {
+    // Mock clipboard so headless Chromium does not deny writeText
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: async () => {} },
+        configurable: true,
+      })
+    })
+    const SIM_WITH_TOKEN = { ...SIM_A, share_token: 'tok456' }
+    await mockStats(page)
+    await mockList(page, [SIM_WITH_TOKEN])
+    await page.goto('/history')
+
+    await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+    // Token already present → link input visible immediately
+    await expect(page.locator('input[readonly]')).toBeVisible()
+    await page.getByRole('button', { name: 'Copy link' }).click()
+
+    await expect(page.getByRole('button', { name: 'Copied!' })).toBeVisible({ timeout: 3000 })
+  })
+
+  test('Revoke removes the share link and shows generate option again', async ({ page }) => {
+    const SIM_WITH_TOKEN = { ...SIM_A, share_token: 'tok789' }
+    await mockStats(page)
+    await mockList(page, [SIM_WITH_TOKEN])
+    await page.route(/\/api\/simulations\/id-a\/share/, async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({ status: 204 })
+      }
+    })
+
+    await page.goto('/history')
+    await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+    await expect(page.getByRole('button', { name: 'Revoke' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Revoke' }).click()
+
+    await expect(page.getByRole('button', { name: 'Generate public link' })).toBeVisible({ timeout: 3000 })
+    await expect(page.locator('input[readonly]')).not.toBeVisible()
+  })
+
+  test('Cancel closes the share panel', async ({ page }) => {
+    await mockStats(page)
+    await mockList(page, [SIM_A])
+    await page.goto('/history')
+
+    await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+    await expect(page.getByText('Anyone with this link can view the simulation without signing in.')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Cancel' }).click()
+
+    await expect(page.getByText('Anyone with this link can view the simulation without signing in.')).not.toBeVisible()
+    await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible()
   })
 })

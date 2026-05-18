@@ -406,6 +406,69 @@ API keys are useful for headless scripts and CI pipelines where a Supabase magic
 
 ---
 
+## GET /api/profiles
+
+Return a list of all supported country codes.
+
+No authentication required.
+
+### Response
+
+```json
+{
+  "countries": ["BE", "DE", "ES", "FR", "GB", "IT", "PT", "US"]
+}
+```
+
+---
+
+## GET /api/profiles/{country}
+
+Return the full country profile for a given country code (case-insensitive).
+
+No authentication required.
+
+### Path parameter
+
+| Parameter | Type | Description |
+|---|---|---|
+| `country` | string | ISO 3166-1 alpha-2 country code (e.g. `BE`, `FR`) |
+
+### Response
+
+All `Decimal` fields are returned as strings.
+
+```json
+{
+  "code": "BE",
+  "currency": "EUR",
+  "annual_rate_average": "0.0340",
+  "annual_rate_best": "0.0320",
+  "insurance_rate_average": "0.0020",
+  "insurance_rate_best": "0.0015",
+  "purchase_tax_rate": "0.125",
+  "taxes_financeable": true,
+  "min_down_payment_ratio": "0.20",
+  "max_debt_ratio": "0.35",
+  "max_loan_duration_months": 300,
+  "ltv_rate_tiers": [
+    {"ltv_max": "0.75", "rate_delta": "-0.0030"},
+    {"ltv_max": "0.80", "rate_delta": "-0.0020"},
+    {"ltv_max": "0.90", "rate_delta": "0.0000"},
+    {"ltv_max": "1.00", "rate_delta": "0.0035"}
+  ],
+  "last_updated_date": "2026-05"
+}
+```
+
+### Error responses
+
+| Condition | Status |
+|---|---|
+| Unknown country code | `404 Not Found` |
+
+---
+
 ## OpenAPI / Swagger UI (E5)
 
 The API auto-generates OpenAPI 3.x documentation via FastAPI:

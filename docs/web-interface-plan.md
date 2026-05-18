@@ -1,8 +1,8 @@
 # Web Interface — Technical Plan & To-Do
 
-## Current Status (2026-05-14)
+## Current Status (2026-05-18)
 
-**Layers 1–5 complete. Layer 6 Theme B (B1, B2) and Theme E (E1–E5) complete.** All shipped layers as of 2026-05-17.
+**Layers 1–5 complete. Layer 6 Theme A (A1–A8), Theme B (B1–B3, B5, B6), Theme C (C1–C5), Theme D (D1), and Theme E (E1–E5) complete.**
 
 **Also completed (2026-05-14, outside web plan):**
 - CLI `rates` subcommand (runtime BE rate refresh) — see `docs/runtime-rates.md`
@@ -232,18 +232,18 @@ Features are grouped by theme. Each can be picked independently or bundled into 
 | B3 | **Refinancing break-even** ✅ | `RefinancingBreakEvenPanel` on the results page. Inputs: new annual rate (%) + closing costs. Pure frontend math: computes new EMI via standard formula, monthly savings, cumulative savings vs costs, and the break-even month. Stat grid (new EMI, monthly savings, break-even month, original/new/saved interest) + toggleable table with green highlighting at break-even. No backend call. |
 | B4 | **Rent-vs-buy comparison** | Input a monthly rent; chart the cumulative cost of renting vs owning over the loan period (accounting for equity build-up). |
 | B5 | **Sweet-spot heatmap** ✅ | `SweetSpotHeatmap` panel on the results page. "Show heatmap" button calls `POST /api/simulate/heatmap` (`build_heatmap_grid` in `optimizer.py`, subsampled 15×12 grid). Frontend renders color cells (green=low → red=high, gray=infeasible), optimal point highlighted with blue ring, toggle between total cost and monthly payment, hover tooltip. Cached in `SESSION_HEATMAP_KEY`. |
-| B6 | **Opportunity cost display** | Expose the CLI's `--opp-rate` flag on the web: "if you invested your down payment at X% p.a. instead, you'd have Y after Z years." |
+| B6 | **Opportunity cost display** ✅ | `OpportunityCostPanel` on the results page. Input: annual investment return rate (%). Pure frontend math: compounds the down payment over the loan duration (`DP × (1+r)^years`). Outputs: future value, investment gain (green), loan interest paid for context; collapsible year-by-year growth table. No backend call. |
 | B7 | **Purchase tax breakdown** | Show the purchase-tax estimate broken down by component (registration, notary, agency) per country with the applicable rates. |
 
 ### C. Country Profiles & Rates
 
 | # | Feature | Description |
 |---|---|---|
-| C1 | **`GET /api/profiles/{country}` endpoint** | Already listed as "future" in the API table. Return the full country profile (rates, regulatory fields, currency). |
-| C2 | **Rates reference page** | Frontend page rendering all country profiles from C1 in a sortable table — useful for quick country comparison before running a simulation. |
-| C3 | **Live rate refresh** | Button on the simulator form to fetch current rates for the selected country via `fetcher.py` (ECB / BoE / FRED). Calls a new `POST /api/profiles/{country}/refresh` endpoint. |
-| C4 | **Session-scoped custom profile** | Let users override any country profile field (rate, tax, max duration) for a single session — mirrors the CLI's session update loop. Stored in frontend state only, never persisted. |
-| C5 | **Rate alert (email notification)** | User sets a target rate for a country; a Supabase Edge Function cron fetches rates daily and emails the user (via Resend or Supabase's built-in mailer) when the threshold is crossed. |
+| C1 | **`GET /api/profiles/{country}` endpoint** ✅ | `GET /api/profiles` (list all) and `GET /api/profiles/{country}` (single). Returns full profile as JSON with Decimal fields as strings. `api/routes/profiles.py`. |
+| C2 | **Rates reference page** ✅ | `web/app/rates/page.tsx` — sortable table of all 8 country profiles. Each row has a Refresh button (C3). Linked from home page. |
+| C3 | **Live rate refresh** ✅ | `POST /api/profiles/{country}/refresh` — clears `fetch_rate` cache and re-fetches (ECB / BoE / FRED). BE returns 422 (no online source). Refresh button in SimulatorForm updates the custom profile panel live rate. |
+| C4 | **Session-scoped custom profile** ✅ | Collapsible "Customize profile" section in SimulatorForm. Loads defaults from C1 on country select; stores overrides in sessionStorage keyed by country. Overrides sent as explicit SimulateRequest fields on submit. Fields: interest rate, insurance rate, min down payment, max debt ratio, max loan duration. |
+| C5 | **Rate alert (email notification)** ✅ | `006_rate_alerts.sql` + `api/routes/alerts.py` (GET/POST/DELETE /api/alerts) + `web/app/alerts/page.tsx` + `supabase/functions/rate-alerts/index.ts` (Deno cron worker). Cron setup: enable pg_cron extension in Supabase Dashboard then run: `select cron.schedule('rate-alerts-daily', '0 9 * * *', $$select net.http_post(current_setting('app.supabase_url') \|\| '/functions/v1/rate-alerts', '{}', 'application/json')$$);`. Required Edge Function secrets: `RESEND_API_KEY`, `FRED_API_KEY` (US only), `RESEND_FROM`. |
 
 ### D. Export & Sharing
 

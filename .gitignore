@@ -52,4 +52,4 @@ web/playwright/.cache/
 web/.playwright/
 
 .claude/settings.local.json
-.claude/worktrees
+.claude/worktrees/
