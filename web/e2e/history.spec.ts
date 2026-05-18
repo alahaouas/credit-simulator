@@ -75,8 +75,10 @@ test.describe('history page (A6)', () => {
     await mockStats(page)
     await mockList(page, [SIM_A, SIM_B])
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
-    await expect(page.getByText('Paris investment')).toBeVisible()
+    // On narrow viewports the name <p> is CSS-truncated to 0-width; use
+    // toContainText to verify the text is in the DOM regardless of overflow.
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+    await expect(page.locator('ul li').nth(1)).toContainText('Paris investment')
   })
 
   // ---------------------------------------------------------------------------
@@ -108,7 +110,7 @@ test.describe('history page (A6)', () => {
     })
 
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
 
     await page.getByPlaceholder('Search by name or tag').fill('zzznomatch')
 
@@ -124,7 +126,7 @@ test.describe('history page (A6)', () => {
     await mockStats(page)
     await mockList(page, [SIM_A, SIM_B], null)
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
     await expect(page.getByRole('button', { name: 'Load more' })).not.toBeVisible()
   })
 
@@ -152,14 +154,14 @@ test.describe('history page (A6)', () => {
     })
 
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
     await expect(page.getByText('Paris investment')).not.toBeVisible()
 
     await page.getByRole('button', { name: 'Load more' }).click()
 
     // Both items visible (appended, not replaced)
-    await expect(page.getByText('Paris investment')).toBeVisible({ timeout: 3000 })
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').nth(1)).toContainText('Paris investment', { timeout: 3000 })
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
     // Button disappears on last page
     await expect(page.getByRole('button', { name: 'Load more' })).not.toBeVisible()
   })
@@ -174,7 +176,7 @@ test.describe('history inline edit (A1)', () => {
     await mockStats(page)
     await mockList(page, [SIM_A, SIM_B])
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
 
     await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
 
@@ -194,7 +196,7 @@ test.describe('history inline edit (A1)', () => {
     await page.getByRole('button', { name: 'Cancel' }).first().click()
 
     await expect(page.getByPlaceholder('Simulation name')).not.toBeVisible()
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
   })
 
   test('Save sends PATCH and reflects updated name and tag in the list', async ({ page }) => {
@@ -215,9 +217,9 @@ test.describe('history inline edit (A1)', () => {
     await page.getByPlaceholder('Tags (comma-separated)').fill('office')
     await page.getByRole('button', { name: 'Save' }).click()
 
-    await expect(page.getByText('Brussels HQ')).toBeVisible({ timeout: 3000 })
+    await expect(page.locator('ul li').first()).toContainText('Brussels HQ', { timeout: 3000 })
     await expect(page.getByPlaceholder('Simulation name')).not.toBeVisible()
-    await expect(page.getByText('office')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('office')
   })
 })
 
@@ -242,7 +244,7 @@ test.describe('history clone (A2)', () => {
     })
 
     await page.goto('/history')
-    await expect(page.getByText('Brussels apartment')).toBeVisible()
+    await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
 
     await page.locator('ul li').first().getByRole('button', { name: 'Clone' }).click()
 
