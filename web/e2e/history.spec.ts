@@ -1,48 +1,5 @@
-import * as fs from 'fs'
-import * as path from 'path'
 import { test, expect, type Page } from '@playwright/test'
-
-// ---------------------------------------------------------------------------
-// Supabase cookie name — computed once at module load in Node.js context.
-// @supabase/ssr derives the cookie name as `sb-{hostname-first-segment}-auth-token`
-// from NEXT_PUBLIC_SUPABASE_URL. We read it from the test process env first,
-// then fall back to parsing .env.local, then fall back to the local Supabase
-// default so CI and worktrees without .env.local still work.
-// ---------------------------------------------------------------------------
-function resolveSupabaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL) return process.env.NEXT_PUBLIC_SUPABASE_URL
-  try {
-    const envPath = path.join(__dirname, '..', '.env.local')
-    const content = fs.readFileSync(envPath, 'utf8')
-    const match = content.match(/^NEXT_PUBLIC_SUPABASE_URL=(.+)$/m)
-    if (match) return match[1].trim()
-  } catch { /* no .env.local */ }
-  return 'http://localhost:54321'
-}
-
-const SUPABASE_URL = resolveSupabaseUrl()
-const SUPABASE_REF = new URL(SUPABASE_URL).hostname.split('.')[0]
-const SESSION_COOKIE_NAME = `sb-${SUPABASE_REF}-auth-token`
-
-const FAKE_SESSION = {
-  access_token: 'fake-access-token',
-  token_type: 'bearer',
-  expires_in: 3600,
-  // Far-future expiry so auth-js never tries to refresh
-  expires_at: Math.floor(Date.now() / 1000) + 86400,
-  refresh_token: 'fake-refresh-token',
-  user: { id: 'test-user-id', email: 'test@example.com', role: 'authenticated' },
-}
-
-// @supabase/ssr v0.10 stores sessions as `base64-{base64url(JSON.stringify(session))}` in cookies.
-// Using Node.js Buffer to produce the same encoding.
-const SESSION_COOKIE_VALUE =
-  'base64-' +
-  Buffer.from(JSON.stringify(FAKE_SESSION))
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '')
+import { injectSession, mockSupabaseAuth } from './fixtures'
 
 const MOCK_STATS = {
   total_count: 2,
@@ -77,33 +34,13 @@ const SIM_B = makeSim('id-b', 'Paris investment', ['rental'], '2026-05-09T10:00:
 // Matches /api/simulations and /api/simulations?... but not /api/simulations/{id} or /stats
 const LIST_ROUTE = /\/api\/simulations(?![\w/])(\?|$)/
 
-// Cookie name and value are fully computed in Node.js — no page navigation needed.
-async function injectSession(page: Page) {
-  await page.context().addCookies([
-    { name: SESSION_COOKIE_NAME, value: SESSION_COOKIE_VALUE, domain: 'localhost', path: '/' },
-  ])
-}
-
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.setItem('locale', 'en')
   })
 
   await injectSession(page)
-
-  // Intercept Supabase token-refresh calls that the middleware or auth-js may make
-  await page.route('**/auth/v1/**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        access_token: 'fake-access-token',
-        token_type: 'bearer',
-        expires_in: 3600,
-        user: { id: 'test-user-id', email: 'test@example.com' },
-      }),
-    })
-  })
+  await mockSupabaseAuth(page)
 })
 
 async function mockList(page: Page, items: object[], next_cursor: string | null = null) {
