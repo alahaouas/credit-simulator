@@ -4,51 +4,47 @@ Audit of the Playwright e2e suite (`web/e2e/`). Use this to resume work later.
 
 ## Current state (2026-05-18)
 
-- 7 spec files, ~46 tests. Wired into CI (`.github/workflows/ci.yml`, `e2e` job).
+- 18 spec files. Wired into CI (`.github/workflows/ci.yml`, `e2e` job).
 - Chromium only; reports uploaded on failure; `reuseExistingServer` locally.
-- Covered: home, simulate happy-path + validation, what-if (A3), clone pre-fill
-  (A2), early-repayment (B2), history search/pagination (A6), share page (A5),
-  dark mode (A8), onboarding tour (A7).
+- Shared fixtures in `web/e2e/fixtures.ts` (mock responses, `goToResults()`,
+  Supabase session injection).
 
-## Done in this pass
+## Done
 
 - [x] **Shared fixture extraction** — `web/e2e/fixtures.ts` exports `MOCK_RESULT`,
-  `MOCK_SIMULATE_RESPONSE`, `MOCK_SHARED_RESPONSE`, and the `goToResults()` helper.
-  `simulate`, `early-repayment`, and `share` specs now import instead of each
-  redefining a ~45-line mock object.
-- [x] **B6 opportunity-cost panel spec** — `web/e2e/opportunity-cost.spec.ts`.
+  `MOCK_SIMULATE_RESPONSE`, `MOCK_SHARED_RESPONSE`, `MOCK_SCHEDULE`,
+  `MOCK_HEATMAP_RESPONSE`, `MOCK_ALL_PREFS_RESPONSE`, `goToResults()`, and the
+  Supabase auth helpers (`injectSession`, `mockSupabaseAuth`). `simulate`,
+  `early-repayment`, `share`, and `history` specs import instead of duplicating.
+- [x] **B6 opportunity-cost panel spec** — `opportunity-cost.spec.ts`.
+- [x] **B3 refinancing break-even** — `refinancing.spec.ts`.
+- [x] **B5 sweet-spot heatmap** — `heatmap.spec.ts`.
+- [x] **B1 compare-all-preferences** — `compare-all.spec.ts`.
+- [x] **D1 CSV export** — `csv-export.spec.ts` (download event + table toggle).
+- [x] **`/compare`** (A4) — `compare.spec.ts`.
+- [x] **`/rates`** (C2) — `rates.spec.ts` (render, sort toggle, refresh).
+- [x] **`/preferences`** (E1) — `preferences.spec.ts`.
+- [x] **`/settings`** (E3) — `settings.spec.ts`.
+- [x] **`/alerts`** (C5) — `alerts.spec.ts` (signed-out + signed-in).
+- [x] **`/auth`** — `auth.spec.ts` (form render + submit).
+- [x] **FR locale smoke test** — `i18n-fr.spec.ts` runs the core simulate flow
+  with `locale='fr'`.
+- [x] **CI command** — `ci.yml` now runs `npm run test:e2e`.
 
-## Backlog
-
-### P1 — results-page panels with no coverage
-
-- [ ] **B3 refinancing break-even** (`RefinancingBreakEvenPanel`) — compute,
-  stat cards, break-even table toggle, rate/cost validation errors.
-- [ ] **B5 sweet-spot heatmap** (`SweetSpotHeatmap`) — "Show heatmap" button,
-  mocked `POST /api/simulate/heatmap`, cell grid + metric toggle.
-- [ ] **B1 compare-all-preferences** — "Compare all preferences" button,
-  mocked `POST /api/simulate/all`, tab strip, infeasible tabs disabled.
-- [ ] **D1 CSV export** — download trigger on the amortization table.
-
-### P2 — pages with no coverage
-
-- [ ] **`/compare`** (A4 scenario comparison) — render + parallel fetch, metric
-  highlighting. Pure render, easy.
-- [ ] **`/rates`** (C2 rates reference) — sortable table of country profiles,
-  mocked `GET /api/profiles`. Pure render, easy.
-- [ ] **`/preferences`** (E1), **`/settings`** (E3), **`/alerts`** (C5) —
-  auth-gated; reuse the Supabase cookie-injection helper from `history.spec.ts`.
-- [ ] **`/auth`** — magic-link login form render + submit.
+## Remaining backlog
 
 ### P3 — quality / breadth
 
-- [ ] **FR locale smoke test** — every spec pins `locale='en'`; the i18n toggle
-  (E2) and all French translations have no e2e safety net. Add at least one
-  spec that runs a core flow with `locale='fr'`.
-- [ ] **Selector consistency** — mix of `getByText` / `getByRole` / CSS `#id` /
-  `data-testid`. Text selectors are brittle against copy changes. Decide on a
-  convention (prefer `getByRole` + `data-testid` for dynamic values).
-- [ ] **CI command** — `ci.yml` runs `npx playwright test`; project convention
-  is `npm run test:e2e` from `web/`. Align for consistency.
-- [ ] Consider a mobile viewport project in `playwright.config.ts` (the UI uses
-  responsive grids) — low priority for a desktop-focused tool.
+- [ ] **Selector consistency** — the suite still mixes `getByText` / `getByRole`
+  / CSS `#id` / `data-testid`. Text selectors are brittle against copy changes.
+  Decide on a convention (prefer `getByRole` + `data-testid` for dynamic values)
+  and migrate. Deferred: a judgment call, not a mechanical fix.
+- [ ] **Mobile viewport project** in `playwright.config.ts` — the UI uses
+  responsive grids. Low priority for a desktop-focused tool.
+
+### Not yet covered (feature areas)
+
+- [ ] `/history` rename/tag inline edit (A1), clone button (A2), share generate/
+  revoke panel (A5) — the history spec covers search/pagination only.
+- [ ] C4 custom-profile section inside `SimulatorForm`.
+- [ ] `/auth/callback` PKCE route.
