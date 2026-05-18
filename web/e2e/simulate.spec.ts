@@ -220,11 +220,12 @@ test('C4: custom profile overrides are included in the simulate request body', a
   // Select Belgium to reveal the custom profile section
   await page.locator('#country').selectOption('BE')
 
-  // Wait for profile loading to finish (spinner disappears, inputs appear)
-  await expect(page.locator('details input[type="number"]').first()).toBeVisible({ timeout: 5000 })
-
-  // Open the Customize profile details panel
+  // Open the details panel first — inputs inside a closed <details> are hidden
+  // by the browser regardless of DOM presence
   await page.locator('details summary').click()
+
+  // Wait for profile loading to finish (spinner gone, inputs rendered)
+  await expect(page.locator('details input[type="number"]').first()).toBeVisible({ timeout: 5000 })
 
   // Override the annual interest rate to 5 %
   await page.locator('details input[type="number"]').first().fill('5')
