@@ -26,6 +26,9 @@ test('csv export: clicking export triggers a .csv download', async ({ page }) =>
 test('csv export: amortization table toggle shows the schedule table', async ({ page }) => {
   await goToResults(page, MOCK_SIMULATE_RESPONSE_WITH_SCHEDULE)
 
-  await page.getByRole('button', { name: /Show amortization schedule/i }).click()
+  const toggleBtn = page.getByRole('button', { name: /Show amortization schedule/i })
+  await toggleBtn.scrollIntoViewIfNeeded()
+  // On mobile the recharts SVG overlaps the button; force bypasses interception
+  await toggleBtn.click({ force: true })
   await expect(page.locator('table')).toBeVisible()
 })

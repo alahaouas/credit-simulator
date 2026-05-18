@@ -35,16 +35,21 @@ Audit of the Playwright e2e suite (`web/e2e/`). Use this to resume work later.
 
 ### P3 — quality / breadth
 
-- [ ] **Selector consistency** — the suite still mixes `getByText` / `getByRole`
-  / CSS `#id` / `data-testid`. Text selectors are brittle against copy changes.
-  Decide on a convention (prefer `getByRole` + `data-testid` for dynamic values)
-  and migrate. Deferred: a judgment call, not a mechanical fix.
-- [ ] **Mobile viewport project** in `playwright.config.ts` — the UI uses
-  responsive grids. Low priority for a desktop-focused tool.
+- [ ] **Selector consistency** — new tests use `getByRole` + scoped locators;
+  migration of older specs' bare `getByText` calls is deferred (judgment call).
+- [x] **Mobile viewport project** in `playwright.config.ts` — added `Pixel 5`
+  project (`mobile-chrome`). Run with `--project=mobile-chrome` to isolate.
 
 ### Not yet covered (feature areas)
 
-- [ ] `/history` rename/tag inline edit (A1), clone button (A2), share generate/
-  revoke panel (A5) — the history spec covers search/pagination only.
-- [ ] C4 custom-profile section inside `SimulatorForm`.
-- [ ] `/auth/callback` PKCE route.
+- [x] `/history` rename/tag inline edit (A1) — `history.spec.ts`
+  `test.describe('history inline edit (A1)')`.
+- [x] `/history` clone button (A2) — `history.spec.ts`
+  `test.describe('history clone (A2)')`.
+- [x] `/history` share generate/revoke panel (A5) — `history.spec.ts`
+  `test.describe('history share panel (A5)')`.
+- [x] C4 custom-profile section inside `SimulatorForm` — `simulate.spec.ts`
+  `'C4: custom profile overrides are included in the simulate request body'`.
+- [x] `/auth/callback` PKCE route — `auth.spec.ts` (no-code + code variants).
+  Note: the with-code test relies on Supabase client catching its own network
+  errors internally; if it starts flaking, wrap the handler in try/catch.

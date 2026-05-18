@@ -23,6 +23,13 @@ export default defineConfig({
         launchOptions: { args: ['--disable-web-security'] },
       },
     },
+    {
+      name: 'mobile-chrome',
+      use: {
+        ...devices['Pixel 5'],
+        launchOptions: { args: ['--disable-web-security'] },
+      },
+    },
   ],
   webServer: {
     command: 'npm run dev',
