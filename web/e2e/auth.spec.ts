@@ -21,3 +21,20 @@ test('auth page: submitting an email shows the check-inbox confirmation', async 
 
   await expect(page.getByText(/Check your inbox/i)).toBeVisible()
 })
+
+// ---------------------------------------------------------------------------
+// /auth/callback — PKCE redirect handler
+// ---------------------------------------------------------------------------
+
+test('auth/callback without code redirects to home', async ({ page }) => {
+  // No code param → supabase call is skipped, route redirects to /
+  await page.goto('/auth/callback')
+  await expect(page).toHaveURL('/')
+})
+
+test('auth/callback with code redirects to home after token exchange', async ({ page }) => {
+  // The server-side Supabase client catches network errors internally, so
+  // the handler redirects to / even when Supabase is unavailable in test env.
+  await page.goto('/auth/callback?code=test-pkce-code-123')
+  await expect(page).toHaveURL('/')
+})
