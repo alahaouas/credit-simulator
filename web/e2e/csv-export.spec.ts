@@ -28,6 +28,7 @@ test('csv export: amortization table toggle shows the schedule table', async ({ 
 
   const toggleBtn = page.getByRole('button', { name: /Show amortization schedule/i })
   await toggleBtn.scrollIntoViewIfNeeded()
-  await toggleBtn.click()
+  // On mobile the recharts SVG overlaps the button; force bypasses interception
+  await toggleBtn.click({ force: true })
   await expect(page.locator('table')).toBeVisible()
 })
