@@ -10,17 +10,23 @@ export default function AuthPage() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setLoading(true)
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${location.origin}/auth/callback` },
-    })
-    if (error) setError(error.message)
-    else setSubmitted(true)
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${location.origin}/auth/callback` },
+      })
+      if (error) setError(error.message)
+      else setSubmitted(true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (submitted) {
@@ -38,17 +44,25 @@ export default function AuthPage() {
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
         <h1 className="text-2xl font-semibold">{t('auth.title')}</h1>
-        <input
-          type="email"
-          placeholder={t('auth.email_placeholder')}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="border dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400"
-        />
+        <div className="flex flex-col gap-1">
+          <label htmlFor="email" className="sr-only">Email</label>
+          <input
+            id="email"
+            type="email"
+            placeholder={t('auth.email_placeholder')}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="border dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400"
+          />
+        </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        <button type="submit" className="bg-black text-white dark:bg-white dark:text-black rounded px-4 py-2 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
-          {t('auth.send')}
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-black text-white dark:bg-white dark:text-black rounded px-4 py-2 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
+        >
+          {loading ? '...' : t('auth.send')}
         </button>
       </form>
     </main>
