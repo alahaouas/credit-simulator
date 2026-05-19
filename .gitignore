@@ -50,5 +50,6 @@ web/playwright-report/
 web/test-results/
 web/playwright/.cache/
 web/.playwright/
+
 .claude/settings.local.json
 .claude/worktrees/
