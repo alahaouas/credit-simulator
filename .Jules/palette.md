@@ -17,3 +17,7 @@
 ## 2024-05-20 - Add confirmation dialogs and helpful empty states
 **Learning:** For destructive CLI commands like `rates clear`, a simple confirmation dialog prevents accidental data loss and improves user confidence. Also, empty states (e.g., in `rates list`) should not be dead ends—they should provide users with a clear call-to-action on what command to run next.
 **Action:** When creating CLI tools that alter state, add `--yes` flags and `click.confirm()` prompts for destructive actions. Ensure all "empty" states provide actionable guidance.
+
+## 2024-05-20 - Replace text loading states with visual spinners
+**Learning:** Using simple text like `...` or `Submitting` for async web operations looks unpolished and can cause slight layout shifts depending on font rendering. An animated SVG spinner provides standard, recognizable feedback that an operation is taking place, making the UI feel smoother and more responsive.
+**Action:** When working on async web forms, always use standard visual progress indicators (like an SVG spinner) instead of text fallbacks, and ensure the button layout (e.g. `flex justify-center min-h-`) prevents layout shift when swapping text for the spinner.
