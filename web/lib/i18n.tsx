@@ -64,6 +64,7 @@ const TRANSLATIONS = {
     'settings.copied': 'Copied!',
     'settings.key_warning': 'Copy your key now — it will not be shown again.',
     // Auth
+    'aria.loading': 'Loading, please wait',
     'auth.title': 'Sign in',
     'auth.email_placeholder': 'you@example.com',
     'auth.send': 'Send magic link',
@@ -392,6 +393,7 @@ const TRANSLATIONS = {
     'settings.copied': 'Copié !',
     'settings.key_warning': 'Copiez votre clé maintenant — elle ne sera plus affichée.',
     // Auth
+    'aria.loading': 'Chargement, veuillez patienter',
     'auth.title': 'Se connecter',
     'auth.email_placeholder': 'vous@exemple.com',
     'auth.send': 'Envoyer le lien magique',
