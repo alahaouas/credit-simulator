@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { expect, type Page } from '@playwright/test'
+import { type Page } from '@playwright/test'
 
 // Canonical OptimizedResult used across results-page specs. Shape mirrors
 // api.OptimizedResult so /results renders without hitting the FastAPI service.
@@ -114,43 +114,6 @@ export const MOCK_ALL_PREFS_RESPONSE = {
     minimize_duration: MOCK_RESULT,
     minimize_down_payment: null,
   },
-}
-
-// Minimal SimulateRequest matching MOCK_RESULT's user inputs.
-export const MOCK_INPUTS = {
-  property_price: '300000',
-  monthly_net_income: '4000',
-  available_savings: '80000',
-}
-
-// Lower-rate variant returned on what-if re-simulation.
-export const MOCK_TWEAKED_RESPONSE = {
-  result: {
-    ...MOCK_RESULT,
-    plan: {
-      ...MOCK_RESULT.plan,
-      annual_interest_rate: '0.0300',
-      monthly_emi: '1270.00',
-      monthly_installment: '1337.20',
-      total_interest_paid: '112600.00',
-      total_cost_of_credit: '132760.00',
-    },
-  },
-  sweet_spot: null,
-  schedule: null,
-}
-
-// Seed the results page from sessionStorage and navigate directly to /results,
-// bypassing the form submit flow entirely. Faster than goToResults for tests
-// that only care about the results page state.
-export async function seedResults(page: Page) {
-  const payload = { result: MOCK_SIMULATE_RESPONSE, inputs: MOCK_INPUTS }
-  await page.addInitScript((data) => {
-    window.sessionStorage.setItem('simulator_result', JSON.stringify(data.result))
-    window.sessionStorage.setItem('simulator_inputs', JSON.stringify(data.inputs))
-  }, payload)
-  await page.goto('/results')
-  await expect(page.locator('h1')).toBeVisible()
 }
 
 // Fill the simulator form and land on /results with a mocked /api/simulate.
