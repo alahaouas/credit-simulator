@@ -172,6 +172,8 @@ test('SESSION_CLONE_KEY is removed after form hydration (A2)', async ({ page }) 
   })
 
   await page.goto('/simulate')
+  // Wait for the useEffect to hydrate the form (proves the effect ran and removed the key)
+  await expect(page.locator('#property_price')).toHaveValue('450000')
   // After hydration the key must be gone so a subsequent reload starts fresh
   const remaining = await page.evaluate(() => window.sessionStorage.getItem('simulator_clone'))
   expect(remaining).toBeNull()
