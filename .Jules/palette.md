@@ -21,3 +21,7 @@
 ## 2024-05-20 - Replace text loading states with visual spinners
 **Learning:** Using simple text like `...` or `Submitting` for async web operations looks unpolished and can cause slight layout shifts depending on font rendering. An animated SVG spinner provides standard, recognizable feedback that an operation is taking place, making the UI feel smoother and more responsive.
 **Action:** When working on async web forms, always use standard visual progress indicators (like an SVG spinner) instead of text fallbacks, and ensure the button layout (e.g. `flex justify-center min-h-`) prevents layout shift when swapping text for the spinner.
+
+## 2024-05-24 - Add focus visible styles to interactive elements
+**Learning:** Many interactive elements (like icon buttons or toggles) lack explicit focus indicators, making keyboard navigation difficult for visually impaired users.
+**Action:** Always add explicit `focus-visible` utility classes (e.g., `focus-visible:ring-2`) to all interactive elements to ensure clear keyboard accessibility.
