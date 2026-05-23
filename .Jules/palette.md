@@ -25,3 +25,7 @@
 ## 2024-05-24 - Add focus visible styles to interactive elements
 **Learning:** Many interactive elements (like icon buttons or toggles) lack explicit focus indicators, making keyboard navigation difficult for visually impaired users.
 **Action:** Always add explicit `focus-visible` utility classes (e.g., `focus-visible:ring-2`) to all interactive elements to ensure clear keyboard accessibility.
+
+## 2024-05-23 - Add missing input associations in complex forms
+**Learning:** In complex interactive UI panels (like advanced settings, overrides, or custom what-if scenarios), secondary inputs often miss proper label associations (`id` + `htmlFor`), breaking accessibility for screen readers and reducing click targets.
+**Action:** Always verify that every input element inside a form or configuration panel has a unique `id` explicitly associated with an `htmlFor` attribute on its corresponding label, even if the element is deeply nested or part of an optional override menu.
