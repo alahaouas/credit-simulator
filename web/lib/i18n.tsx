@@ -331,6 +331,19 @@ const TRANSLATIONS = {
     'compare.apr': 'APR',
     'compare.ltv': 'LTV',
     'compare.preference': 'Preference',
+    // Purchase tax breakdown (B7)
+    'tax.title': 'Purchase tax breakdown',
+    'tax.subtitle': 'Estimated transaction costs for the selected country, based on the property price.',
+    'tax.property_price': 'Property price',
+    'tax.total_rate': 'Total rate',
+    'tax.total_amount': 'Total estimated taxes',
+    'tax.show_table': 'Show breakdown',
+    'tax.hide_table': 'Hide breakdown',
+    'tax.col_component': 'Component',
+    'tax.col_rate': 'Rate',
+    'tax.col_amount': 'Amount',
+    'tax.total': 'Total',
+    'tax.note': 'Rates are indicative. Actual costs depend on the region, property type, and negotiated fees.',
   },
   fr: {
     // Navigation
@@ -660,6 +673,19 @@ const TRANSLATIONS = {
     'compare.apr': 'TAEG',
     'compare.ltv': 'LTV',
     'compare.preference': 'Préférence',
+    // Purchase tax breakdown (B7)
+    'tax.title': "Détail des frais d'acquisition",
+    'tax.subtitle': "Estimation des frais de transaction pour le pays sélectionné, basée sur le prix du bien.",
+    'tax.property_price': 'Prix du bien',
+    'tax.total_rate': 'Taux total',
+    'tax.total_amount': 'Frais estimés totaux',
+    'tax.show_table': 'Afficher le détail',
+    'tax.hide_table': 'Masquer le détail',
+    'tax.col_component': 'Composante',
+    'tax.col_rate': 'Taux',
+    'tax.col_amount': 'Montant',
+    'tax.total': 'Total',
+    'tax.note': 'Les taux sont indicatifs. Les frais réels dépendent de la région, du type de bien et des honoraires négociés.',
   },
 } satisfies Record<Locale, Record<string, string>>
 

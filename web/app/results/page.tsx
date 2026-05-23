@@ -14,6 +14,7 @@ import EarlyRepaymentPanel from '@/components/EarlyRepaymentPanel'
 import RefinancingBreakEvenPanel from '@/components/RefinancingBreakEvenPanel'
 import OpportunityCostPanel from '@/components/OpportunityCostPanel'
 import SweetSpotHeatmap from '@/components/SweetSpotHeatmap'
+import PurchaseTaxPanel from '@/components/PurchaseTaxPanel'
 
 const LoanChart = dynamic(() => import('@/components/LoanChart'), { ssr: false })
 
@@ -154,6 +155,7 @@ export default function ResultsPage() {
       <EarlyRepaymentPanel result={result} currency={c} />
       <RefinancingBreakEvenPanel result={result} currency={c} />
       <OpportunityCostPanel result={result} currency={c} />
+      <PurchaseTaxPanel result={result} currency={c} />
 
       {inputs && (
         <SweetSpotHeatmap result={result} inputs={inputs} currency={c} />
