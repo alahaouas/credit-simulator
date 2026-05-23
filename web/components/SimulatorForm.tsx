@@ -348,8 +348,9 @@ export default function SimulatorForm() {
                   <>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.annual_rate')}</label>
+                        <label htmlFor="override_annual_interest_rate_pct" className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.annual_rate')}</label>
                         <input
+                          id="override_annual_interest_rate_pct"
                           type="number" min="0" max="99" step="0.0001"
                           value={overrides.annual_interest_rate_pct}
                           onChange={e => setOverride('annual_interest_rate_pct', e.target.value)}
@@ -357,8 +358,9 @@ export default function SimulatorForm() {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.insurance_rate')}</label>
+                        <label htmlFor="override_insurance_rate_pct" className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.insurance_rate')}</label>
                         <input
+                          id="override_insurance_rate_pct"
                           type="number" min="0" max="99" step="0.0001"
                           value={overrides.insurance_rate_pct}
                           onChange={e => setOverride('insurance_rate_pct', e.target.value)}
@@ -366,8 +368,9 @@ export default function SimulatorForm() {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.min_down')}</label>
+                        <label htmlFor="override_min_down_pct" className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.min_down')}</label>
                         <input
+                          id="override_min_down_pct"
                           type="number" min="0" max="100" step="0.01"
                           value={overrides.min_down_pct}
                           onChange={e => setOverride('min_down_pct', e.target.value)}
@@ -375,8 +378,9 @@ export default function SimulatorForm() {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.max_debt')}</label>
+                        <label htmlFor="override_max_debt_pct" className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.max_debt')}</label>
                         <input
+                          id="override_max_debt_pct"
                           type="number" min="0" max="100" step="0.01"
                           value={overrides.max_debt_pct}
                           onChange={e => setOverride('max_debt_pct', e.target.value)}
@@ -384,8 +388,9 @@ export default function SimulatorForm() {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.max_duration')}</label>
+                        <label htmlFor="override_max_duration_months" className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('profile.max_duration')}</label>
                         <input
+                          id="override_max_duration_months"
                           type="number" min="1" max="600" step="1"
                           value={overrides.max_duration_months}
                           onChange={e => setOverride('max_duration_months', e.target.value)}
@@ -424,8 +429,9 @@ export default function SimulatorForm() {
         </div>
       </TourTooltip>
 
-      <label className="flex items-center gap-2 text-sm">
+      <label htmlFor="include_schedule" className="flex items-center gap-2 text-sm">
         <input
+          id="include_schedule"
           type="checkbox"
           checked={form.include_schedule}
           onChange={e => set('include_schedule', e.target.checked)}
