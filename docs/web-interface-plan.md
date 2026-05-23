@@ -233,7 +233,7 @@ Features are grouped by theme. Each can be picked independently or bundled into 
 | B4 | **Rent-vs-buy comparison** | Input a monthly rent; chart the cumulative cost of renting vs owning over the loan period (accounting for equity build-up). |
 | B5 | **Sweet-spot heatmap** ✅ | `SweetSpotHeatmap` panel on the results page. "Show heatmap" button calls `POST /api/simulate/heatmap` (`build_heatmap_grid` in `optimizer.py`, subsampled 15×12 grid). Frontend renders color cells (green=low → red=high, gray=infeasible), optimal point highlighted with blue ring, toggle between total cost and monthly payment, hover tooltip. Cached in `SESSION_HEATMAP_KEY`. |
 | B6 | **Opportunity cost display** ✅ | `OpportunityCostPanel` on the results page. Input: annual investment return rate (%). Pure frontend math: compounds the down payment over the loan duration (`DP × (1+r)^years`). Outputs: future value, investment gain (green), loan interest paid for context; collapsible year-by-year growth table. No backend call. |
-| B7 | **Purchase tax breakdown** | Show the purchase-tax estimate broken down by component (registration, notary, agency) per country with the applicable rates. |
+| B7 | **Purchase tax breakdown** ✅ | `PurchaseTaxPanel` on the results page. Pure frontend: country-specific component rates hardcoded (registration, notary, stamp duty, etc.) applied to the property price. Collapsible table with per-component rate + amount, total row, and an indicative-rates disclaimer. Component names are bilingual (EN/FR). No backend call. |
 
 ### C. Country Profiles & Rates
 
