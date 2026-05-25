@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.105.4",
+    "@supabase/supabase-js": "^2.106.1",
     "next": "15.5.18",
     "react": "^18",
     "react-dom": "^18",
@@ -31,7 +31,7 @@
     "postcss": "^8.5.10",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.46.2"
+    "typescript-eslint": "^8.59.4"
   },
   "overrides": {
     "postcss": "^8.5.10"
