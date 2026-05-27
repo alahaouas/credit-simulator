@@ -316,7 +316,7 @@ export default function SimulatorForm() {
                 type="button"
                 onClick={handleRefreshRate}
                 disabled={refreshingRate}
-                className="text-xs text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white disabled:opacity-40 transition-colors border dark:border-gray-600 rounded px-2 py-1"
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white disabled:opacity-40 transition-colors border dark:border-gray-600 rounded px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
               >
                 {refreshingRate ? t('profile.refreshing') : t('profile.refresh_rate')}
               </button>
@@ -337,7 +337,7 @@ export default function SimulatorForm() {
               open={showCustomProfile}
               onToggle={e => setShowCustomProfile((e.currentTarget as HTMLDetailsElement).open)}
             >
-              <summary className="text-sm font-medium cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 select-none">
+              <summary className="text-sm font-medium cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded">
                 {t('profile.customize')}
                 {showCustomProfile ? ' ▲' : ' ▼'}
               </summary>
@@ -401,7 +401,7 @@ export default function SimulatorForm() {
                     <button
                       type="button"
                       onClick={resetOverrides}
-                      className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-left"
+                      className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
                     >
                       {t('profile.reset')}
                     </button>
@@ -461,7 +461,7 @@ export default function SimulatorForm() {
         <button
           type="button"
           onClick={restart}
-          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-center"
+          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded px-1 py-0.5"
         >
           {t('tour.restart')}
         </button>
