@@ -29,3 +29,7 @@
 ## 2024-05-23 - Add missing input associations in complex forms
 **Learning:** In complex interactive UI panels (like advanced settings, overrides, or custom what-if scenarios), secondary inputs often miss proper label associations (`id` + `htmlFor`), breaking accessibility for screen readers and reducing click targets.
 **Action:** Always verify that every input element inside a form or configuration panel has a unique `id` explicitly associated with an `htmlFor` attribute on its corresponding label, even if the element is deeply nested or part of an optional override menu.
+
+## 2024-05-25 - Add aria-labels alongside visual loading spinners
+**Learning:** When replacing text loading states with visual spinners to avoid layout shift, the `svg` alone is not announced by screen readers (especially since it often has `aria-hidden="true"`). This causes a regression in accessibility during async operations.
+**Action:** Always add an explicit dynamic `aria-label` to the button itself (e.g., `aria-label={loading ? t('aria.loading') : defaultText}`) when swapping text for a loading spinner.
