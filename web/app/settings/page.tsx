@@ -136,9 +136,17 @@ export default function SettingsPage() {
         <button
           type="submit"
           disabled={creating || !newKeyName.trim()}
-          className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
+          aria-label={creating ? t('aria.loading') : t('settings.generate')}
+          className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 min-h-[38px] flex items-center justify-center min-w-[80px]"
         >
-          {creating ? '…' : t('settings.generate')}
+          {creating ? (
+            <svg aria-hidden="true" className="animate-spin h-4 w-4 text-white dark:text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            t('settings.generate')
+          )}
         </button>
       </form>
 
@@ -160,9 +168,17 @@ export default function SettingsPage() {
               <button
                 onClick={() => handleDelete(k.id)}
                 disabled={deleting === k.id}
-                className="shrink-0 text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                aria-label={deleting === k.id ? t('aria.loading') : t('settings.revoke')}
+                className="shrink-0 text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 min-h-[32px] flex items-center justify-center min-w-[60px]"
               >
-                {deleting === k.id ? '…' : t('settings.revoke')}
+                {deleting === k.id ? (
+                  <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  t('settings.revoke')
+                )}
               </button>
             </li>
           ))}
