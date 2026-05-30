@@ -337,11 +337,15 @@ export default function SimulatorForm() {
               open={showCustomProfile}
               onToggle={e => setShowCustomProfile((e.currentTarget as HTMLDetailsElement).open)}
             >
-              <summary className="text-sm font-medium cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded">
+              <summary
+                className="text-sm font-medium cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
+                aria-expanded={showCustomProfile}
+                aria-controls="custom-profile-overrides"
+              >
                 {t('profile.customize')}
                 {showCustomProfile ? ' ▲' : ' ▼'}
               </summary>
-              <div className="mt-3 flex flex-col gap-3">
+              <div id="custom-profile-overrides" className="mt-3 flex flex-col gap-3">
                 {loadingProfile ? (
                   <p className="text-xs text-gray-400">{t('profile.loading')}</p>
                 ) : (
