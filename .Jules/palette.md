@@ -33,3 +33,7 @@
 ## 2024-05-25 - Add aria-labels alongside visual loading spinners
 **Learning:** When replacing text loading states with visual spinners to avoid layout shift, the `svg` alone is not announced by screen readers (especially since it often has `aria-hidden="true"`). This causes a regression in accessibility during async operations.
 **Action:** Always add an explicit dynamic `aria-label` to the button itself (e.g., `aria-label={loading ? t('aria.loading') : defaultText}`) when swapping text for a loading spinner.
+
+## 2024-05-26 - Add ARIA label and prevent layout shift for dynamic buttons
+**Learning:** When replacing text with a visual loading spinner in a button (like "Refresh live rate"), adding dynamic `aria-label` is crucial for accessibility. Setting minimum width (`min-w-`) and height (`min-h-`) classes along with flex centering prevents layout shifts when the content changes from text to the narrower SVG.
+**Action:** Use fixed-minimum dimensions and dynamic `aria-label` on buttons when substituting their inner text with status indicators (like Spinners).
