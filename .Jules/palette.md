@@ -38,6 +38,10 @@
 **Learning:** When replacing text with a visual loading spinner in a button (like "Refresh live rate"), adding dynamic `aria-label` is crucial for accessibility. Setting minimum width (`min-w-`) and height (`min-h-`) classes along with flex centering prevents layout shifts when the content changes from text to the narrower SVG.
 **Action:** Use fixed-minimum dimensions and dynamic `aria-label` on buttons when substituting their inner text with status indicators (like Spinners).
 
+## 2026-05-28 - Add browser confirmation dialog for destructive actions
+**Learning:** Users can accidentally click the "Delete" button when managing their history or settings. Relying on an immediate destructive action without confirmation is a poor UX choice that leads to frustration.
+**Action:** Wrap all destructive frontend API calls in `window.confirm()` dialogs with localized strings so users have a chance to cancel accidental clicks before the state is irreversibly altered.
+
 ## 2026-06-01 - [Accessible Table Sorting Headers]
 **Learning:** Found a common accessibility anti-pattern where an `onClick` event is attached directly to a `<th>` element to handle table sorting. This prevents keyboard users from focusing and activating the header, and lacks the necessary `aria-sort` state for screen readers.
 **Action:** When implementing sortable columns, always wrap the header's contents in a native `<button>` to restore natural keyboard navigation, and add `aria-sort="ascending|descending|none"` to the wrapping `<th>` to accurately announce the sort state.

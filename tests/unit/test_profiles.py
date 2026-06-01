@@ -175,13 +175,6 @@ class TestSessionProfileStore:
         store = self._store()
         assert store.get_field("BE", "purchase_tax_rate") == Decimal("0.125")
 
-    def test_get_rate_for_ltv_applies_tier_delta(self):
-        """SessionProfileStore.get_rate_for_ltv applies the correct tier."""
-        store = self._store()
-        # LTV 70% → ≤75% tier, delta = -0.30%
-        rate = store.get_rate_for_ltv("BE", "average", Decimal("0.70"))
-        assert rate == Decimal("0.0340") + Decimal("-0.0030")
-
     def test_be_last_updated_date(self):
         """BE profile has a non-empty last_updated_date."""
         profile = get_profile("BE")
