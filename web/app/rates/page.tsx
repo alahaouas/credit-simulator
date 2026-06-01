@@ -69,11 +69,19 @@ export default function RatesPage() {
 
   const SortHeader = ({ col, label }: { col: SortKey; label: string }) => (
     <th
-      className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer whitespace-nowrap select-none hover:text-gray-800 dark:hover:text-gray-200"
-      onClick={() => handleSort(col)}
+      className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap select-none"
+      aria-sort={sortKey === col ? (sortAsc ? 'ascending' : 'descending') : 'none'}
     >
-      {label}
-      {sortKey === col ? (sortAsc ? ' ↑' : ' ↓') : ''}
+      <button
+        type="button"
+        onClick={() => handleSort(col)}
+        className="flex items-center w-full text-left px-3 py-2 hover:text-gray-800 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded transition-colors"
+      >
+        {label}
+        <span className="ml-1 w-3 text-center">
+          {sortKey === col ? (sortAsc ? '↑' : '↓') : ''}
+        </span>
+      </button>
     </th>
   )
 
