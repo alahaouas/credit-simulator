@@ -33,3 +33,7 @@
 ## 2024-05-25 - Add aria-labels alongside visual loading spinners
 **Learning:** When replacing text loading states with visual spinners to avoid layout shift, the `svg` alone is not announced by screen readers (especially since it often has `aria-hidden="true"`). This causes a regression in accessibility during async operations.
 **Action:** Always add an explicit dynamic `aria-label` to the button itself (e.g., `aria-label={loading ? t('aria.loading') : defaultText}`) when swapping text for a loading spinner.
+
+## 2024-06-01 - [Accessible Table Sorting Headers]
+**Learning:** Found a common accessibility anti-pattern where an `onClick` event is attached directly to a `<th>` element to handle table sorting. This prevents keyboard users from focusing and activating the header, and lacks the necessary `aria-sort` state for screen readers.
+**Action:** When implementing sortable columns, always wrap the header's contents in a native `<button>` to restore natural keyboard navigation, and add `aria-sort="ascending|descending|none"` to the wrapping `<th>` to accurately announce the sort state.
