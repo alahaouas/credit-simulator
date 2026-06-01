@@ -64,6 +64,7 @@ export default function AlertsPage() {
   }
 
   async function handleDelete(id: string) {
+    if (!window.confirm(t('alerts.confirm_delete') || 'Are you sure you want to delete this alert?')) return
     if (!accessToken) return
     setDeletingId(id)
     try {

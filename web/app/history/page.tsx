@@ -191,6 +191,7 @@ export default function HistoryPage() {
   }
 
   async function handleDelete(id: string) {
+    if (!window.confirm(t('history.confirm_delete') || 'Are you sure you want to delete this simulation?')) return
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return

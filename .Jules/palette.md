@@ -1,31 +1,35 @@
-## 2024-05-19 - Added Spinner for Network Fetch
+## 2026-05-19 - Added Spinner for Network Fetch
 **Learning:** For terminal applications using `rich`, network requests (like fetching APIs) can cause the UI to hang. Replacing a static `console.print` with `console.status` provides immediate UX improvement with minimal code changes.
 **Action:** Always look for long-running synchronous calls (like API or DB requests) and wrap them in a spinner or progress bar to reassure the user that the system hasn't frozen.
 
-## 2024-04-25 - Add loading spinners for intensive CLI calculations
+## 2026-04-25 - Add loading spinners for intensive CLI calculations
 **Learning:** For interactive CLI tools, computationally intensive tasks like grid-search optimizations and sweet-spot analysis can feel unresponsive to the user. Adding simple micro-interactions like a loading spinner significantly improves perceived responsiveness.
 **Action:** Always wrap calculation-heavy or blocking synchronous functions in `rich.console.status` to indicate progress, not just network IO. Keep error-handling try/except outside the `with console.status()` block so error panels render correctly.
 
-## 2024-05-15 - [Manage expectations for instantaneous tasks]
+## 2026-05-15 - [Manage expectations for instantaneous tasks]
 **Learning:** When making UX improvements to the CLI, wrapping non-instantaneous compute tasks (even fast ones taking under a second) in a visual indicator like `rich.console.status` manages user expectations and prevents the application from feeling frozen. Hardcoded UI strings must be avoided to ensure proper localization.
 **Action:** Added `status.resolving` and `status.generating_schedule` localized strings to wrap the `resolve` and `build_amortization_schedule` methods.
 
-## 2024-05-19 - Group sequential CLI spinners to prevent UI stutter
+## 2026-05-19 - Group sequential CLI spinners to prevent UI stutter
 **Learning:** Sequential calls to `with console.status("...")` cause the spinner to disappear and reappear between tasks, resulting in UI stutter when tasks are fast but not instantaneous.
 **Action:** When executing a contiguous chain of synchronous tasks, group them inside a single `with console.status(...) as status:` block and use `status.update("...")` to change the message seamlessly without visual interruptions. Keep error handling robust by using state variables (like `params = None` before the block) to identify which step failed if they raise the same exception type.
 
-## 2024-05-20 - Add confirmation dialogs and helpful empty states
+## 2026-05-20 - Add confirmation dialogs and helpful empty states
 **Learning:** For destructive CLI commands like `rates clear`, a simple confirmation dialog prevents accidental data loss and improves user confidence. Also, empty states (e.g., in `rates list`) should not be dead ends—they should provide users with a clear call-to-action on what command to run next.
 **Action:** When creating CLI tools that alter state, add `--yes` flags and `click.confirm()` prompts for destructive actions. Ensure all "empty" states provide actionable guidance.
 
-## 2024-05-20 - Replace text loading states with visual spinners
+## 2026-05-20 - Replace text loading states with visual spinners
 **Learning:** Using simple text like `...` or `Submitting` for async web operations looks unpolished and can cause slight layout shifts depending on font rendering. An animated SVG spinner provides standard, recognizable feedback that an operation is taking place, making the UI feel smoother and more responsive.
 **Action:** When working on async web forms, always use standard visual progress indicators (like an SVG spinner) instead of text fallbacks, and ensure the button layout (e.g. `flex justify-center min-h-`) prevents layout shift when swapping text for the spinner.
 
-## 2024-05-24 - Add focus visible styles to interactive elements
+## 2026-05-24 - Add focus visible styles to interactive elements
 **Learning:** Many interactive elements (like icon buttons or toggles) lack explicit focus indicators, making keyboard navigation difficult for visually impaired users.
 **Action:** Always add explicit `focus-visible` utility classes (e.g., `focus-visible:ring-2`) to all interactive elements to ensure clear keyboard accessibility.
 
-## 2024-05-23 - Add missing input associations in complex forms
+## 2026-05-23 - Add missing input associations in complex forms
 **Learning:** In complex interactive UI panels (like advanced settings, overrides, or custom what-if scenarios), secondary inputs often miss proper label associations (`id` + `htmlFor`), breaking accessibility for screen readers and reducing click targets.
 **Action:** Always verify that every input element inside a form or configuration panel has a unique `id` explicitly associated with an `htmlFor` attribute on its corresponding label, even if the element is deeply nested or part of an optional override menu.
+
+## 2026-05-28 - Add browser confirmation dialog for destructive actions
+**Learning:** Users can accidentally click the "Delete" button when managing their history or settings. Relying on an immediate destructive action without confirmation is a poor UX choice that leads to frustration.
+**Action:** Wrap all destructive frontend API calls in `window.confirm()` dialogs with localized strings so users have a chance to cancel accidental clicks before the state is irreversibly altered.
