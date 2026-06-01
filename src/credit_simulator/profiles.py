@@ -288,17 +288,6 @@ class SessionProfileStore:
         # (to decide whether online fetch should prompt for confirmation)
         self._manual_rate_set: set[tuple[str, ProfileQuality]] = set()
 
-    def get_rate_for_ltv(self, country: str, quality: ProfileQuality, ltv: Decimal) -> Decimal:
-        """Base rate (with any session override applied) plus the LTV tier delta."""
-        base = self.get_annual_rate(country, quality)
-        profile = get_profile(country.upper())
-        for tier in profile.ltv_rate_tiers:
-            if ltv <= tier.ltv_max:
-                return base + tier.rate_delta
-        if profile.ltv_rate_tiers:
-            return base + profile.ltv_rate_tiers[-1].rate_delta
-        return base
-
     def get_annual_rate(self, country: str, quality: ProfileQuality) -> Decimal:
         code = country.upper()
         key = f"annual_rate_{quality}"
