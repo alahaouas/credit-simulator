@@ -110,6 +110,29 @@ class TestAmortizationSchedule:
             expected = row.principal_component + row.interest_component + row.insurance_component
             assert row.monthly_installment == expected
 
+    def test_negative_principal_due_to_rounding(self):
+        """Edge case where rounding logic causes principal_component > opening."""
+        # Using specific parameters that trigger principal_component > opening
+        # where emi - interest yields a value larger than the remaining tiny balance.
+        schedule = self._build(
+            principal="0.02",
+            annual_rate="0.01",
+            insurance_rate="0.00",
+            months=4
+        )
+
+        # Verify that we never overpay principal (which would make closing_balance negative)
+        for row in schedule:
+            assert row.principal_component <= row.opening_balance
+            assert row.closing_balance >= ZERO
+
+        # Also verify it specifically hit the state we expect on period 2
+        # P=0.02, EMI=0.01. Period 1: balance goes to 0.01.
+        # Period 2: opening=0.01. EMI=0.01, Interest=0. EMI - Interest = 0.01.
+        # If precision artifacts occurred without the guard, it could exceed 0.01.
+        # Guard limits it to 0.01.
+        assert schedule[1].closing_balance == ZERO
+
 
 class TestLoanPlan:
     def test_total_repaid_equals_principal_plus_cost(self):
