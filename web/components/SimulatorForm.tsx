@@ -316,9 +316,17 @@ export default function SimulatorForm() {
                 type="button"
                 onClick={handleRefreshRate}
                 disabled={refreshingRate}
-                className="text-xs text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white disabled:opacity-40 transition-colors border dark:border-gray-600 rounded px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+                aria-label={refreshingRate ? t('aria.loading') : t('profile.refresh_rate')}
+                className="flex items-center justify-center min-w-[150px] min-h-[26px] text-xs text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white disabled:opacity-40 transition-colors border dark:border-gray-600 rounded px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
               >
-                {refreshingRate ? t('profile.refreshing') : t('profile.refresh_rate')}
+                {refreshingRate ? (
+                  <svg aria-hidden="true" className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  t('profile.refresh_rate')
+                )}
               </button>
               {liveRatePct && (
                 <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded px-2 py-0.5">
