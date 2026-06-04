@@ -45,6 +45,11 @@
 ## 2026-06-01 - [Accessible Table Sorting Headers]
 **Learning:** Found a common accessibility anti-pattern where an `onClick` event is attached directly to a `<th>` element to handle table sorting. This prevents keyboard users from focusing and activating the header, and lacks the necessary `aria-sort` state for screen readers.
 **Action:** When implementing sortable columns, always wrap the header's contents in a native `<button>` to restore natural keyboard navigation, and add `aria-sort="ascending|descending|none"` to the wrapping `<th>` to accurately announce the sort state.
+
+## 2026-06-02 - [Native details and summary accessibility]
+**Learning:** Found a common accessibility anti-pattern where `aria-expanded` and `aria-controls` are manually added to native `<summary>` elements. Native HTML `<details>` and `<summary>` elements automatically handle their own expanded/collapsed states for screen readers, and modifying them is considered an accessibility anti-pattern that can confuse assistive technologies.
+**Action:** Do not manually add `aria-expanded` or `aria-controls` to native HTML `<details>` and `<summary>` elements. Rely on the browser's built-in accessibility features for these tags.
+
 ## 2026-06-03 - [Replace text loading state with visual spinner in refresh button]
 **Learning:** Found an accessibility and UX issue in the rates table refresh button where clicking refresh simply changes the text to 'Refreshing...'. This can cause layout shifts and lacks proper ARIA labels. Adding an animated SVG spinner with a dynamic `aria-label` improves accessibility and perceived responsiveness, while enforcing min-width and min-height on the button prevents layout jumps.
 **Action:** Always replace basic text loading states with visual SVG spinners, add dynamic `aria-label` for screen readers, and enforce structural boundaries (e.g. `min-w`, `min-h`) on buttons to prevent layout shift during loading states.
