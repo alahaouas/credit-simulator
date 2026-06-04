@@ -347,8 +347,6 @@ export default function SimulatorForm() {
             >
               <summary
                 className="text-sm font-medium cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
-                aria-expanded={showCustomProfile}
-                aria-controls="custom-profile-overrides"
               >
                 {t('profile.customize')}
                 {showCustomProfile ? ' ▲' : ' ▼'}
