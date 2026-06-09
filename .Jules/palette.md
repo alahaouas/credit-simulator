@@ -53,3 +53,7 @@
 ## 2026-06-03 - [Replace text loading state with visual spinner in refresh button]
 **Learning:** Found an accessibility and UX issue in the rates table refresh button where clicking refresh simply changes the text to 'Refreshing...'. This can cause layout shifts and lacks proper ARIA labels. Adding an animated SVG spinner with a dynamic `aria-label` improves accessibility and perceived responsiveness, while enforcing min-width and min-height on the button prevents layout jumps.
 **Action:** Always replace basic text loading states with visual SVG spinners, add dynamic `aria-label` for screen readers, and enforce structural boundaries (e.g. `min-w`, `min-h`) on buttons to prevent layout shift during loading states.
+
+## 2026-06-09 - [Replace text loading state with visual spinner in load more button]
+**Learning:** Replacing text loading states (e.g. 'Loading...') with visual spinners in pagination/load more buttons prevents layout shift and provides standard, recognizable feedback. Dynamic `aria-label` ensures screen reader compatibility, and using `inline-flex` alongside `min-h` and `min-w` maintains the button's layout within centered parent containers.
+**Action:** Always replace basic text loading states with visual SVG spinners, add dynamic `aria-label` for screen readers, and enforce structural boundaries (e.g. `inline-flex`, `min-w`, `min-h`) on pagination/load more buttons to prevent layout shift during async operations.
