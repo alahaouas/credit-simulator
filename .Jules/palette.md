@@ -57,3 +57,7 @@
 ## 2026-06-09 - [Replace text loading state with visual spinner in load more button]
 **Learning:** Replacing text loading states (e.g. 'Loading...') with visual spinners in pagination/load more buttons prevents layout shift and provides standard, recognizable feedback. Dynamic `aria-label` ensures screen reader compatibility, and using `inline-flex` alongside `min-h` and `min-w` maintains the button's layout within centered parent containers.
 **Action:** Always replace basic text loading states with visual SVG spinners, add dynamic `aria-label` for screen readers, and enforce structural boundaries (e.g. `inline-flex`, `min-w`, `min-h`) on pagination/load more buttons to prevent layout shift during async operations.
+
+## 2026-06-10 - [Improve accessibility of form elements and visual loading feedback]
+**Learning:** Text-based loading states inside buttons can cause slight visual layout shifts during state transitions and lack proper screen reader communication without dynamic `aria-label` attributes. Additionally, inputs that miss their matching `htmlFor` attributes on corresponding `<label>` tags break form accessibility for screen-reader users, and missing `focus-visible` states make keyboard navigation impossible.
+**Action:** When adding micro-UX enhancements to forms, always replace text loading states with an SVG spinner and use `aria-label` for screen reader communication. Also, always verify `id` and `htmlFor` matches on input-label pairs, and add `focus-visible:ring-2` to buttons to ensure full accessibility support.
