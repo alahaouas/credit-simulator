@@ -53,3 +53,7 @@
 ## 2026-06-03 - [Replace text loading state with visual spinner in refresh button]
 **Learning:** Found an accessibility and UX issue in the rates table refresh button where clicking refresh simply changes the text to 'Refreshing...'. This can cause layout shifts and lacks proper ARIA labels. Adding an animated SVG spinner with a dynamic `aria-label` improves accessibility and perceived responsiveness, while enforcing min-width and min-height on the button prevents layout jumps.
 **Action:** Always replace basic text loading states with visual SVG spinners, add dynamic `aria-label` for screen readers, and enforce structural boundaries (e.g. `min-w`, `min-h`) on buttons to prevent layout shift during loading states.
+
+## 2026-06-10 - [Improve accessibility of form elements and visual loading feedback]
+**Learning:** Text-based loading states inside buttons can cause slight visual layout shifts during state transitions and lack proper screen reader communication without dynamic `aria-label` attributes. Additionally, inputs that miss their matching `htmlFor` attributes on corresponding `<label>` tags break form accessibility for screen-reader users, and missing `focus-visible` states make keyboard navigation impossible.
+**Action:** When adding micro-UX enhancements to forms, always replace text loading states with an SVG spinner and use `aria-label` for screen reader communication. Also, always verify `id` and `htmlFor` matches on input-label pairs, and add `focus-visible:ring-2` to buttons to ensure full accessibility support.

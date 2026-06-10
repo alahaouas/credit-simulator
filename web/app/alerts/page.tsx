@@ -104,8 +104,9 @@ export default function AlertsPage() {
             {/* Create form */}
             <form onSubmit={handleCreate} className="flex gap-3 mb-8 items-end flex-wrap">
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">{t('alerts.country')}</label>
+                <label htmlFor="country" className="text-sm font-medium">{t('alerts.country')}</label>
                 <select
+                  id="country"
                   value={country}
                   onChange={e => setCountry(e.target.value)}
                   className={selectClass}
@@ -114,8 +115,9 @@ export default function AlertsPage() {
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">{t('alerts.target_rate')}</label>
+                <label htmlFor="targetRate" className="text-sm font-medium">{t('alerts.target_rate')}</label>
                 <input
+                  id="targetRate"
                   type="number"
                   min="0.01"
                   max="99.99"
@@ -130,9 +132,17 @@ export default function AlertsPage() {
               <button
                 type="submit"
                 disabled={creating}
-                className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-5 py-2 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
+                aria-label={creating ? t('aria.loading') : t('alerts.create')}
+                className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-5 py-2 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 min-w-[80px] min-h-[40px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
               >
-                {creating ? t('alerts.creating') : t('alerts.create')}
+                {creating ? (
+                  <svg aria-hidden="true" className="animate-spin h-5 w-5 text-white dark:text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  t('alerts.create')
+                )}
               </button>
             </form>
             {createError && <p className="text-red-500 text-sm mb-4">{createError}</p>}
@@ -166,7 +176,7 @@ export default function AlertsPage() {
                       onClick={() => handleDelete(alert.id)}
                       disabled={deletingId === alert.id}
                       aria-label={deletingId === alert.id ? t('aria.loading') : t('alerts.delete')}
-                      className="text-sm text-red-500 hover:text-red-700 disabled:opacity-40 transition-colors min-h-[32px] flex items-center justify-center min-w-[60px]"
+                      className="text-sm text-red-500 hover:text-red-700 disabled:opacity-40 transition-colors min-h-[32px] flex items-center justify-center min-w-[60px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
                     >
                       {deletingId === alert.id ? (
                         <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
