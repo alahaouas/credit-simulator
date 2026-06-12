@@ -94,10 +94,11 @@ export default function PreferencesPage() {
 
       <form onSubmit={handleSave} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="defaultCountry" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {t('prefs.country')}
           </label>
           <select
+            id="defaultCountry"
             value={form.default_country}
             onChange={e => setForm(f => ({ ...f, default_country: e.target.value }))}
             className="w-full rounded-lg border dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400"
@@ -109,10 +110,11 @@ export default function PreferencesPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="defaultOptimization" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {t('prefs.preference')}
           </label>
           <select
+            id="defaultOptimization"
             value={form.default_optimization_preference}
             onChange={e => setForm(f => ({ ...f, default_optimization_preference: e.target.value }))}
             className="w-full rounded-lg border dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-400"
@@ -148,7 +150,7 @@ export default function PreferencesPage() {
           type="submit"
           disabled={saving}
           aria-label={saving ? t('aria.loading') : saved ? t('prefs.saved') : t('prefs.save')}
-          className="w-full flex items-center justify-center min-h-[44px] rounded-lg bg-black text-white dark:bg-white dark:text-black py-2.5 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
+          className="w-full flex items-center justify-center min-h-[44px] rounded-lg bg-black text-white dark:bg-white dark:text-black py-2.5 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
         >
           {saved ? (
             t('prefs.saved')
