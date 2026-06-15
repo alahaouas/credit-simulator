@@ -61,3 +61,7 @@
 ## 2026-06-10 - [Improve accessibility of form elements and visual loading feedback]
 **Learning:** Text-based loading states inside buttons can cause slight visual layout shifts during state transitions and lack proper screen reader communication without dynamic `aria-label` attributes. Additionally, inputs that miss their matching `htmlFor` attributes on corresponding `<label>` tags break form accessibility for screen-reader users, and missing `focus-visible` states make keyboard navigation impossible.
 **Action:** When adding micro-UX enhancements to forms, always replace text loading states with an SVG spinner and use `aria-label` for screen reader communication. Also, always verify `id` and `htmlFor` matches on input-label pairs, and add `focus-visible:ring-2` to buttons to ensure full accessibility support.
+
+## 2026-06-11 - [Replace text loading state with visual spinner in What If panel]
+**Learning:** Using simple text like 'Recalculating...' for async operations in panels can be missed by screen readers and look unpolished. Adding an SVG spinner with `aria-live="polite"` and `aria-busy="true"` ensures assistive technologies announce the loading state while providing smooth, standard visual feedback.
+**Action:** Always replace text loading states in non-button elements (like configuration panels) with visual SVG spinners, and ensure they are wrapped in an `aria-live` region with appropriate screen reader labels.
