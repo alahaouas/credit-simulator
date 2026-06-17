@@ -122,7 +122,7 @@ export default function WhatIfPanel({ original, originalRequest, currency }: Pro
         {isDirty && (
           <button
             onClick={reset}
-            className="text-sm text-gray-500 hover:text-black dark:hover:text-white transition-colors"
+            className="text-sm text-gray-500 hover:text-black dark:hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
           >
             {t('whatif.reset')}
           </button>

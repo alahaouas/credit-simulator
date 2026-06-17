@@ -61,3 +61,7 @@
 ## 2026-06-10 - [Improve accessibility of form elements and visual loading feedback]
 **Learning:** Text-based loading states inside buttons can cause slight visual layout shifts during state transitions and lack proper screen reader communication without dynamic `aria-label` attributes. Additionally, inputs that miss their matching `htmlFor` attributes on corresponding `<label>` tags break form accessibility for screen-reader users, and missing `focus-visible` states make keyboard navigation impossible.
 **Action:** When adding micro-UX enhancements to forms, always replace text loading states with an SVG spinner and use `aria-label` for screen reader communication. Also, always verify `id` and `htmlFor` matches on input-label pairs, and add `focus-visible:ring-2` to buttons to ensure full accessibility support.
+
+## 2026-06-17 - Add missing focus-visible styles to secondary text buttons
+**Learning:** Unstyled text-link buttons (like "Reset" or "Show table") often get overlooked for focus states, breaking keyboard navigation for visually impaired users interacting with simple panels.
+**Action:** Always ensure text-style buttons have explicit `focus-visible:ring-2 focus-visible:outline-none rounded` added to them to ensure clear keyboard accessibility.
