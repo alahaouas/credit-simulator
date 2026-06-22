@@ -61,3 +61,7 @@
 ## 2026-06-10 - [Improve accessibility of form elements and visual loading feedback]
 **Learning:** Text-based loading states inside buttons can cause slight visual layout shifts during state transitions and lack proper screen reader communication without dynamic `aria-label` attributes. Additionally, inputs that miss their matching `htmlFor` attributes on corresponding `<label>` tags break form accessibility for screen-reader users, and missing `focus-visible` states make keyboard navigation impossible.
 **Action:** When adding micro-UX enhancements to forms, always replace text loading states with an SVG spinner and use `aria-label` for screen reader communication. Also, always verify `id` and `htmlFor` matches on input-label pairs, and add `focus-visible:ring-2` to buttons to ensure full accessibility support.
+
+## 2026-06-22 - [Apply focus-visible and spinner patterns to all panels consistently]
+**Learning:** Focus-visible fixes and loading spinner patterns applied to one component must be audited across all sibling components. EarlyRepaymentPanel, OpportunityCostPanel, and RefinancingBreakEvenPanel all shared the same underlined toggle button pattern without focus-visible, and WhatIfPanel had a text loading state that needed the spinner treatment.
+**Action:** After any accessibility or UX improvement to a single panel component, grep for identical className patterns across all panel components and apply the fix uniformly. Never assume a change to one panel covers the rest.

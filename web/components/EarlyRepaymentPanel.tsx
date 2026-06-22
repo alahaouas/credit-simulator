@@ -223,7 +223,7 @@ export default function EarlyRepaymentPanel({ result, currency }: Props) {
 
           <button
             onClick={() => setShowSchedule(s => !s)}
-            className="text-sm text-gray-500 dark:text-gray-400 underline mb-3"
+            className="text-sm text-gray-500 dark:text-gray-400 underline mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
           >
             {showSchedule ? t('early.hide_schedule') : t('early.show_schedule')}
           </button>
