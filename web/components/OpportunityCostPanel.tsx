@@ -134,7 +134,7 @@ export default function OpportunityCostPanel({ result, currency }: Props) {
 
           <button
             onClick={() => setShowTable(s => !s)}
-            className="text-sm text-gray-500 dark:text-gray-400 underline mb-3"
+            className="text-sm text-gray-500 dark:text-gray-400 underline mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
           >
             {showTable ? t('opp.hide_table') : t('opp.show_table')}
           </button>

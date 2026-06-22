@@ -26,7 +26,7 @@ export default function AmortizationTable({ rows }: { rows: AmortizationRow[] })
     <div className="mt-6">
       <button
         onClick={() => setOpen(o => !o)}
-        className="text-sm font-medium underline underline-offset-2"
+        className="text-sm font-medium underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
       >
         {open ? t('amort.hide') : t('amort.show')} ({rows.length} {t('stats.months')})
       </button>
