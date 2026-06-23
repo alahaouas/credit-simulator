@@ -65,3 +65,7 @@
 ## 2026-06-22 - [Apply focus-visible and spinner patterns to all panels consistently]
 **Learning:** Focus-visible fixes and loading spinner patterns applied to one component must be audited across all sibling components. EarlyRepaymentPanel, OpportunityCostPanel, and RefinancingBreakEvenPanel all shared the same underlined toggle button pattern without focus-visible, and WhatIfPanel had a text loading state that needed the spinner treatment.
 **Action:** After any accessibility or UX improvement to a single panel component, grep for identical className patterns across all panel components and apply the fix uniformly. Never assume a change to one panel covers the rest.
+
+## 2026-06-25 - [Add focus-visible to secondary floating widget buttons]
+**Learning:** Found that while primary forms and panels have `focus-visible` styles, secondary floating widget buttons like tooltip navigation (Next/Skip) and modal close buttons (✕) frequently lack them. This breaks keyboard accessibility for users navigating these overlays.
+**Action:** When auditing for `focus-visible` improvements, actively search for floating UI elements like tooltips, modals, and dismissible banners, and ensure their controls receive proper `focus-visible` classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400`).

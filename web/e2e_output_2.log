@@ -1,0 +1,2000 @@
+
+> web@0.1.0 test:e2e /app/web
+> playwright test
+
+
+Running 168 tests using 2 workers
+
+  ✓    2 [chromium] › e2e/alerts.spec.ts:8:5 › alerts page prompts sign-in when not authenticated (C5) (2.5s)
+  ✘    1 [chromium] › e2e/alerts.spec.ts:13:5 › alerts page renders the create form for a signed-in user (7.6s)
+  ✘    3 [chromium] › e2e/alerts.spec.ts:31:5 › alerts page lists existing alerts (7.2s)
+  ✓    4 [chromium] › e2e/auth.spec.ts:8:5 › auth page renders the magic-link sign-in form (2.2s)
+  ✓    6 [chromium] › e2e/auth.spec.ts:29:5 › auth/callback without code redirects to home (4.0s)
+  ✘    5 [chromium] › e2e/auth.spec.ts:15:5 › auth page: submitting an email shows the check-inbox confirmation (9.6s)
+  ✘    7 [chromium] › e2e/auth.spec.ts:35:5 › auth/callback with code redirects to home after token exchange (5.6s)
+  ✓    8 [chromium] › e2e/compare-all.spec.ts:23:5 › compare-all button is visible on results page (B1) (4.0s)
+  ✓    9 [chromium] › e2e/compare-all.spec.ts:28:5 › compare-all: clicking renders the all-preferences section (4.2s)
+  ✓   11 [chromium] › e2e/compare.spec.ts:8:5 › compare page shows a no-data message when no ids are given (A4) (2.7s)
+  ✓   10 [chromium] › e2e/compare-all.spec.ts:41:5 › compare-all: infeasible preference tab is disabled (3.6s)
+  ✓   13 [chromium] › e2e/csv-export.spec.ts:11:5 › export button is visible when a schedule is present (D1) (2.8s)
+  ✘   12 [chromium] › e2e/compare.spec.ts:13:5 › compare page renders a metric table for the selected simulations (7.7s)
+  ✓   14 [chromium] › e2e/csv-export.spec.ts:16:5 › csv export: clicking export triggers a .csv download (4.9s)
+  ✓   15 [chromium] › e2e/dark-mode.spec.ts:17:7 › dark mode toggle › toggle button is visible on the home page (3.1s)
+  ✓   17 [chromium] › e2e/dark-mode.spec.ts:22:7 › dark mode toggle › toggle button is visible on the simulate page (2.3s)
+  ✓   16 [chromium] › e2e/csv-export.spec.ts:26:5 › csv export: amortization table toggle shows the schedule table (4.7s)
+  ✓   18 [chromium] › e2e/dark-mode.spec.ts:27:7 › dark mode toggle › clicking toggle adds dark class to <html> (3.6s)
+  ✓   19 [chromium] › e2e/dark-mode.spec.ts:36:7 › dark mode toggle › clicking toggle again removes dark class (3.9s)
+  ✓   20 [chromium] › e2e/dark-mode.spec.ts:45:7 › dark mode toggle › button label reflects current theme (5.2s)
+  ✓   21 [chromium] › e2e/dark-mode.spec.ts:53:7 › dark mode toggle › preference is saved to localStorage (5.4s)
+  ✓   23 [chromium] › e2e/dark-mode.spec.ts:71:7 › dark mode toggle › dark mode persists across navigation (5.3s)
+  ✓   22 [chromium] › e2e/dark-mode.spec.ts:61:7 › dark mode toggle › dark mode persists after page reload (8.2s)
+  ✓   24 [chromium] › e2e/early-repayment.spec.ts:15:5 › early repayment panel is visible on results page (B2) (3.6s)
+  ✓   25 [chromium] › e2e/early-repayment.spec.ts:20:5 › early repayment: compute shows summary cards (3.9s)
+  ✓   26 [chromium] › e2e/early-repayment.spec.ts:34:5 › early repayment: revised schedule toggle shows table (5.2s)
+  ✓   27 [chromium] › e2e/early-repayment.spec.ts:50:5 › early repayment: invalid month shows error (4.6s)
+  ✓   28 [chromium] › e2e/early-repayment.spec.ts:61:5 › early repayment: zero lump sum shows error (5.5s)
+  ✓   29 [chromium] › e2e/heatmap.spec.ts:23:5 › heatmap panel shows load button on results page (B5) (4.7s)
+  ✓   30 [chromium] › e2e/heatmap.spec.ts:29:5 › heatmap: clicking Show heatmap renders the grid (4.7s)
+  ✓   31 [chromium] › e2e/heatmap.spec.ts:41:5 › heatmap: metric toggle switches between total cost and monthly (4.2s)
+  ✘   32 [chromium] › e2e/history.spec.ts:67:7 › history page (A6) › renders search input (9.0s)
+  ✘   33 [chromium] › e2e/history.spec.ts:74:7 › history page (A6) › renders simulation names from API (8.9s)
+  ✘   35 [chromium] › e2e/history.spec.ts:96:7 › history page (A6) › shows no-results message when search returns empty (10.1s)
+  ✘   34 [chromium] › e2e/history.spec.ts:88:7 › history page (A6) › shows empty-history state when no sims and no search query (11.1s)
+  ✘   36 [chromium] › e2e/history.spec.ts:125:7 › history page (A6) › Load more button is hidden when next_cursor is null (10.3s)
+  ✘   37 [chromium] › e2e/history.spec.ts:133:7 › history page (A6) › Load more button appears when next_cursor is set (9.4s)
+  ✘   38 [chromium] › e2e/history.spec.ts:140:7 › history page (A6) › clicking Load more appends next page and hides button on last page (10.9s)
+  ✘   39 [chromium] › e2e/history.spec.ts:175:7 › history inline edit (A1) › Edit button shows name and tags pre-filled from the simulation (11.6s)
+  ✘   40 [chromium] › e2e/history.spec.ts:188:7 › history inline edit (A1) › Cancel restores the row without changes (30.4s)
+  ✘   41 [chromium] › e2e/history.spec.ts:202:7 › history inline edit (A1) › Save sends PATCH and reflects updated name and tag in the list (30.4s)
+  ✘   42 [chromium] › e2e/history.spec.ts:231:7 › history clone (A2) › Clone navigates to /simulate with form pre-filled from saved inputs (12.0s)
+  ✘   43 [chromium] › e2e/history.spec.ts:263:7 › history share panel (A5) › Share button opens the panel with generate-link option when no token exists (30.2s)
+  ✘   44 [chromium] › e2e/history.spec.ts:274:7 › history share panel (A5) › Generate public link shows the share URL and action buttons (30.2s)
+  ✘   45 [chromium] › e2e/history.spec.ts:294:7 › history share panel (A5) › Copy link shows "Copied!" feedback (30.2s)
+  ✘   46 [chromium] › e2e/history.spec.ts:315:7 › history share panel (A5) › Revoke removes the share link and shows generate option again (30.2s)
+  ✓   48 [chromium] › e2e/home.spec.ts:11:7 › home page › shows title and primary CTA (2.2s)
+  ✓   49 [chromium] › e2e/home.spec.ts:17:7 › home page › CTA navigates to /simulate (2.6s)
+  ✓   50 [chromium] › e2e/i18n-fr.spec.ts:6:5 › core simulate flow renders in French (E2) (2.7s)
+  ✓   51 [chromium] › e2e/opportunity-cost.spec.ts:15:5 › opportunity cost panel is visible on results page (B6) (2.7s)
+  ✓   52 [chromium] › e2e/opportunity-cost.spec.ts:20:5 › opportunity cost: compute shows future value and gain (2.6s)
+  ✓   53 [chromium] › e2e/opportunity-cost.spec.ts:33:5 › opportunity cost: yearly growth toggle shows table (2.6s)
+  ✘   47 [chromium] › e2e/history.spec.ts:335:7 › history share panel (A5) › Cancel closes the share panel (30.2s)
+  ✓   54 [chromium] › e2e/opportunity-cost.spec.ts:48:5 › opportunity cost: zero rate shows error (3.0s)
+  ✘   55 [chromium] › e2e/preferences.spec.ts:19:5 › preferences page renders the form for a signed-in user (E1) (7.6s)
+  ✘   56 [chromium] › e2e/preferences.spec.ts:25:5 › preferences page loads the default country from the API (7.4s)
+  ✓   57 [chromium] › e2e/rates.spec.ts:32:5 › rates page renders a row per country (C2) (3.0s)
+  ✓   58 [chromium] › e2e/rates.spec.ts:38:5 › rates page: clicking a column header toggles sort order (3.4s)
+  ✓   59 [chromium] › e2e/rates.spec.ts:46:5 › rates page: refreshing a country updates its average rate (2.5s)
+  ✓   60 [chromium] › e2e/refinancing.spec.ts:17:5 › refinancing panel is visible on results page (B3) (2.8s)
+  ✓   61 [chromium] › e2e/refinancing.spec.ts:22:5 › refinancing: compute shows summary cards (2.8s)
+  ✓   62 [chromium] › e2e/refinancing.spec.ts:35:5 › refinancing: break-even table toggle shows table (3.3s)
+  ✓   63 [chromium] › e2e/refinancing.spec.ts:51:5 › refinancing: rate at or above current rate shows error (3.5s)
+  ✓   64 [chromium] › e2e/refinancing.spec.ts:62:5 › refinancing: negative closing costs shows error (3.7s)
+  ✘   65 [chromium] › e2e/settings.spec.ts:10:5 › settings page renders the API keys UI for a signed-in user (E3) (7.8s)
+  ✘   66 [chromium] › e2e/settings.spec.ts:20:5 › settings page lists existing API keys (7.8s)
+  ✓   67 [chromium] › e2e/share.spec.ts:12:7 › share page (public, no auth required) › renders simulation name and key metrics (2.8s)
+  ✓   68 [chromium] › e2e/share.spec.ts:32:7 › share page (public, no auth required) › shows not-found message for invalid or revoked token (3.0s)
+  ✓   69 [chromium] › e2e/share.spec.ts:47:7 › share page (public, no auth required) › falls back to generic title when simulation has no name (2.5s)
+  ✓   70 [chromium] › e2e/share.spec.ts:63:7 › share page (public, no auth required) › dark mode toggle is present on share page (3.7s)
+  ✓   71 [chromium] › e2e/simulate.spec.ts:13:5 › simulator happy path: form → results page (4.4s)
+  ✓   72 [chromium] › e2e/simulate.spec.ts:37:5 › simulator surfaces backend validation error (3.1s)
+  ✓   73 [chromium] › e2e/simulate.spec.ts:91:5 › what-if panel is visible on results page with original values (3.9s)
+  ✓   74 [chromium] › e2e/simulate.spec.ts:109:5 › what-if panel shows delta table after rate change (7.3s)
+  ✓   75 [chromium] › e2e/simulate.spec.ts:128:5 › what-if reset restores original values and hides delta table (6.1s)
+  ✓   76 [chromium] › e2e/simulate.spec.ts:144:5 › simulator form pre-fills from SESSION_CLONE_KEY (A2) (4.9s)
+  ✓   77 [chromium] › e2e/simulate.spec.ts:164:5 › SESSION_CLONE_KEY is removed after form hydration (A2) (4.8s)
+  ✓   79 [chromium] › e2e/tour.spec.ts:13:7 › onboarding tour (A7) › auto-starts on first visit and shows step 1 (2.8s)
+  ✓   78 [chromium] › e2e/simulate.spec.ts:188:5 › C4: custom profile overrides are included in the simulate request body (4.1s)
+  ✓   80 [chromium] › e2e/tour.spec.ts:20:7 › onboarding tour (A7) › Next button advances to step 2 (3.2s)
+  ✓   81 [chromium] › e2e/tour.spec.ts:27:7 › onboarding tour (A7) › Skip dismisses the tour and sets the done flag (2.7s)
+  ✓   82 [chromium] › e2e/tour.spec.ts:36:7 › onboarding tour (A7) › does not show on return visit (4.0s)
+  ✓   83 [chromium] › e2e/tour.spec.ts:45:7 › onboarding tour (A7) › Take tour again restarts from step 1 (3.9s)
+  ✓   84 [chromium] › e2e/tour.spec.ts:55:7 › onboarding tour (A7) › Done on the last step dismisses the tour (4.0s)
+  ✓   85 [mobile-chrome] › e2e/alerts.spec.ts:8:5 › alerts page prompts sign-in when not authenticated (C5) (3.6s)
+  ✘   87 [mobile-chrome] › e2e/alerts.spec.ts:31:5 › alerts page lists existing alerts (8.7s)
+  ✘   86 [mobile-chrome] › e2e/alerts.spec.ts:13:5 › alerts page renders the create form for a signed-in user (9.0s)
+  ✓   88 [mobile-chrome] › e2e/auth.spec.ts:8:5 › auth page renders the magic-link sign-in form (4.0s)
+  ✓   90 [mobile-chrome] › e2e/auth.spec.ts:29:5 › auth/callback without code redirects to home (3.9s)
+  ✘   89 [mobile-chrome] › e2e/auth.spec.ts:15:5 › auth page: submitting an email shows the check-inbox confirmation (9.2s)
+  ✘   91 [mobile-chrome] › e2e/auth.spec.ts:35:5 › auth/callback with code redirects to home after token exchange (5.8s)
+  ✓   92 [mobile-chrome] › e2e/compare-all.spec.ts:23:5 › compare-all button is visible on results page (B1) (5.4s)
+  ✓   93 [mobile-chrome] › e2e/compare-all.spec.ts:28:5 › compare-all: clicking renders the all-preferences section (4.4s)
+  ✓   94 [mobile-chrome] › e2e/compare-all.spec.ts:41:5 › compare-all: infeasible preference tab is disabled (4.9s)
+  ✓   95 [mobile-chrome] › e2e/compare.spec.ts:8:5 › compare page shows a no-data message when no ids are given (A4) (3.5s)
+  ✓   97 [mobile-chrome] › e2e/csv-export.spec.ts:11:5 › export button is visible when a schedule is present (D1) (3.8s)
+  ✘   96 [mobile-chrome] › e2e/compare.spec.ts:13:5 › compare page renders a metric table for the selected simulations (8.5s)
+  ✓   98 [mobile-chrome] › e2e/csv-export.spec.ts:16:5 › csv export: clicking export triggers a .csv download (3.7s)
+  ✓   99 [mobile-chrome] › e2e/dark-mode.spec.ts:17:7 › dark mode toggle › toggle button is visible on the home page (5.8s)
+  ✓  100 [mobile-chrome] › e2e/csv-export.spec.ts:26:5 › csv export: amortization table toggle shows the schedule table (5.8s)
+  ✓  101 [mobile-chrome] › e2e/dark-mode.spec.ts:22:7 › dark mode toggle › toggle button is visible on the simulate page (3.6s)
+  ✓  102 [mobile-chrome] › e2e/dark-mode.spec.ts:27:7 › dark mode toggle › clicking toggle adds dark class to <html> (3.3s)
+  ✓  103 [mobile-chrome] › e2e/dark-mode.spec.ts:36:7 › dark mode toggle › clicking toggle again removes dark class (3.7s)
+  ✓  104 [mobile-chrome] › e2e/dark-mode.spec.ts:45:7 › dark mode toggle › button label reflects current theme (3.1s)
+  ✓  105 [mobile-chrome] › e2e/dark-mode.spec.ts:53:7 › dark mode toggle › preference is saved to localStorage (2.6s)
+  ✓  106 [mobile-chrome] › e2e/dark-mode.spec.ts:61:7 › dark mode toggle › dark mode persists after page reload (4.7s)
+  ✓  107 [mobile-chrome] › e2e/dark-mode.spec.ts:71:7 › dark mode toggle › dark mode persists across navigation (3.8s)
+  ✓  108 [mobile-chrome] › e2e/early-repayment.spec.ts:15:5 › early repayment panel is visible on results page (B2) (4.4s)
+  ✓  109 [mobile-chrome] › e2e/early-repayment.spec.ts:20:5 › early repayment: compute shows summary cards (5.8s)
+  ✓  110 [mobile-chrome] › e2e/early-repayment.spec.ts:34:5 › early repayment: revised schedule toggle shows table (4.7s)
+  ✓  111 [mobile-chrome] › e2e/early-repayment.spec.ts:50:5 › early repayment: invalid month shows error (3.7s)
+  ✓  112 [mobile-chrome] › e2e/early-repayment.spec.ts:61:5 › early repayment: zero lump sum shows error (3.6s)
+  ✓  113 [mobile-chrome] › e2e/heatmap.spec.ts:23:5 › heatmap panel shows load button on results page (B5) (3.1s)
+  ✓  114 [mobile-chrome] › e2e/heatmap.spec.ts:29:5 › heatmap: clicking Show heatmap renders the grid (3.7s)
+  ✓  115 [mobile-chrome] › e2e/heatmap.spec.ts:41:5 › heatmap: metric toggle switches between total cost and monthly (4.1s)
+  ✘  116 [mobile-chrome] › e2e/history.spec.ts:67:7 › history page (A6) › renders search input (8.6s)
+  ✘  117 [mobile-chrome] › e2e/history.spec.ts:74:7 › history page (A6) › renders simulation names from API (8.3s)
+  ✘  118 [mobile-chrome] › e2e/history.spec.ts:88:7 › history page (A6) › shows empty-history state when no sims and no search query (8.4s)
+  ✘  119 [mobile-chrome] › e2e/history.spec.ts:96:7 › history page (A6) › shows no-results message when search returns empty (8.4s)
+  ✘  120 [mobile-chrome] › e2e/history.spec.ts:125:7 › history page (A6) › Load more button is hidden when next_cursor is null (8.9s)
+  ✘  121 [mobile-chrome] › e2e/history.spec.ts:133:7 › history page (A6) › Load more button appears when next_cursor is set (9.3s)
+  ✘  122 [mobile-chrome] › e2e/history.spec.ts:140:7 › history page (A6) › clicking Load more appends next page and hides button on last page (8.4s)
+  ✘  123 [mobile-chrome] › e2e/history.spec.ts:175:7 › history inline edit (A1) › Edit button shows name and tags pre-filled from the simulation (7.5s)
+  ✘  124 [mobile-chrome] › e2e/history.spec.ts:188:7 › history inline edit (A1) › Cancel restores the row without changes (30.2s)
+  ✘  125 [mobile-chrome] › e2e/history.spec.ts:202:7 › history inline edit (A1) › Save sends PATCH and reflects updated name and tag in the list (30.4s)
+  ✘  126 [mobile-chrome] › e2e/history.spec.ts:231:7 › history clone (A2) › Clone navigates to /simulate with form pre-filled from saved inputs (9.1s)
+  ✘  127 [mobile-chrome] › e2e/history.spec.ts:263:7 › history share panel (A5) › Share button opens the panel with generate-link option when no token exists (30.5s)
+  ✘  128 [mobile-chrome] › e2e/history.spec.ts:274:7 › history share panel (A5) › Generate public link shows the share URL and action buttons (30.4s)
+  ✘  129 [mobile-chrome] › e2e/history.spec.ts:294:7 › history share panel (A5) › Copy link shows "Copied!" feedback (30.2s)
+  ✘  130 [mobile-chrome] › e2e/history.spec.ts:315:7 › history share panel (A5) › Revoke removes the share link and shows generate option again (30.4s)
+  ✓  132 [mobile-chrome] › e2e/home.spec.ts:11:7 › home page › shows title and primary CTA (2.3s)
+  ✓  133 [mobile-chrome] › e2e/home.spec.ts:17:7 › home page › CTA navigates to /simulate (4.1s)
+  ✓  134 [mobile-chrome] › e2e/i18n-fr.spec.ts:6:5 › core simulate flow renders in French (E2) (3.4s)
+  ✓  135 [mobile-chrome] › e2e/opportunity-cost.spec.ts:15:5 › opportunity cost panel is visible on results page (B6) (2.6s)
+  ✓  136 [mobile-chrome] › e2e/opportunity-cost.spec.ts:20:5 › opportunity cost: compute shows future value and gain (2.7s)
+  ✓  137 [mobile-chrome] › e2e/opportunity-cost.spec.ts:33:5 › opportunity cost: yearly growth toggle shows table (2.7s)
+  ✓  138 [mobile-chrome] › e2e/opportunity-cost.spec.ts:48:5 › opportunity cost: zero rate shows error (2.6s)
+  ✘  131 [mobile-chrome] › e2e/history.spec.ts:335:7 › history share panel (A5) › Cancel closes the share panel (30.3s)
+  ✘  139 [mobile-chrome] › e2e/preferences.spec.ts:19:5 › preferences page renders the form for a signed-in user (E1) (7.6s)
+  ✓  141 [mobile-chrome] › e2e/rates.spec.ts:32:5 › rates page renders a row per country (C2) (3.0s)
+  ✘  140 [mobile-chrome] › e2e/preferences.spec.ts:25:5 › preferences page loads the default country from the API (8.4s)
+  ✓  142 [mobile-chrome] › e2e/rates.spec.ts:38:5 › rates page: clicking a column header toggles sort order (2.4s)
+  ✓  143 [mobile-chrome] › e2e/rates.spec.ts:46:5 › rates page: refreshing a country updates its average rate (2.7s)
+  ✓  144 [mobile-chrome] › e2e/refinancing.spec.ts:17:5 › refinancing panel is visible on results page (B3) (3.6s)
+  ✓  145 [mobile-chrome] › e2e/refinancing.spec.ts:22:5 › refinancing: compute shows summary cards (5.1s)
+  ✓  146 [mobile-chrome] › e2e/refinancing.spec.ts:35:5 › refinancing: break-even table toggle shows table (4.8s)
+  ✓  147 [mobile-chrome] › e2e/refinancing.spec.ts:51:5 › refinancing: rate at or above current rate shows error (3.4s)
+  ✓  148 [mobile-chrome] › e2e/refinancing.spec.ts:62:5 › refinancing: negative closing costs shows error (3.1s)
+  ✘  149 [mobile-chrome] › e2e/settings.spec.ts:10:5 › settings page renders the API keys UI for a signed-in user (E3) (7.6s)
+  ✘  150 [mobile-chrome] › e2e/settings.spec.ts:20:5 › settings page lists existing API keys (7.8s)
+  ✓  151 [mobile-chrome] › e2e/share.spec.ts:12:7 › share page (public, no auth required) › renders simulation name and key metrics (3.0s)
+  ✓  152 [mobile-chrome] › e2e/share.spec.ts:32:7 › share page (public, no auth required) › shows not-found message for invalid or revoked token (2.5s)
+  ✓  153 [mobile-chrome] › e2e/share.spec.ts:47:7 › share page (public, no auth required) › falls back to generic title when simulation has no name (2.5s)
+  ✓  154 [mobile-chrome] › e2e/share.spec.ts:63:7 › share page (public, no auth required) › dark mode toggle is present on share page (2.5s)
+  ✓  155 [mobile-chrome] › e2e/simulate.spec.ts:13:5 › simulator happy path: form → results page (2.8s)
+  ✓  156 [mobile-chrome] › e2e/simulate.spec.ts:37:5 › simulator surfaces backend validation error (2.6s)
+  ✓  157 [mobile-chrome] › e2e/simulate.spec.ts:91:5 › what-if panel is visible on results page with original values (3.0s)
+  ✓  158 [mobile-chrome] › e2e/simulate.spec.ts:109:5 › what-if panel shows delta table after rate change (3.9s)
+  ✓  159 [mobile-chrome] › e2e/simulate.spec.ts:128:5 › what-if reset restores original values and hides delta table (5.0s)
+  ✓  160 [mobile-chrome] › e2e/simulate.spec.ts:144:5 › simulator form pre-fills from SESSION_CLONE_KEY (A2) (6.3s)
+  ✓  161 [mobile-chrome] › e2e/simulate.spec.ts:164:5 › SESSION_CLONE_KEY is removed after form hydration (A2) (5.2s)
+  ✓  162 [mobile-chrome] › e2e/simulate.spec.ts:188:5 › C4: custom profile overrides are included in the simulate request body (2.9s)
+  ✓  163 [mobile-chrome] › e2e/tour.spec.ts:13:7 › onboarding tour (A7) › auto-starts on first visit and shows step 1 (2.3s)
+  ✓  164 [mobile-chrome] › e2e/tour.spec.ts:20:7 › onboarding tour (A7) › Next button advances to step 2 (2.7s)
+  ✓  165 [mobile-chrome] › e2e/tour.spec.ts:27:7 › onboarding tour (A7) › Skip dismisses the tour and sets the done flag (3.2s)
+  ✓  166 [mobile-chrome] › e2e/tour.spec.ts:36:7 › onboarding tour (A7) › does not show on return visit (4.8s)
+  ✓  167 [mobile-chrome] › e2e/tour.spec.ts:45:7 › onboarding tour (A7) › Take tour again restarts from step 1 (4.0s)
+  ✓  168 [mobile-chrome] › e2e/tour.spec.ts:55:7 › onboarding tour (A7) › Done on the last step dismisses the tour (3.0s)
+
+
+  1) [chromium] › e2e/alerts.spec.ts:13:5 › alerts page renders the create form for a signed-in user
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'Add alert' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('button', { name: 'Add alert' })
+
+
+      25 |
+      26 |   await expect(page.getByRole('heading', { name: 'Rate alerts' })).toBeVisible()
+    > 27 |   await expect(page.getByRole('button', { name: 'Add alert' })).toBeVisible()
+         |                                                                 ^
+      28 |   await expect(page.getByText('No rate alerts set.')).toBeVisible()
+      29 | })
+      30 |
+        at /app/web/e2e/alerts.spec.ts:27:65
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/alerts-alerts-page-renders-38a61-e-form-for-a-signed-in-user-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/alerts-alerts-page-renders-38a61-e-form-for-a-signed-in-user-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/alerts-alerts-page-renders-38a61-e-form-for-a-signed-in-user-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/alerts-alerts-page-renders-38a61-e-form-for-a-signed-in-user-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e/alerts.spec.ts:31:5 › alerts page lists existing alerts ──────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('FR — 3.00%')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText('FR — 3.00%')
+
+
+      53 |   await page.goto('/alerts')
+      54 |
+    > 55 |   await expect(page.getByText('FR — 3.00%')).toBeVisible()
+         |                                              ^
+      56 | })
+      57 |
+        at /app/web/e2e/alerts.spec.ts:55:46
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/alerts-alerts-page-lists-existing-alerts-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/alerts-alerts-page-lists-existing-alerts-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/alerts-alerts-page-lists-existing-alerts-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/alerts-alerts-page-lists-existing-alerts-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e/auth.spec.ts:15:5 › auth page: submitting an email shows the check-inbox confirmation
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/Check your inbox/i)
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/Check your inbox/i)
+
+
+      20 |   await page.getByRole('button', { name: 'Send magic link' }).click()
+      21 |
+    > 22 |   await expect(page.getByText(/Check your inbox/i)).toBeVisible()
+         |                                                     ^
+      23 | })
+      24 |
+      25 | // ---------------------------------------------------------------------------
+        at /app/web/e2e/auth.spec.ts:22:53
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-auth-page-submitting--61534-he-check-inbox-confirmation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-auth-page-submitting--61534-he-check-inbox-confirmation-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/auth-auth-page-submitting--61534-he-check-inbox-confirmation-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/auth-auth-page-submitting--61534-he-check-inbox-confirmation-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › e2e/auth.spec.ts:35:5 › auth/callback with code redirects to home after token exchange
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected: "http://localhost:3000/"
+    Received: "http://localhost:3000/auth/callback?code=test-pkce-code-123"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 5000ms
+        14 × unexpected value "http://localhost:3000/auth/callback?code=test-pkce-code-123"
+
+
+      37 |   // the handler redirects to / even when Supabase is unavailable in test env.
+      38 |   await page.goto('/auth/callback?code=test-pkce-code-123')
+    > 39 |   await expect(page).toHaveURL('/')
+         |                      ^
+      40 | })
+      41 |
+        at /app/web/e2e/auth.spec.ts:39:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-auth-callback-with-co-bf7be-o-home-after-token-exchange-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-auth-callback-with-co-bf7be-o-home-after-token-exchange-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/auth-auth-callback-with-co-bf7be-o-home-after-token-exchange-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/auth-auth-callback-with-co-bf7be-o-home-after-token-exchange-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › e2e/compare.spec.ts:13:5 › compare page renders a metric table for the selected simulations
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Metric')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText('Metric')
+
+
+      27 |   await page.goto('/compare?ids=id-a,id-b')
+      28 |
+    > 29 |   await expect(page.getByText('Metric')).toBeVisible()
+         |                                          ^
+      30 |   await expect(page.getByText('Down payment')).toBeVisible()
+      31 |   await expect(page.getByText('Total cost')).toBeVisible()
+      32 |   await expect(page.getByText('Sim id-a')).toBeVisible()
+        at /app/web/e2e/compare.spec.ts:29:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-compare-page-rende-219cd-or-the-selected-simulations-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-compare-page-rende-219cd-or-the-selected-simulations-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-compare-page-rende-219cd-or-the-selected-simulations-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/compare-compare-page-rende-219cd-or-the-selected-simulations-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › e2e/history.spec.ts:67:7 › history page (A6) › renders search input ──────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByPlaceholder('Search by name or tag')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByPlaceholder('Search by name or tag')
+
+
+      69 |     await mockList(page, [SIM_A, SIM_B])
+      70 |     await page.goto('/history')
+    > 71 |     await expect(page.getByPlaceholder('Search by name or tag')).toBeVisible()
+         |                                                                  ^
+      72 |   })
+      73 |
+      74 |   test('renders simulation names from API', async ({ page }) => {
+        at /app/web/e2e/history.spec.ts:71:66
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-renders-search-input-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-renders-search-input-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-renders-search-input-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-renders-search-input-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium] › e2e/history.spec.ts:74:7 › history page (A6) › renders simulation names from API ─
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      78 |     // On narrow viewports the name <p> is CSS-truncated to 0-width; use
+      79 |     // toContainText to verify the text is in the DOM regardless of overflow.
+    > 80 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+         |                                                 ^
+      81 |     await expect(page.locator('ul li').nth(1)).toContainText('Paris investment')
+      82 |   })
+      83 |
+        at /app/web/e2e/history.spec.ts:80:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-renders-simulation-names-from-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-renders-simulation-names-from-API-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-renders-simulation-names-from-API-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-renders-simulation-names-from-API-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [chromium] › e2e/history.spec.ts:88:7 › history page (A6) › shows empty-history state when no sims and no search query
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('No saved simulations yet.')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText('No saved simulations yet.')
+
+
+      90 |     await mockList(page, [])
+      91 |     await page.goto('/history')
+    > 92 |     await expect(page.getByText('No saved simulations yet.')).toBeVisible()
+         |                                                               ^
+      93 |     await expect(page.getByRole('link', { name: /run your first simulation/i })).toBeVisible()
+      94 |   })
+      95 |
+        at /app/web/e2e/history.spec.ts:92:63
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-sh-92c4c-no-sims-and-no-search-query-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-sh-92c4c-no-sims-and-no-search-query-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-sh-92c4c-no-sims-and-no-search-query-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-sh-92c4c-no-sims-and-no-search-query-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [chromium] › e2e/history.spec.ts:96:7 › history page (A6) › shows no-results message when search returns empty
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      111 |
+      112 |     await page.goto('/history')
+    > 113 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      114 |
+      115 |     await page.getByPlaceholder('Search by name or tag').fill('zzznomatch')
+      116 |
+        at /app/web/e2e/history.spec.ts:113:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-sh-3a505-e-when-search-returns-empty-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-sh-3a505-e-when-search-returns-empty-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-sh-3a505-e-when-search-returns-empty-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-sh-3a505-e-when-search-returns-empty-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [chromium] › e2e/history.spec.ts:125:7 › history page (A6) › Load more button is hidden when next_cursor is null
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      127 |     await mockList(page, [SIM_A, SIM_B], null)
+      128 |     await page.goto('/history')
+    > 129 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      130 |     await expect(page.getByRole('button', { name: 'Load more' })).not.toBeVisible()
+      131 |   })
+      132 |
+        at /app/web/e2e/history.spec.ts:129:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-Lo-dda3e-en-when-next-cursor-is-null-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-Lo-dda3e-en-when-next-cursor-is-null-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-Lo-dda3e-en-when-next-cursor-is-null-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-Lo-dda3e-en-when-next-cursor-is-null-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [chromium] › e2e/history.spec.ts:133:7 › history page (A6) › Load more button appears when next_cursor is set
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'Load more' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('button', { name: 'Load more' })
+
+
+      135 |     await mockList(page, [SIM_A], '2026-05-09T10:00:00+00:00')
+      136 |     await page.goto('/history')
+    > 137 |     await expect(page.getByRole('button', { name: 'Load more' })).toBeVisible()
+          |                                                                   ^
+      138 |   })
+      139 |
+      140 |   test('clicking Load more appends next page and hides button on last page', async ({ page }) => {
+        at /app/web/e2e/history.spec.ts:137:67
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-Lo-6ba48-ars-when-next-cursor-is-set-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-Lo-6ba48-ars-when-next-cursor-is-set-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-Lo-6ba48-ars-when-next-cursor-is-set-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-Lo-6ba48-ars-when-next-cursor-is-set-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [chromium] › e2e/history.spec.ts:140:7 › history page (A6) › clicking Load more appends next page and hides button on last page
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      155 |
+      156 |     await page.goto('/history')
+    > 157 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      158 |     await expect(page.getByText('Paris investment')).not.toBeVisible()
+      159 |
+      160 |     await page.getByRole('button', { name: 'Load more' }).click()
+        at /app/web/e2e/history.spec.ts:157:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-cl-6d346-d-hides-button-on-last-page-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-cl-6d346-d-hides-button-on-last-page-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-cl-6d346-d-hides-button-on-last-page-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-cl-6d346-d-hides-button-on-last-page-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [chromium] › e2e/history.spec.ts:175:7 › history inline edit (A1) › Edit button shows name and tags pre-filled from the simulation
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      177 |     await mockList(page, [SIM_A, SIM_B])
+      178 |     await page.goto('/history')
+    > 179 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      180 |
+      181 |     await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
+      182 |
+        at /app/web/e2e/history.spec.ts:179:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-9e11a--filled-from-the-simulation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-inline-edi-9e11a--filled-from-the-simulation-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-9e11a--filled-from-the-simulation-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-inline-edi-9e11a--filled-from-the-simulation-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [chromium] › e2e/history.spec.ts:188:7 › history inline edit (A1) › Cancel restores the row without changes
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Edit' })
+
+
+      191 |     await page.goto('/history')
+      192 |
+    > 193 |     await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
+          |                                                                               ^
+      194 |     await expect(page.getByPlaceholder('Simulation name')).toBeVisible()
+      195 |
+      196 |     await page.getByRole('button', { name: 'Cancel' }).first().click()
+        at /app/web/e2e/history.spec.ts:193:79
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-4efba-res-the-row-without-changes-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-inline-edi-4efba-res-the-row-without-changes-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-4efba-res-the-row-without-changes-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-inline-edi-4efba-res-the-row-without-changes-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) [chromium] › e2e/history.spec.ts:202:7 › history inline edit (A1) › Save sends PATCH and reflects updated name and tag in the list
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Edit' })
+
+
+      212 |
+      213 |     await page.goto('/history')
+    > 214 |     await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
+          |                                                                               ^
+      215 |
+      216 |     await page.getByPlaceholder('Simulation name').fill('Brussels HQ')
+      217 |     await page.getByPlaceholder('Tags (comma-separated)').fill('office')
+        at /app/web/e2e/history.spec.ts:214:79
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-84298-ed-name-and-tag-in-the-list-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-inline-edi-84298-ed-name-and-tag-in-the-list-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-84298-ed-name-and-tag-in-the-list-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-inline-edi-84298-ed-name-and-tag-in-the-list-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) [chromium] › e2e/history.spec.ts:231:7 › history clone (A2) › Clone navigates to /simulate with form pre-filled from saved inputs
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      245 |
+      246 |     await page.goto('/history')
+    > 247 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      248 |
+      249 |     await page.locator('ul li').first().getByRole('button', { name: 'Clone' }).click()
+      250 |
+        at /app/web/e2e/history.spec.ts:247:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-clone-A2-C-63520-re-filled-from-saved-inputs-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-clone-A2-C-63520-re-filled-from-saved-inputs-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-clone-A2-C-63520-re-filled-from-saved-inputs-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-clone-A2-C-63520-re-filled-from-saved-inputs-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  17) [chromium] › e2e/history.spec.ts:263:7 › history share panel (A5) › Share button opens the panel with generate-link option when no token exists
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      266 |     await page.goto('/history')
+      267 |
+    > 268 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      269 |
+      270 |     await expect(page.getByText('Anyone with this link can view the simulation without signing in.')).toBeVisible()
+      271 |     await expect(page.getByRole('button', { name: 'Generate public link' })).toBeVisible()
+        at /app/web/e2e/history.spec.ts:268:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-8c1e8-option-when-no-token-exists-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-pane-8c1e8-option-when-no-token-exists-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-8c1e8-option-when-no-token-exists-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-pane-8c1e8-option-when-no-token-exists-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18) [chromium] › e2e/history.spec.ts:274:7 › history share panel (A5) › Generate public link shows the share URL and action buttons
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      284 |
+      285 |     await page.goto('/history')
+    > 286 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      287 |     await page.getByRole('button', { name: 'Generate public link' }).click()
+      288 |
+      289 |     await expect(page.locator('input[readonly]')).toHaveValue(/\/share\/tok123/, { timeout: 3000 })
+        at /app/web/e2e/history.spec.ts:286:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-2daef-hare-URL-and-action-buttons-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-pane-2daef-hare-URL-and-action-buttons-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-2daef-hare-URL-and-action-buttons-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-pane-2daef-hare-URL-and-action-buttons-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  19) [chromium] › e2e/history.spec.ts:294:7 › history share panel (A5) › Copy link shows "Copied!" feedback
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      305 |     await page.goto('/history')
+      306 |
+    > 307 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      308 |     // Token already present → link input visible immediately
+      309 |     await expect(page.locator('input[readonly]')).toBeVisible()
+      310 |     await page.getByRole('button', { name: 'Copy link' }).click()
+        at /app/web/e2e/history.spec.ts:307:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-16c7d--link-shows-Copied-feedback-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-pane-16c7d--link-shows-Copied-feedback-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-16c7d--link-shows-Copied-feedback-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-pane-16c7d--link-shows-Copied-feedback-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  20) [chromium] › e2e/history.spec.ts:315:7 › history share panel (A5) › Revoke removes the share link and shows generate option again
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      324 |
+      325 |     await page.goto('/history')
+    > 326 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      327 |     await expect(page.getByRole('button', { name: 'Revoke' })).toBeVisible()
+      328 |
+      329 |     await page.getByRole('button', { name: 'Revoke' }).click()
+        at /app/web/e2e/history.spec.ts:326:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-47bcb-shows-generate-option-again-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-pane-47bcb-shows-generate-option-again-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-47bcb-shows-generate-option-again-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-pane-47bcb-shows-generate-option-again-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  21) [chromium] › e2e/history.spec.ts:335:7 › history share panel (A5) › Cancel closes the share panel
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      338 |     await page.goto('/history')
+      339 |
+    > 340 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      341 |     await expect(page.getByText('Anyone with this link can view the simulation without signing in.')).toBeVisible()
+      342 |
+      343 |     await page.getByRole('button', { name: 'Cancel' }).click()
+        at /app/web/e2e/history.spec.ts:340:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-panel-A5-Cancel-closes-the-share-panel-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-panel-A5-Cancel-closes-the-share-panel-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-panel-A5-Cancel-closes-the-share-panel-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-panel-A5-Cancel-closes-the-share-panel-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  22) [chromium] › e2e/preferences.spec.ts:19:5 › preferences page renders the form for a signed-in user (E1)
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Preferences' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'Preferences' })
+
+
+      19 | test('preferences page renders the form for a signed-in user (E1)', async ({ page }) => {
+      20 |   await page.goto('/preferences')
+    > 21 |   await expect(page.getByRole('heading', { name: 'Preferences' })).toBeVisible()
+         |                                                                    ^
+      22 |   await expect(page.getByRole('button', { name: 'Save' })).toBeVisible()
+      23 | })
+      24 |
+        at /app/web/e2e/preferences.spec.ts:21:68
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/preferences-preferences-pa-62cd1-rm-for-a-signed-in-user-E1--chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/preferences-preferences-pa-62cd1-rm-for-a-signed-in-user-E1--chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/preferences-preferences-pa-62cd1-rm-for-a-signed-in-user-E1--chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/preferences-preferences-pa-62cd1-rm-for-a-signed-in-user-E1--chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  23) [chromium] › e2e/preferences.spec.ts:25:5 › preferences page loads the default country from the API
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: locator('select').first()
+    Expected: "BE"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" with timeout 5000ms
+      - waiting for locator('select').first()
+
+
+      26 |   await page.goto('/preferences')
+      27 |   // The country select is hydrated from the mocked GET /api/preferences.
+    > 28 |   await expect(page.locator('select').first()).toHaveValue('BE')
+         |                                                ^
+      29 | })
+      30 |
+        at /app/web/e2e/preferences.spec.ts:28:48
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/preferences-preferences-pa-a2c4b-efault-country-from-the-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/preferences-preferences-pa-a2c4b-efault-country-from-the-API-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/preferences-preferences-pa-a2c4b-efault-country-from-the-API-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/preferences-preferences-pa-a2c4b-efault-country-from-the-API-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  24) [chromium] › e2e/settings.spec.ts:10:5 › settings page renders the API keys UI for a signed-in user (E3)
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'API Keys' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'API Keys' })
+
+
+      14 |   await page.goto('/settings')
+      15 |
+    > 16 |   await expect(page.getByRole('heading', { name: 'API Keys' })).toBeVisible()
+         |                                                                 ^
+      17 |   await expect(page.getByText('No API keys yet.')).toBeVisible()
+      18 | })
+      19 |
+        at /app/web/e2e/settings.spec.ts:16:65
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/settings-settings-page-ren-f5e13-UI-for-a-signed-in-user-E3--chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/settings-settings-page-ren-f5e13-UI-for-a-signed-in-user-E3--chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/settings-settings-page-ren-f5e13-UI-for-a-signed-in-user-E3--chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/settings-settings-page-ren-f5e13-UI-for-a-signed-in-user-E3--chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  25) [chromium] › e2e/settings.spec.ts:20:5 › settings page lists existing API keys ───────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('my-script')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText('my-script')
+
+
+      33 |   await page.goto('/settings')
+      34 |
+    > 35 |   await expect(page.getByText('my-script')).toBeVisible()
+         |                                             ^
+      36 | })
+      37 |
+        at /app/web/e2e/settings.spec.ts:35:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/settings-settings-page-lists-existing-API-keys-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/settings-settings-page-lists-existing-API-keys-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/settings-settings-page-lists-existing-API-keys-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/settings-settings-page-lists-existing-API-keys-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  26) [mobile-chrome] › e2e/alerts.spec.ts:13:5 › alerts page renders the create form for a signed-in user
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'Add alert' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('button', { name: 'Add alert' })
+
+
+      25 |
+      26 |   await expect(page.getByRole('heading', { name: 'Rate alerts' })).toBeVisible()
+    > 27 |   await expect(page.getByRole('button', { name: 'Add alert' })).toBeVisible()
+         |                                                                 ^
+      28 |   await expect(page.getByText('No rate alerts set.')).toBeVisible()
+      29 | })
+      30 |
+        at /app/web/e2e/alerts.spec.ts:27:65
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/alerts-alerts-page-renders-38a61-e-form-for-a-signed-in-user-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/alerts-alerts-page-renders-38a61-e-form-for-a-signed-in-user-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/alerts-alerts-page-renders-38a61-e-form-for-a-signed-in-user-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/alerts-alerts-page-renders-38a61-e-form-for-a-signed-in-user-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  27) [mobile-chrome] › e2e/alerts.spec.ts:31:5 › alerts page lists existing alerts ────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('FR — 3.00%')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText('FR — 3.00%')
+
+
+      53 |   await page.goto('/alerts')
+      54 |
+    > 55 |   await expect(page.getByText('FR — 3.00%')).toBeVisible()
+         |                                              ^
+      56 | })
+      57 |
+        at /app/web/e2e/alerts.spec.ts:55:46
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/alerts-alerts-page-lists-existing-alerts-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/alerts-alerts-page-lists-existing-alerts-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/alerts-alerts-page-lists-existing-alerts-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/alerts-alerts-page-lists-existing-alerts-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  28) [mobile-chrome] › e2e/auth.spec.ts:15:5 › auth page: submitting an email shows the check-inbox confirmation
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/Check your inbox/i)
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/Check your inbox/i)
+
+
+      20 |   await page.getByRole('button', { name: 'Send magic link' }).click()
+      21 |
+    > 22 |   await expect(page.getByText(/Check your inbox/i)).toBeVisible()
+         |                                                     ^
+      23 | })
+      24 |
+      25 | // ---------------------------------------------------------------------------
+        at /app/web/e2e/auth.spec.ts:22:53
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-auth-page-submitting--61534-he-check-inbox-confirmation-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-auth-page-submitting--61534-he-check-inbox-confirmation-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/auth-auth-page-submitting--61534-he-check-inbox-confirmation-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/auth-auth-page-submitting--61534-he-check-inbox-confirmation-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  29) [mobile-chrome] › e2e/auth.spec.ts:35:5 › auth/callback with code redirects to home after token exchange
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected: "http://localhost:3000/"
+    Received: "http://localhost:3000/auth/callback?code=test-pkce-code-123"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 5000ms
+        14 × unexpected value "http://localhost:3000/auth/callback?code=test-pkce-code-123"
+
+
+      37 |   // the handler redirects to / even when Supabase is unavailable in test env.
+      38 |   await page.goto('/auth/callback?code=test-pkce-code-123')
+    > 39 |   await expect(page).toHaveURL('/')
+         |                      ^
+      40 | })
+      41 |
+        at /app/web/e2e/auth.spec.ts:39:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-auth-callback-with-co-bf7be-o-home-after-token-exchange-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-auth-callback-with-co-bf7be-o-home-after-token-exchange-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/auth-auth-callback-with-co-bf7be-o-home-after-token-exchange-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/auth-auth-callback-with-co-bf7be-o-home-after-token-exchange-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  30) [mobile-chrome] › e2e/compare.spec.ts:13:5 › compare page renders a metric table for the selected simulations
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Metric')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText('Metric')
+
+
+      27 |   await page.goto('/compare?ids=id-a,id-b')
+      28 |
+    > 29 |   await expect(page.getByText('Metric')).toBeVisible()
+         |                                          ^
+      30 |   await expect(page.getByText('Down payment')).toBeVisible()
+      31 |   await expect(page.getByText('Total cost')).toBeVisible()
+      32 |   await expect(page.getByText('Sim id-a')).toBeVisible()
+        at /app/web/e2e/compare.spec.ts:29:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-compare-page-rende-219cd-or-the-selected-simulations-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-compare-page-rende-219cd-or-the-selected-simulations-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-compare-page-rende-219cd-or-the-selected-simulations-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/compare-compare-page-rende-219cd-or-the-selected-simulations-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  31) [mobile-chrome] › e2e/history.spec.ts:67:7 › history page (A6) › renders search input ────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByPlaceholder('Search by name or tag')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByPlaceholder('Search by name or tag')
+
+
+      69 |     await mockList(page, [SIM_A, SIM_B])
+      70 |     await page.goto('/history')
+    > 71 |     await expect(page.getByPlaceholder('Search by name or tag')).toBeVisible()
+         |                                                                  ^
+      72 |   })
+      73 |
+      74 |   test('renders simulation names from API', async ({ page }) => {
+        at /app/web/e2e/history.spec.ts:71:66
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-renders-search-input-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-renders-search-input-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-renders-search-input-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-renders-search-input-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  32) [mobile-chrome] › e2e/history.spec.ts:74:7 › history page (A6) › renders simulation names from API
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      78 |     // On narrow viewports the name <p> is CSS-truncated to 0-width; use
+      79 |     // toContainText to verify the text is in the DOM regardless of overflow.
+    > 80 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+         |                                                 ^
+      81 |     await expect(page.locator('ul li').nth(1)).toContainText('Paris investment')
+      82 |   })
+      83 |
+        at /app/web/e2e/history.spec.ts:80:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-renders-simulation-names-from-API-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-renders-simulation-names-from-API-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-renders-simulation-names-from-API-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-renders-simulation-names-from-API-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  33) [mobile-chrome] › e2e/history.spec.ts:88:7 › history page (A6) › shows empty-history state when no sims and no search query
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('No saved simulations yet.')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText('No saved simulations yet.')
+
+
+      90 |     await mockList(page, [])
+      91 |     await page.goto('/history')
+    > 92 |     await expect(page.getByText('No saved simulations yet.')).toBeVisible()
+         |                                                               ^
+      93 |     await expect(page.getByRole('link', { name: /run your first simulation/i })).toBeVisible()
+      94 |   })
+      95 |
+        at /app/web/e2e/history.spec.ts:92:63
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-sh-92c4c-no-sims-and-no-search-query-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-sh-92c4c-no-sims-and-no-search-query-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-sh-92c4c-no-sims-and-no-search-query-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-sh-92c4c-no-sims-and-no-search-query-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  34) [mobile-chrome] › e2e/history.spec.ts:96:7 › history page (A6) › shows no-results message when search returns empty
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      111 |
+      112 |     await page.goto('/history')
+    > 113 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      114 |
+      115 |     await page.getByPlaceholder('Search by name or tag').fill('zzznomatch')
+      116 |
+        at /app/web/e2e/history.spec.ts:113:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-sh-3a505-e-when-search-returns-empty-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-sh-3a505-e-when-search-returns-empty-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-sh-3a505-e-when-search-returns-empty-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-sh-3a505-e-when-search-returns-empty-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  35) [mobile-chrome] › e2e/history.spec.ts:125:7 › history page (A6) › Load more button is hidden when next_cursor is null
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      127 |     await mockList(page, [SIM_A, SIM_B], null)
+      128 |     await page.goto('/history')
+    > 129 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      130 |     await expect(page.getByRole('button', { name: 'Load more' })).not.toBeVisible()
+      131 |   })
+      132 |
+        at /app/web/e2e/history.spec.ts:129:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-Lo-dda3e-en-when-next-cursor-is-null-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-Lo-dda3e-en-when-next-cursor-is-null-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-Lo-dda3e-en-when-next-cursor-is-null-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-Lo-dda3e-en-when-next-cursor-is-null-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  36) [mobile-chrome] › e2e/history.spec.ts:133:7 › history page (A6) › Load more button appears when next_cursor is set
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'Load more' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('button', { name: 'Load more' })
+
+
+      135 |     await mockList(page, [SIM_A], '2026-05-09T10:00:00+00:00')
+      136 |     await page.goto('/history')
+    > 137 |     await expect(page.getByRole('button', { name: 'Load more' })).toBeVisible()
+          |                                                                   ^
+      138 |   })
+      139 |
+      140 |   test('clicking Load more appends next page and hides button on last page', async ({ page }) => {
+        at /app/web/e2e/history.spec.ts:137:67
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-Lo-6ba48-ars-when-next-cursor-is-set-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-Lo-6ba48-ars-when-next-cursor-is-set-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-Lo-6ba48-ars-when-next-cursor-is-set-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-Lo-6ba48-ars-when-next-cursor-is-set-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  37) [mobile-chrome] › e2e/history.spec.ts:140:7 › history page (A6) › clicking Load more appends next page and hides button on last page
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      155 |
+      156 |     await page.goto('/history')
+    > 157 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      158 |     await expect(page.getByText('Paris investment')).not.toBeVisible()
+      159 |
+      160 |     await page.getByRole('button', { name: 'Load more' }).click()
+        at /app/web/e2e/history.spec.ts:157:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-cl-6d346-d-hides-button-on-last-page-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-page-A6-cl-6d346-d-hides-button-on-last-page-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-page-A6-cl-6d346-d-hides-button-on-last-page-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-page-A6-cl-6d346-d-hides-button-on-last-page-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  38) [mobile-chrome] › e2e/history.spec.ts:175:7 › history inline edit (A1) › Edit button shows name and tags pre-filled from the simulation
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      177 |     await mockList(page, [SIM_A, SIM_B])
+      178 |     await page.goto('/history')
+    > 179 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      180 |
+      181 |     await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
+      182 |
+        at /app/web/e2e/history.spec.ts:179:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-9e11a--filled-from-the-simulation-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-inline-edi-9e11a--filled-from-the-simulation-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-9e11a--filled-from-the-simulation-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-inline-edi-9e11a--filled-from-the-simulation-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  39) [mobile-chrome] › e2e/history.spec.ts:188:7 › history inline edit (A1) › Cancel restores the row without changes
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Edit' })
+
+
+      191 |     await page.goto('/history')
+      192 |
+    > 193 |     await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
+          |                                                                               ^
+      194 |     await expect(page.getByPlaceholder('Simulation name')).toBeVisible()
+      195 |
+      196 |     await page.getByRole('button', { name: 'Cancel' }).first().click()
+        at /app/web/e2e/history.spec.ts:193:79
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-4efba-res-the-row-without-changes-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-inline-edi-4efba-res-the-row-without-changes-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-4efba-res-the-row-without-changes-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-inline-edi-4efba-res-the-row-without-changes-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  40) [mobile-chrome] › e2e/history.spec.ts:202:7 › history inline edit (A1) › Save sends PATCH and reflects updated name and tag in the list
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Edit' })
+
+
+      212 |
+      213 |     await page.goto('/history')
+    > 214 |     await page.locator('ul li').first().getByRole('button', { name: 'Edit' }).click()
+          |                                                                               ^
+      215 |
+      216 |     await page.getByPlaceholder('Simulation name').fill('Brussels HQ')
+      217 |     await page.getByPlaceholder('Tags (comma-separated)').fill('office')
+        at /app/web/e2e/history.spec.ts:214:79
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-84298-ed-name-and-tag-in-the-list-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-inline-edi-84298-ed-name-and-tag-in-the-list-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-inline-edi-84298-ed-name-and-tag-in-the-list-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-inline-edi-84298-ed-name-and-tag-in-the-list-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  41) [mobile-chrome] › e2e/history.spec.ts:231:7 › history clone (A2) › Clone navigates to /simulate with form pre-filled from saved inputs
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('ul li').first()
+    Expected substring: "Brussels apartment"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('ul li').first()
+
+
+      245 |
+      246 |     await page.goto('/history')
+    > 247 |     await expect(page.locator('ul li').first()).toContainText('Brussels apartment')
+          |                                                 ^
+      248 |
+      249 |     await page.locator('ul li').first().getByRole('button', { name: 'Clone' }).click()
+      250 |
+        at /app/web/e2e/history.spec.ts:247:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-clone-A2-C-63520-re-filled-from-saved-inputs-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-clone-A2-C-63520-re-filled-from-saved-inputs-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-clone-A2-C-63520-re-filled-from-saved-inputs-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-clone-A2-C-63520-re-filled-from-saved-inputs-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  42) [mobile-chrome] › e2e/history.spec.ts:263:7 › history share panel (A5) › Share button opens the panel with generate-link option when no token exists
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      266 |     await page.goto('/history')
+      267 |
+    > 268 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      269 |
+      270 |     await expect(page.getByText('Anyone with this link can view the simulation without signing in.')).toBeVisible()
+      271 |     await expect(page.getByRole('button', { name: 'Generate public link' })).toBeVisible()
+        at /app/web/e2e/history.spec.ts:268:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-8c1e8-option-when-no-token-exists-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-pane-8c1e8-option-when-no-token-exists-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-8c1e8-option-when-no-token-exists-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-pane-8c1e8-option-when-no-token-exists-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  43) [mobile-chrome] › e2e/history.spec.ts:274:7 › history share panel (A5) › Generate public link shows the share URL and action buttons
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      284 |
+      285 |     await page.goto('/history')
+    > 286 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      287 |     await page.getByRole('button', { name: 'Generate public link' }).click()
+      288 |
+      289 |     await expect(page.locator('input[readonly]')).toHaveValue(/\/share\/tok123/, { timeout: 3000 })
+        at /app/web/e2e/history.spec.ts:286:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-2daef-hare-URL-and-action-buttons-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-pane-2daef-hare-URL-and-action-buttons-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-2daef-hare-URL-and-action-buttons-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-pane-2daef-hare-URL-and-action-buttons-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  44) [mobile-chrome] › e2e/history.spec.ts:294:7 › history share panel (A5) › Copy link shows "Copied!" feedback
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      305 |     await page.goto('/history')
+      306 |
+    > 307 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      308 |     // Token already present → link input visible immediately
+      309 |     await expect(page.locator('input[readonly]')).toBeVisible()
+      310 |     await page.getByRole('button', { name: 'Copy link' }).click()
+        at /app/web/e2e/history.spec.ts:307:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-16c7d--link-shows-Copied-feedback-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-pane-16c7d--link-shows-Copied-feedback-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-16c7d--link-shows-Copied-feedback-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-pane-16c7d--link-shows-Copied-feedback-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  45) [mobile-chrome] › e2e/history.spec.ts:315:7 › history share panel (A5) › Revoke removes the share link and shows generate option again
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      324 |
+      325 |     await page.goto('/history')
+    > 326 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      327 |     await expect(page.getByRole('button', { name: 'Revoke' })).toBeVisible()
+      328 |
+      329 |     await page.getByRole('button', { name: 'Revoke' }).click()
+        at /app/web/e2e/history.spec.ts:326:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-47bcb-shows-generate-option-again-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-pane-47bcb-shows-generate-option-again-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-pane-47bcb-shows-generate-option-again-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-pane-47bcb-shows-generate-option-again-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  46) [mobile-chrome] › e2e/history.spec.ts:335:7 › history share panel (A5) › Cancel closes the share panel
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('ul li').first().getByRole('button', { name: 'Share' })
+
+
+      338 |     await page.goto('/history')
+      339 |
+    > 340 |     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
+          |                                                                                ^
+      341 |     await expect(page.getByText('Anyone with this link can view the simulation without signing in.')).toBeVisible()
+      342 |
+      343 |     await page.getByRole('button', { name: 'Cancel' }).click()
+        at /app/web/e2e/history.spec.ts:340:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/history-history-share-panel-A5-Cancel-closes-the-share-panel-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/history-history-share-panel-A5-Cancel-closes-the-share-panel-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/history-history-share-panel-A5-Cancel-closes-the-share-panel-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/history-history-share-panel-A5-Cancel-closes-the-share-panel-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  47) [mobile-chrome] › e2e/preferences.spec.ts:19:5 › preferences page renders the form for a signed-in user (E1)
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Preferences' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'Preferences' })
+
+
+      19 | test('preferences page renders the form for a signed-in user (E1)', async ({ page }) => {
+      20 |   await page.goto('/preferences')
+    > 21 |   await expect(page.getByRole('heading', { name: 'Preferences' })).toBeVisible()
+         |                                                                    ^
+      22 |   await expect(page.getByRole('button', { name: 'Save' })).toBeVisible()
+      23 | })
+      24 |
+        at /app/web/e2e/preferences.spec.ts:21:68
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/preferences-preferences-pa-62cd1-rm-for-a-signed-in-user-E1--mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/preferences-preferences-pa-62cd1-rm-for-a-signed-in-user-E1--mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/preferences-preferences-pa-62cd1-rm-for-a-signed-in-user-E1--mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/preferences-preferences-pa-62cd1-rm-for-a-signed-in-user-E1--mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  48) [mobile-chrome] › e2e/preferences.spec.ts:25:5 › preferences page loads the default country from the API
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: locator('select').first()
+    Expected: "BE"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" with timeout 5000ms
+      - waiting for locator('select').first()
+
+
+      26 |   await page.goto('/preferences')
+      27 |   // The country select is hydrated from the mocked GET /api/preferences.
+    > 28 |   await expect(page.locator('select').first()).toHaveValue('BE')
+         |                                                ^
+      29 | })
+      30 |
+        at /app/web/e2e/preferences.spec.ts:28:48
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/preferences-preferences-pa-a2c4b-efault-country-from-the-API-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/preferences-preferences-pa-a2c4b-efault-country-from-the-API-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/preferences-preferences-pa-a2c4b-efault-country-from-the-API-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/preferences-preferences-pa-a2c4b-efault-country-from-the-API-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  49) [mobile-chrome] › e2e/settings.spec.ts:10:5 › settings page renders the API keys UI for a signed-in user (E3)
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'API Keys' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'API Keys' })
+
+
+      14 |   await page.goto('/settings')
+      15 |
+    > 16 |   await expect(page.getByRole('heading', { name: 'API Keys' })).toBeVisible()
+         |                                                                 ^
+      17 |   await expect(page.getByText('No API keys yet.')).toBeVisible()
+      18 | })
+      19 |
+        at /app/web/e2e/settings.spec.ts:16:65
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/settings-settings-page-ren-f5e13-UI-for-a-signed-in-user-E3--mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/settings-settings-page-ren-f5e13-UI-for-a-signed-in-user-E3--mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/settings-settings-page-ren-f5e13-UI-for-a-signed-in-user-E3--mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/settings-settings-page-ren-f5e13-UI-for-a-signed-in-user-E3--mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  50) [mobile-chrome] › e2e/settings.spec.ts:20:5 › settings page lists existing API keys ──────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('my-script')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText('my-script')
+
+
+      33 |   await page.goto('/settings')
+      34 |
+    > 35 |   await expect(page.getByText('my-script')).toBeVisible()
+         |                                             ^
+      36 | })
+      37 |
+        at /app/web/e2e/settings.spec.ts:35:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/settings-settings-page-lists-existing-API-keys-mobile-chrome/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/settings-settings-page-lists-existing-API-keys-mobile-chrome/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/settings-settings-page-lists-existing-API-keys-mobile-chrome/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/settings-settings-page-lists-existing-API-keys-mobile-chrome/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  50 failed
+    [chromium] › e2e/alerts.spec.ts:13:5 › alerts page renders the create form for a signed-in user
+    [chromium] › e2e/alerts.spec.ts:31:5 › alerts page lists existing alerts ───────────────────────
+    [chromium] › e2e/auth.spec.ts:15:5 › auth page: submitting an email shows the check-inbox confirmation
+    [chromium] › e2e/auth.spec.ts:35:5 › auth/callback with code redirects to home after token exchange
+    [chromium] › e2e/compare.spec.ts:13:5 › compare page renders a metric table for the selected simulations
+    [chromium] › e2e/history.spec.ts:67:7 › history page (A6) › renders search input ───────────────
+    [chromium] › e2e/history.spec.ts:74:7 › history page (A6) › renders simulation names from API ──
+    [chromium] › e2e/history.spec.ts:88:7 › history page (A6) › shows empty-history state when no sims and no search query
+    [chromium] › e2e/history.spec.ts:96:7 › history page (A6) › shows no-results message when search returns empty
+    [chromium] › e2e/history.spec.ts:125:7 › history page (A6) › Load more button is hidden when next_cursor is null
+    [chromium] › e2e/history.spec.ts:133:7 › history page (A6) › Load more button appears when next_cursor is set
+    [chromium] › e2e/history.spec.ts:140:7 › history page (A6) › clicking Load more appends next page and hides button on last page
+    [chromium] › e2e/history.spec.ts:175:7 › history inline edit (A1) › Edit button shows name and tags pre-filled from the simulation
+    [chromium] › e2e/history.spec.ts:188:7 › history inline edit (A1) › Cancel restores the row without changes
+    [chromium] › e2e/history.spec.ts:202:7 › history inline edit (A1) › Save sends PATCH and reflects updated name and tag in the list
+    [chromium] › e2e/history.spec.ts:231:7 › history clone (A2) › Clone navigates to /simulate with form pre-filled from saved inputs
+    [chromium] › e2e/history.spec.ts:263:7 › history share panel (A5) › Share button opens the panel with generate-link option when no token exists
+    [chromium] › e2e/history.spec.ts:274:7 › history share panel (A5) › Generate public link shows the share URL and action buttons
+    [chromium] › e2e/history.spec.ts:294:7 › history share panel (A5) › Copy link shows "Copied!" feedback
+    [chromium] › e2e/history.spec.ts:315:7 › history share panel (A5) › Revoke removes the share link and shows generate option again
+    [chromium] › e2e/history.spec.ts:335:7 › history share panel (A5) › Cancel closes the share panel
+    [chromium] › e2e/preferences.spec.ts:19:5 › preferences page renders the form for a signed-in user (E1)
+    [chromium] › e2e/preferences.spec.ts:25:5 › preferences page loads the default country from the API
+    [chromium] › e2e/settings.spec.ts:10:5 › settings page renders the API keys UI for a signed-in user (E3)
+    [chromium] › e2e/settings.spec.ts:20:5 › settings page lists existing API keys ─────────────────
+    [mobile-chrome] › e2e/alerts.spec.ts:13:5 › alerts page renders the create form for a signed-in user
+    [mobile-chrome] › e2e/alerts.spec.ts:31:5 › alerts page lists existing alerts ──────────────────
+    [mobile-chrome] › e2e/auth.spec.ts:15:5 › auth page: submitting an email shows the check-inbox confirmation
+    [mobile-chrome] › e2e/auth.spec.ts:35:5 › auth/callback with code redirects to home after token exchange
+    [mobile-chrome] › e2e/compare.spec.ts:13:5 › compare page renders a metric table for the selected simulations
+    [mobile-chrome] › e2e/history.spec.ts:67:7 › history page (A6) › renders search input ──────────
+    [mobile-chrome] › e2e/history.spec.ts:74:7 › history page (A6) › renders simulation names from API
+    [mobile-chrome] › e2e/history.spec.ts:88:7 › history page (A6) › shows empty-history state when no sims and no search query
+    [mobile-chrome] › e2e/history.spec.ts:96:7 › history page (A6) › shows no-results message when search returns empty
+    [mobile-chrome] › e2e/history.spec.ts:125:7 › history page (A6) › Load more button is hidden when next_cursor is null
+    [mobile-chrome] › e2e/history.spec.ts:133:7 › history page (A6) › Load more button appears when next_cursor is set
+    [mobile-chrome] › e2e/history.spec.ts:140:7 › history page (A6) › clicking Load more appends next page and hides button on last page
+    [mobile-chrome] › e2e/history.spec.ts:175:7 › history inline edit (A1) › Edit button shows name and tags pre-filled from the simulation
+    [mobile-chrome] › e2e/history.spec.ts:188:7 › history inline edit (A1) › Cancel restores the row without changes
+    [mobile-chrome] › e2e/history.spec.ts:202:7 › history inline edit (A1) › Save sends PATCH and reflects updated name and tag in the list
+    [mobile-chrome] › e2e/history.spec.ts:231:7 › history clone (A2) › Clone navigates to /simulate with form pre-filled from saved inputs
+    [mobile-chrome] › e2e/history.spec.ts:263:7 › history share panel (A5) › Share button opens the panel with generate-link option when no token exists
+    [mobile-chrome] › e2e/history.spec.ts:274:7 › history share panel (A5) › Generate public link shows the share URL and action buttons
+    [mobile-chrome] › e2e/history.spec.ts:294:7 › history share panel (A5) › Copy link shows "Copied!" feedback
+    [mobile-chrome] › e2e/history.spec.ts:315:7 › history share panel (A5) › Revoke removes the share link and shows generate option again
+    [mobile-chrome] › e2e/history.spec.ts:335:7 › history share panel (A5) › Cancel closes the share panel
+    [mobile-chrome] › e2e/preferences.spec.ts:19:5 › preferences page renders the form for a signed-in user (E1)
+    [mobile-chrome] › e2e/preferences.spec.ts:25:5 › preferences page loads the default country from the API
+    [mobile-chrome] › e2e/settings.spec.ts:10:5 › settings page renders the API keys UI for a signed-in user (E3)
+    [mobile-chrome] › e2e/settings.spec.ts:20:5 › settings page lists existing API keys ────────────
+  118 passed (10.5m)
+ ELIFECYCLE  Command failed with exit code 1.
