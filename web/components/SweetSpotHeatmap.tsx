@@ -112,7 +112,7 @@ export default function SweetSpotHeatmap({ result, inputs, currency }: Props) {
         <h2 className="text-lg font-semibold">{t('heatmap.title')}</h2>
         <button
           onClick={() => { setData(null); sessionStorage.removeItem(SESSION_HEATMAP_KEY) }}
-          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
           aria-label="Close"
         >
           ✕

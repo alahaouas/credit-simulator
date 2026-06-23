@@ -43,7 +43,7 @@ export default function TourTooltip({
             <button
               type="button"
               onClick={onSkip}
-              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
             >
               {skipLabel}
             </button>
@@ -54,7 +54,7 @@ export default function TourTooltip({
             <button
               type="button"
               onClick={onNext}
-              className="text-xs bg-black dark:bg-white text-white dark:text-black rounded px-3 py-1 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+              className="text-xs bg-black dark:bg-white text-white dark:text-black rounded px-3 py-1 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
             >
               {nextLabel}
             </button>
