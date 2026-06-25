@@ -69,7 +69,7 @@ export default function SharePage() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
         <p className="text-gray-500 dark:text-gray-400 text-center">{t('share.not_found')}</p>
-        <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors text-sm">
+        <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900">
           {t('share.cta')}
         </Link>
       </main>
@@ -112,7 +112,7 @@ export default function SharePage() {
       </div>
 
       <div className="text-center">
-        <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors text-sm">
+        <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900">
           {t('share.cta')}
         </Link>
       </div>

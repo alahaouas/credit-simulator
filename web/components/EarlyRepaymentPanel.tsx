@@ -201,7 +201,7 @@ export default function EarlyRepaymentPanel({ result, currency }: Props) {
         <div className="flex items-end">
           <button
             onClick={handleCompute}
-            className="px-5 py-2 text-sm rounded-lg bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+            className="px-5 py-2 text-sm rounded-lg bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
           >
             {t('early.compute')}
           </button>

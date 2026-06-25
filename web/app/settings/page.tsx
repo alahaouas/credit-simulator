@@ -138,7 +138,7 @@ export default function SettingsPage() {
           type="submit"
           disabled={creating || !newKeyName.trim()}
           aria-label={creating ? t('aria.loading') : t('settings.generate')}
-          className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 min-h-[38px] flex items-center justify-center min-w-[80px]"
+          className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 min-h-[38px] flex items-center justify-center min-w-[80px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
         >
           {creating ? (
             <svg aria-hidden="true" className="animate-spin h-4 w-4 text-white dark:text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
