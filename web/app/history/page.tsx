@@ -285,7 +285,7 @@ export default function HistoryPage() {
           {selected.size >= 2 && (
             <Link
               href={`/compare?ids=${Array.from(selected).join(',')}`}
-              className="text-sm rounded-lg px-4 py-2 bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+              className="text-sm rounded-lg px-4 py-2 bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
             >
               {t('history.compare')} ({selected.size})
             </Link>
@@ -317,7 +317,7 @@ export default function HistoryPage() {
           ) : (
             <>
               <p className="mb-4">{t('history.empty')}</p>
-              <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+              <Link href="/simulate" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900">
                 {t('history.first')}
               </Link>
             </>
@@ -348,7 +348,7 @@ export default function HistoryPage() {
                       onClick={() => saveEdit(sim.id)}
                       disabled={saving}
                       aria-label={saving ? t('aria.loading') : t('history.save')}
-                      className="text-sm px-3 py-1.5 rounded bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-40 min-h-[32px] flex items-center justify-center min-w-[60px]"
+                      className="text-sm px-3 py-1.5 rounded bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-40 min-h-[32px] flex items-center justify-center min-w-[60px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
                     >
                       {saving ? (
                         <svg aria-hidden="true" className="animate-spin h-4 w-4 text-white dark:text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -409,7 +409,7 @@ export default function HistoryPage() {
                         <button
                           onClick={() => handleGenerateToken(sim.id)}
                           disabled={shareLoading}
-                          className="text-sm px-3 py-1.5 rounded bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-40"
+                          className="text-sm px-3 py-1.5 rounded bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
                         >
                           {shareLoading ? t('history.share_generating') : t('history.share_generate')}
                         </button>
