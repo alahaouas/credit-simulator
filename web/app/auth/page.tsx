@@ -61,7 +61,7 @@ export default function AuthPage() {
           type="submit"
           disabled={loading}
           aria-label={loading ? t('aria.loading') : t('auth.send')}
-          className="flex items-center justify-center min-h-[40px] bg-black text-white dark:bg-white dark:text-black rounded px-4 py-2 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center min-h-[40px] bg-black text-white dark:bg-white dark:text-black rounded px-4 py-2 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
         >
           {loading ? (
             <svg aria-hidden="true" className="animate-spin h-5 w-5 text-white dark:text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
