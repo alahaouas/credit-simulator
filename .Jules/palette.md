@@ -65,3 +65,7 @@
 ## 2026-06-22 - [Apply focus-visible and spinner patterns to all panels consistently]
 **Learning:** Focus-visible fixes and loading spinner patterns applied to one component must be audited across all sibling components. EarlyRepaymentPanel, OpportunityCostPanel, and RefinancingBreakEvenPanel all shared the same underlined toggle button pattern without focus-visible, and WhatIfPanel had a text loading state that needed the spinner treatment.
 **Action:** After any accessibility or UX improvement to a single panel component, grep for identical className patterns across all panel components and apply the fix uniformly. Never assume a change to one panel covers the rest.
+
+## 2026-06-25 - [Apply focus-visible pattern to auth page button]
+**Learning:** The Auth page's primary submit button lacked `focus-visible` styles, making keyboard navigation difficult. It's critical to ensure all form buttons consistently implement the application's focus states (`focus-visible:ring-2 focus-visible:ring-offset-2 ...`).
+**Action:** Added proper `focus-visible` utility classes to the auth form button and will remember to audit standalone pages (like auth) when applying global accessibility patterns.
