@@ -69,3 +69,7 @@
 ## 2026-06-25 - [Apply focus-visible pattern to auth page button]
 **Learning:** The Auth page's primary submit button lacked `focus-visible` styles, making keyboard navigation difficult. It's critical to ensure all form buttons consistently implement the application's focus states (`focus-visible:ring-2 focus-visible:ring-offset-2 ...`).
 **Action:** Added proper `focus-visible` utility classes to the auth form button and will remember to audit standalone pages (like auth) when applying global accessibility patterns.
+
+## 2026-07-02 - [Replace text loading states with visual spinners in nested interactive flows]
+**Learning:** Text-based loading states like 'Generating...' inside secondary nested interaction flows (such as sharing modals or inline editing) cause poor UX due to layout shifting and often lack proper screen reader communication because they lack a dynamic `aria-label`. Furthermore, interactive secondary buttons in these nested elements frequently miss the global `focus-visible` styling standard.
+**Action:** Even for deeply nested interaction states, always replace text loading states with an SVG spinner alongside a dynamic `aria-label`. Apply flex centering, fixed minimum width/height, and `focus-visible:ring-2` styling on buttons consistently across all UI states to ensure robust accessibility and visual polish.
