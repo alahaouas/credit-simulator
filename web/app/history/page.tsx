@@ -383,7 +383,7 @@ export default function HistoryPage() {
                           />
                           <button
                             onClick={() => handleCopy(token)}
-                            className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
+                            className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                           >
                             {copied ? t('history.share_copied') : t('history.share_copy')}
                           </button>
@@ -392,13 +392,21 @@ export default function HistoryPage() {
                           <button
                             onClick={() => handleRevokeToken(sim.id)}
                             disabled={shareLoading}
-                            className="text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                            aria-label={shareLoading ? t('aria.loading') : t('history.share_revoke')}
+                            className="text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 min-h-[32px] min-w-[100px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                           >
-                            {shareLoading ? t('history.share_revoking') : t('history.share_revoke')}
+                            {shareLoading ? (
+                              <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              t('history.share_revoke')
+                            )}
                           </button>
                           <button
                             onClick={() => setSharing(null)}
-                            className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                           >
                             {t('history.cancel')}
                           </button>
@@ -409,13 +417,21 @@ export default function HistoryPage() {
                         <button
                           onClick={() => handleGenerateToken(sim.id)}
                           disabled={shareLoading}
-                          className="text-sm px-3 py-1.5 rounded bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
+                          aria-label={shareLoading ? t('aria.loading') : t('history.share_generate')}
+                          className="text-sm px-3 py-1.5 rounded bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900 min-h-[32px] min-w-[110px] flex items-center justify-center"
                         >
-                          {shareLoading ? t('history.share_generating') : t('history.share_generate')}
+                          {shareLoading ? (
+                            <svg aria-hidden="true" className="animate-spin h-4 w-4 text-white dark:text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            t('history.share_generate')
+                          )}
                         </button>
                         <button
                           onClick={() => setSharing(null)}
-                          className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                         >
                           {t('history.cancel')}
                         </button>
@@ -456,25 +472,25 @@ export default function HistoryPage() {
                   <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => startEdit(sim)}
-                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                     >
                       {t('history.edit')}
                     </button>
                     <button
                       onClick={() => handleClone(sim.id)}
-                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                     >
                       {t('history.clone')}
                     </button>
                     <button
                       onClick={() => { setSharing(sim.id); setError(null) }}
-                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                     >
                       {t('history.share')}
                     </button>
                     <button
                       onClick={() => handleView(sim.id)}
-                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                     >
                       {t('history.view')}
                     </button>
@@ -482,7 +498,7 @@ export default function HistoryPage() {
                       onClick={() => handleDelete(sim.id)}
                       disabled={deleting === sim.id}
                       aria-label={deleting === sim.id ? t('aria.loading') : t('history.delete')}
-                      className="text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 min-h-[32px] flex items-center justify-center min-w-[70px]"
+                      className="text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 min-h-[32px] flex items-center justify-center min-w-[70px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                     >
                       {deleting === sim.id ? (
                         <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

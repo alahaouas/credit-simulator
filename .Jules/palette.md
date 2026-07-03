@@ -69,3 +69,7 @@
 ## 2026-06-25 - [Apply focus-visible pattern to auth page button]
 **Learning:** The Auth page's primary submit button lacked `focus-visible` styles, making keyboard navigation difficult. It's critical to ensure all form buttons consistently implement the application's focus states (`focus-visible:ring-2 focus-visible:ring-offset-2 ...`).
 **Action:** Added proper `focus-visible` utility classes to the auth form button and will remember to audit standalone pages (like auth) when applying global accessibility patterns.
+
+## 2026-07-04 - [Apply focus-visible and loading states to inline secondary actions]
+**Learning:** Secondary or inline action flows (like generating/revoking share tokens in history lists) often miss standard UX patterns applied to primary forms, leading to layout shifts during async operations and poor keyboard accessibility.
+**Action:** When auditing list or table views, specifically check inline expansion panels (like share or edit flows) to ensure buttons use layout constraints (`min-w`, `min-h`), visual SVG spinners with `aria-label` for loading states, and explicit `focus-visible` classes for keyboard navigation.
