@@ -69,3 +69,7 @@
 ## 2026-06-25 - [Apply focus-visible pattern to auth page button]
 **Learning:** The Auth page's primary submit button lacked `focus-visible` styles, making keyboard navigation difficult. It's critical to ensure all form buttons consistently implement the application's focus states (`focus-visible:ring-2 focus-visible:ring-offset-2 ...`).
 **Action:** Added proper `focus-visible` utility classes to the auth form button and will remember to audit standalone pages (like auth) when applying global accessibility patterns.
+
+## 2026-07-04 - [Replace text loading state with visual spinner in configuration panels]
+**Learning:** Text-based loading states in configuration panels (like "Loading profile...") look unpolished and can cause slight layout shifts. When replacing them with visual SVG spinners outside of buttons, using `aria-live="polite"` and `aria-busy="true"` on the parent container ensures screen readers announce the state change properly.
+**Action:** When replacing text loading states in non-button frontend elements (like panels or forms), use visual SVG spinners wrapped in a container with `aria-live="polite"` and `aria-busy="true"` to maintain screen reader accessibility while improving visual feedback.
