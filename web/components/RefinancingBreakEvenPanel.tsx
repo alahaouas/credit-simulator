@@ -201,13 +201,15 @@ export default function RefinancingBreakEvenPanel({ result, currency }: Props) {
 
           <button
             onClick={() => setShowTable(s => !s)}
+            aria-expanded={showTable}
+            aria-controls="refinancing-breakeven-table"
             className="text-sm text-gray-500 dark:text-gray-400 underline mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
           >
             {showTable ? t('refi.hide_table') : t('refi.show_table')}
           </button>
 
           {showTable && (
-            <div className="overflow-x-auto rounded-lg border dark:border-gray-700 text-xs max-h-80 overflow-y-auto">
+            <div id="refinancing-breakeven-table" className="overflow-x-auto rounded-lg border dark:border-gray-700 text-xs max-h-80 overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
                   <tr>

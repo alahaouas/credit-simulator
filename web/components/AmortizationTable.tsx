@@ -26,13 +26,15 @@ export default function AmortizationTable({ rows }: { rows: AmortizationRow[] })
     <div className="mt-6">
       <button
         onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-controls="amortization-table"
         className="text-sm font-medium underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
       >
         {open ? t('amort.hide') : t('amort.show')} ({rows.length} {t('stats.months')})
       </button>
 
       {open && (
-        <div className="mt-3 overflow-x-auto rounded-lg border dark:border-gray-700 text-sm">
+        <div id="amortization-table" className="mt-3 overflow-x-auto rounded-lg border dark:border-gray-700 text-sm">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
