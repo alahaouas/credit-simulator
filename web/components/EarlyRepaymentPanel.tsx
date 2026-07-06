@@ -223,13 +223,15 @@ export default function EarlyRepaymentPanel({ result, currency }: Props) {
 
           <button
             onClick={() => setShowSchedule(s => !s)}
+            aria-expanded={showSchedule}
+            aria-controls="early-repayment-schedule-content"
             className="text-sm text-gray-500 dark:text-gray-400 underline mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
           >
             {showSchedule ? t('early.hide_schedule') : t('early.show_schedule')}
           </button>
 
           {showSchedule && (
-            <div className="overflow-x-auto rounded-lg border dark:border-gray-700 text-xs max-h-80 overflow-y-auto">
+            <div id="early-repayment-schedule-content" className="overflow-x-auto rounded-lg border dark:border-gray-700 text-xs max-h-80 overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
                   <tr>

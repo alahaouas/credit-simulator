@@ -116,13 +116,15 @@ export default function PurchaseTaxPanel({ result, currency }: Props) {
 
       <button
         onClick={() => setShowTable(s => !s)}
+        aria-expanded={showTable}
+        aria-controls="tax-table-content"
         className="text-sm text-gray-500 dark:text-gray-400 underline mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
       >
         {showTable ? t('tax.hide_table') : t('tax.show_table')}
       </button>
 
       {showTable && (
-        <>
+        <div id="tax-table-content">
           <div className="overflow-x-auto rounded-lg border dark:border-gray-700 text-xs mb-3">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-800">
@@ -149,7 +151,7 @@ export default function PurchaseTaxPanel({ result, currency }: Props) {
             </table>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 italic">{t('tax.note')}</p>
-        </>
+        </div>
       )}
     </section>
   )

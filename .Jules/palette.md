@@ -69,3 +69,7 @@
 ## 2026-06-25 - [Apply focus-visible pattern to auth page button]
 **Learning:** The Auth page's primary submit button lacked `focus-visible` styles, making keyboard navigation difficult. It's critical to ensure all form buttons consistently implement the application's focus states (`focus-visible:ring-2 focus-visible:ring-offset-2 ...`).
 **Action:** Added proper `focus-visible` utility classes to the auth form button and will remember to audit standalone pages (like auth) when applying global accessibility patterns.
+
+## 2026-07-06 - [Accessible Toggle Buttons for Custom Panels]
+**Learning:** When using standard `<button>` elements to toggle custom content panels (like tables or schedules), the connection between the button and the toggled content is visually apparent but hidden from screen readers.
+**Action:** Always add `aria-expanded={boolean}` and `aria-controls="target-id"` to toggle buttons, and ensure the target content container has a matching `id="target-id"` to communicate state and relationships to assistive technologies.
