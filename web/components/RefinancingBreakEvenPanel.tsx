@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import { OptimizedResult } from '@/lib/api'
 import { useI18n } from '@/lib/i18n'
 
@@ -107,6 +107,7 @@ export default function RefinancingBreakEvenPanel({ result, currency }: Props) {
   const [showTable, setShowTable] = useState(false)
   const [summary, setSummary] = useState<BreakEvenSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const contentId = useId()
 
   function handleCompute() {
     setError(null)
@@ -201,13 +202,15 @@ export default function RefinancingBreakEvenPanel({ result, currency }: Props) {
 
           <button
             onClick={() => setShowTable(s => !s)}
+            aria-expanded={showTable}
+            aria-controls={contentId}
             className="text-sm text-gray-500 dark:text-gray-400 underline mb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
           >
             {showTable ? t('refi.hide_table') : t('refi.show_table')}
           </button>
 
           {showTable && (
-            <div className="overflow-x-auto rounded-lg border dark:border-gray-700 text-xs max-h-80 overflow-y-auto">
+            <div id={contentId} className="overflow-x-auto rounded-lg border dark:border-gray-700 text-xs max-h-80 overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
                   <tr>
