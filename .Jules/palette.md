@@ -73,3 +73,7 @@
 ## 2026-07-04 - [Apply focus-visible and loading states to inline secondary actions]
 **Learning:** Secondary or inline action flows (like generating/revoking share tokens in history lists) often miss standard UX patterns applied to primary forms, leading to layout shifts during async operations and poor keyboard accessibility.
 **Action:** When auditing list or table views, specifically check inline expansion panels (like share or edit flows) to ensure buttons use layout constraints (`min-w`, `min-h`), visual SVG spinners with `aria-label` for loading states, and explicit `focus-visible` classes for keyboard navigation.
+
+## 2026-07-08 - [Add aria-expanded and aria-controls to custom panel toggle buttons]
+**Learning:** Custom UI panels that toggle visibility using a standard `<button>` lack ARIA state, making it impossible for screen reader users to know the panel state or what content the button controls. Use React's `useId()` hook (not hardcoded strings) to generate collision-safe IDs when the component may render multiple times on the same page.
+**Action:** Always add `aria-expanded={boolean}` and `aria-controls={contentId}` to toggle buttons with `const contentId = useId()`, and add `id={contentId}` to the target container. When replacing text loading states in non-button elements, use an SVG spinner with `aria-live="polite"` and `aria-busy="true"` on the wrapper.
