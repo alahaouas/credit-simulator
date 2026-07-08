@@ -69,3 +69,7 @@
 ## 2026-06-25 - [Apply focus-visible pattern to auth page button]
 **Learning:** The Auth page's primary submit button lacked `focus-visible` styles, making keyboard navigation difficult. It's critical to ensure all form buttons consistently implement the application's focus states (`focus-visible:ring-2 focus-visible:ring-offset-2 ...`).
 **Action:** Added proper `focus-visible` utility classes to the auth form button and will remember to audit standalone pages (like auth) when applying global accessibility patterns.
+
+## 2026-07-08 - [Add aria-expanded and aria-controls to custom panel toggle buttons]
+**Learning:** Custom UI panels that toggle visibility using a standard `<button>` lack ARIA state, making it impossible for screen reader users to know the panel state or what content the button controls. Use React's `useId()` hook (not hardcoded strings) to generate collision-safe IDs when the component may render multiple times on the same page.
+**Action:** Always add `aria-expanded={boolean}` and `aria-controls={contentId}` to toggle buttons with `const contentId = useId()`, and add `id={contentId}` to the target container. When replacing text loading states in non-button elements, use an SVG spinner with `aria-live="polite"` and `aria-busy="true"` on the wrapper.
