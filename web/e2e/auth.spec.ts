@@ -26,15 +26,19 @@ test('auth page: submitting an email shows the check-inbox confirmation', async 
 // /auth/callback — PKCE redirect handler
 // ---------------------------------------------------------------------------
 
-test('auth/callback without code redirects to home', async ({ page }) => {
-  // No code param → supabase call is skipped, route redirects to /
+test('auth/callback without code redirects to sign-in with an error', async ({ page }) => {
+  // No code param → nothing to exchange → route redirects to /auth with an
+  // error flag instead of silently landing on / logged out.
   await page.goto('/auth/callback')
-  await expect(page).toHaveURL('/')
+  await expect(page).toHaveURL(/\/auth\?error=callback_failed$/)
+  await expect(page.getByText(/invalid or has expired/i)).toBeVisible()
 })
 
-test('auth/callback with code redirects to home after token exchange', async ({ page }) => {
-  // The server-side Supabase client catches network errors internally, so
-  // the handler redirects to / even when Supabase is unavailable in test env.
+test('auth/callback with an invalid code redirects to sign-in with an error', async ({ page }) => {
+  // No real Supabase in the test env, so the exchange always fails for a
+  // fake code — the handler must redirect to /auth with an error rather
+  // than pretending the sign-in succeeded.
   await page.goto('/auth/callback?code=test-pkce-code-123')
-  await expect(page).toHaveURL('/')
+  await expect(page).toHaveURL(/\/auth\?error=callback_failed$/)
+  await expect(page.getByText(/invalid or has expired/i)).toBeVisible()
 })
