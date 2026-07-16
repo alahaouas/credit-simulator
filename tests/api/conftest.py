@@ -6,7 +6,21 @@ from unittest.mock import MagicMock
 import pytest
 
 from api.db import get_db
+from api.limiter import limiter
 from api.main import app
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Clear slowapi's in-memory rate-limit counters before every test.
+
+    Without this, tests sharing the same TestClient "IP" accumulate
+    request counts across the whole test session and start tripping
+    429s well before a minute of wall-clock time has passed.
+    """
+    limiter.reset()
+    yield
+
 
 USER_ID = "11111111-1111-1111-1111-111111111111"
 SIM_ID = "22222222-2222-2222-2222-222222222222"

@@ -388,7 +388,11 @@ class TestSimulateAll:
             "headers": [], "client": ("testclient", 12345),
         })
 
-        fn_globals = run_simulate_all.__globals__
+        # The @limiter.limit decorator wraps run_simulate_all in a slowapi
+        # function whose own __globals__ point at slowapi's module, not this
+        # route module's. functools.wraps preserves __wrapped__, so unwrap
+        # one level to reach the real function's globals dict.
+        fn_globals = run_simulate_all.__wrapped__.__globals__
         original = fn_globals["optimize"]
         called_with: list[str] = []
 
