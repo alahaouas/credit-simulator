@@ -7,7 +7,7 @@ GET    /api/share/{token}            – fetch a simulation by token (no auth)
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -40,11 +40,11 @@ def generate_share_token(
     row = check.data[0]
     existing = row.get("share_token")
     expires_at = row.get("share_token_expires_at")
-    if existing and (expires_at is None or _parse_iso(expires_at) > datetime.now(timezone.utc)):
+    if existing and (expires_at is None or _parse_iso(expires_at) > datetime.now(UTC)):
         return {"share_token": existing, "expires_at": expires_at}
 
     token = secrets.token_urlsafe(32)
-    new_expiry = (datetime.now(timezone.utc) + SHARE_TOKEN_TTL).isoformat()
+    new_expiry = (datetime.now(UTC) + SHARE_TOKEN_TTL).isoformat()
     resp = (
         db.table("simulations")
         .update({"share_token": token, "share_token_expires_at": new_expiry})
@@ -59,7 +59,7 @@ def generate_share_token(
 
 def _parse_iso(value: str) -> datetime:
     dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 @router.delete("/simulations/{sim_id}/share", status_code=204, summary="Revoke a share token")
@@ -99,6 +99,6 @@ def get_shared_simulation(
 
     row = resp.data[0]
     expires_at = row.pop("share_token_expires_at", None)
-    if expires_at is not None and _parse_iso(expires_at) <= datetime.now(timezone.utc):
+    if expires_at is not None and _parse_iso(expires_at) <= datetime.now(UTC):
         raise HTTPException(status_code=404, detail="Shared simulation not found")
     return row

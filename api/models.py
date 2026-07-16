@@ -12,9 +12,9 @@ from pydantic import BaseModel, field_validator
 
 from credit_simulator.config import MIN_LOAN_DURATION_MONTHS, VALID_PREFERENCES
 
-MAX_LOAN_DURATION_MONTHS = 600  # 50 years — matches the CLI's own sanity cap
-
 from .constants import CURRENCY_DISPLAY_OPTIONS, SUPPORTED_COUNTRIES
+
+MAX_LOAN_DURATION_MONTHS = 600  # 50 years — matches the CLI's own sanity cap
 
 
 class UserPreferencesModel(BaseModel):
