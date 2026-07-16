@@ -377,12 +377,22 @@ class TestSimulateAll:
 
     def test_partial_infeasibility_returns_null_for_failing_preference(self):
         """If optimize raises for one preference, that slot is null; others succeed."""
+        from starlette.requests import Request as StarletteRequest
+
         from api.models import SimulateRequest
         from api.routes.simulate import run_simulate_all
 
         req = SimulateRequest(**BASE)
+        fake_request = StarletteRequest({
+            "type": "http", "method": "POST", "path": "/api/simulate/all",
+            "headers": [], "client": ("testclient", 12345),
+        })
 
-        fn_globals = run_simulate_all.__globals__
+        # The @limiter.limit decorator wraps run_simulate_all in a slowapi
+        # function whose own __globals__ point at slowapi's module, not this
+        # route module's. functools.wraps preserves __wrapped__, so unwrap
+        # one level to reach the real function's globals dict.
+        fn_globals = run_simulate_all.__wrapped__.__globals__
         original = fn_globals["optimize"]
         called_with: list[str] = []
 
@@ -397,7 +407,7 @@ class TestSimulateAll:
             # Call the function directly (same thread) to avoid Python 3.11's
             # LOAD_GLOBAL_MODULE bytecode cache, which ignores __globals__ mutations
             # when the route executes in FastAPI's thread-pool executor.
-            response = run_simulate_all(req=req, user_id=None, db=None)
+            response = run_simulate_all(request=fake_request, req=req, user_id=None, db=None)
         finally:
             fn_globals["optimize"] = original
 

@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from credit_simulator.calculator import build_amortization_schedule
 from credit_simulator.config import VALID_PREFERENCES
@@ -14,10 +15,12 @@ from credit_simulator.resolver import InfeasibleError, UserInputs, check_feasibi
 
 from ..auth import optional_user
 from ..db import get_db
+from ..limiter import limiter
 from ..models import SimulateRequest
 from ..serializers import to_json_safe
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _d(v: str | None) -> Decimal | None:
@@ -25,7 +28,9 @@ def _d(v: str | None) -> Decimal | None:
 
 
 @router.post("/simulate", summary="Run a credit simulation")
+@limiter.limit("20/minute")
 def run_simulate(
+    request: Request,
     req: SimulateRequest,
     user_id: str | None = Depends(optional_user),
     db=Depends(get_db),
@@ -92,18 +97,25 @@ def run_simulate(
         response["schedule"] = None
 
     if user_id is not None and db is not None:
-        db.table("simulations").insert({
-            "user_id": user_id,
-            "inputs": req.model_dump(exclude_none=True, mode="json"),
-            "result": response["result"],
-            "schedule": response.get("schedule"),
-        }).execute()
+        try:
+            db.table("simulations").insert({
+                "user_id": user_id,
+                "inputs": req.model_dump(exclude_none=True, mode="json"),
+                "result": response["result"],
+                "schedule": response.get("schedule"),
+            }).execute()
+        except Exception:
+            # The simulation itself succeeded — don't discard an already-computed
+            # result just because persisting the history row failed.
+            logger.exception("Failed to save simulation history for user %s", user_id)
 
     return response
 
 
 @router.post("/simulate/all", summary="Run all optimization preferences in one call")
+@limiter.limit("10/minute")
 def run_simulate_all(
+    request: Request,
     req: SimulateRequest,
     user_id: str | None = Depends(optional_user),
     db=Depends(get_db),
@@ -156,7 +168,8 @@ def run_simulate_all(
 
 
 @router.post("/simulate/heatmap", summary="Build a 2D heatmap grid for the optimizer search space")
-def run_heatmap(req: SimulateRequest) -> dict:
+@limiter.limit("10/minute")
+def run_heatmap(request: Request, req: SimulateRequest) -> dict:
     """Return a subsampled 2D grid of down_payment × duration → metrics.
 
     Each cell contains ``total_cost`` and ``monthly_installment`` (decimal

@@ -28,6 +28,8 @@ from .calculator import build_amortization_schedule
 from .config import (
     DEFAULT_COUNTRY,
     DEFAULT_LOAN_DURATION_MONTHS,
+    MAX_MONETARY_VALUE,
+    MAX_RATIO_VALUE,
     SWEET_SPOT_OPPORTUNITY_COST_RATE,
     VALID_PREFERENCES,
 )
@@ -333,6 +335,7 @@ def _prompt_decimal(
     allow_zero: bool = False,
     hint: str = "",
     help_text: str = "",
+    max_value: Decimal | None = None,
 ) -> Decimal:
     """Prompt for a Decimal value.  Type '?' for inline help."""
     display = f"{prompt} [{hint}]" if hint else prompt
@@ -352,6 +355,9 @@ def _prompt_decimal(
         if allow_zero and value < 0:
             err_console.print(_("error.must_be_nonneg"))
             continue
+        if max_value is not None and value > max_value:
+            err_console.print(_("error.must_be_at_most", max_val=max_value))
+            continue
         return value
 
 
@@ -361,6 +367,7 @@ def _prompt_decimal_with_default(
     *,
     positive: bool = True,
     allow_zero: bool = False,
+    max_value: Decimal | None = None,
 ) -> Decimal:
     """Prompt for a Decimal, accepting Enter to keep *default*."""
     while True:
@@ -379,6 +386,9 @@ def _prompt_decimal_with_default(
             continue
         if allow_zero and value < 0:
             err_console.print(_("error.must_be_nonneg"))
+            continue
+        if max_value is not None and value > max_value:
+            err_console.print(_("error.must_be_at_most", max_val=max_value))
             continue
         return value
 
@@ -525,12 +535,12 @@ def _update_profile_manual(store: SessionProfileStore) -> None:
         console.print(_("profile.updated", country=country, quality="", field="taxes_financeable", value=raw))
 
     elif field == "min_down_payment_ratio":
-        value = _prompt_decimal(_("prompt.new_min_dp"), allow_zero=True, positive=False)
+        value = _prompt_decimal(_("prompt.new_min_dp"), allow_zero=True, positive=False, max_value=MAX_RATIO_VALUE)
         store.set_field(country, "min_down_payment_ratio", value)
         console.print(_("profile.updated", country=country, quality="", field="min_down_payment_ratio", value=_fmt_pct(value)))
 
     elif field == "max_debt_ratio":
-        value = _prompt_decimal(_("prompt.new_max_debt"), allow_zero=False, positive=True)
+        value = _prompt_decimal(_("prompt.new_max_debt"), allow_zero=False, positive=True, max_value=MAX_RATIO_VALUE)
         store.set_field(country, "max_debt_ratio", value)
         console.print(_("profile.updated", country=country, quality="", field="max_debt_ratio", value=_fmt_pct(value)))
 
@@ -677,33 +687,33 @@ def interactive_loop(inputs: UserInputs, store: SessionProfileStore) -> None:
 def _apply_update(field: str, inputs: UserInputs, store: SessionProfileStore) -> None:
     try:
         if field == "property_price":
-            inputs.property_price = _prompt_decimal(_("prompt.new_property_price"), positive=True)
+            inputs.property_price = _prompt_decimal(_("prompt.new_property_price"), positive=True, max_value=MAX_MONETARY_VALUE)
         elif field == "country":
             inputs.country = _prompt_country()
         elif field == "profile_quality":
             inputs.profile_quality = _prompt_quality()  # type: ignore[assignment]
         elif field == "purchase_taxes":
-            inputs.purchase_taxes = _prompt_decimal(_("prompt.new_taxes"), allow_zero=True, positive=False)
+            inputs.purchase_taxes = _prompt_decimal(_("prompt.new_taxes"), allow_zero=True, positive=False, max_value=MAX_MONETARY_VALUE)
         elif field == "annual_interest_rate":
             inputs.annual_interest_rate = _prompt_decimal(_("prompt.new_rate_direct"), positive=True)
         elif field == "insurance_rate":
             inputs.insurance_rate = _prompt_decimal(_("prompt.new_insurance_direct"), allow_zero=True, positive=False)
         elif field == "min_down_payment_ratio":
-            inputs.min_down_payment_ratio = _prompt_decimal(_("prompt.new_min_dp_direct"), allow_zero=True, positive=False)
+            inputs.min_down_payment_ratio = _prompt_decimal(_("prompt.new_min_dp_direct"), allow_zero=True, positive=False, max_value=MAX_RATIO_VALUE)
         elif field == "max_loan_duration_months":
             inputs.max_loan_duration_months = _prompt_int(_("prompt.new_max_dur"), min_val=12)
         elif field == "fixed_loan_duration_months":
             inputs.fixed_loan_duration_months = _prompt_int(_("prompt.new_max_dur_direct"), min_val=12)
         elif field == "monthly_net_income":
-            inputs.monthly_net_income = _prompt_decimal(_("prompt.new_income"), positive=True)
+            inputs.monthly_net_income = _prompt_decimal(_("prompt.new_income"), positive=True, max_value=MAX_MONETARY_VALUE)
         elif field == "available_savings":
-            inputs.available_savings = _prompt_decimal(_("prompt.new_savings"), allow_zero=True, positive=False)
+            inputs.available_savings = _prompt_decimal(_("prompt.new_savings"), allow_zero=True, positive=False, max_value=MAX_MONETARY_VALUE)
         elif field == "preferred_down_payment":
-            inputs.preferred_down_payment = _prompt_decimal(_("prompt.new_preferred_dp"), allow_zero=True, positive=False)
+            inputs.preferred_down_payment = _prompt_decimal(_("prompt.new_preferred_dp"), allow_zero=True, positive=False, max_value=MAX_MONETARY_VALUE)
         elif field == "max_debt_ratio":
-            inputs.max_debt_ratio = _prompt_decimal(_("prompt.new_max_debt_direct"), allow_zero=False, positive=True)
+            inputs.max_debt_ratio = _prompt_decimal(_("prompt.new_max_debt_direct"), allow_zero=False, positive=True, max_value=MAX_RATIO_VALUE)
         elif field == "max_monthly_payment":
-            inputs.max_monthly_payment = _prompt_decimal(_("prompt.new_max_payment"), positive=True)
+            inputs.max_monthly_payment = _prompt_decimal(_("prompt.new_max_payment"), positive=True, max_value=MAX_MONETARY_VALUE)
         elif field == "optimization_preference":
             inputs.optimization_preference = _prompt_preference()
         elif field == "opportunity_cost_rate":
@@ -823,39 +833,57 @@ def main(
     prefs = preferences.load()
     preferences.apply_to_store(prefs, store)
 
-    def _parse_opt(s: str | None, name: str) -> Decimal | None:
+    def _parse_opt(
+        s: str | None,
+        name: str,
+        *,
+        positive: bool = True,
+        allow_zero: bool = False,
+        max_value: Decimal | None = None,
+    ) -> Decimal | None:
         if s is None:
             return None
         try:
-            return Decimal(s.replace(",", ".").replace(" ", ""))
+            value = Decimal(s.replace(",", ".").replace(" ", ""))
         except InvalidOperation:
             err_console.print(_("error.invalid_cli_value", name=name, val=s))
             sys.exit(1)
+        if positive and value <= 0 and not (allow_zero and value == 0):
+            err_console.print(_("error.must_be_positive") if not allow_zero else _("error.must_be_nonneg"))
+            sys.exit(1)
+        if allow_zero and value < 0:
+            err_console.print(_("error.must_be_nonneg"))
+            sys.exit(1)
+        if max_value is not None and value > max_value:
+            err_console.print(_("error.must_be_at_most", max_val=max_value))
+            sys.exit(1)
+        return value
 
     # --- Stage 1: mandatory inputs ---
-    pp = _parse_opt(property_price, "property-price")
+    pp = _parse_opt(property_price, "property-price", positive=True, max_value=MAX_MONETARY_VALUE)
     if pp is None:
         pp = _prompt_decimal(
             _("prompt.property_price"),
             positive=True,
             help_text=_("help.property_price"),
+            max_value=MAX_MONETARY_VALUE,
         )
 
-    inc = _parse_opt(income, "income")
+    inc = _parse_opt(income, "income", positive=True, max_value=MAX_MONETARY_VALUE)
     if inc is None:
         saved_inc = preferences.saved_decimal(prefs, "monthly_net_income")
         if saved_inc is not None:
-            inc = _prompt_decimal_with_default(_("prompt.income"), saved_inc, positive=True)
+            inc = _prompt_decimal_with_default(_("prompt.income"), saved_inc, positive=True, max_value=MAX_MONETARY_VALUE)
         else:
-            inc = _prompt_decimal(_("prompt.income"), positive=True, help_text=_("help.income"))
+            inc = _prompt_decimal(_("prompt.income"), positive=True, help_text=_("help.income"), max_value=MAX_MONETARY_VALUE)
 
-    sav = _parse_opt(savings, "savings")
+    sav = _parse_opt(savings, "savings", positive=False, allow_zero=True, max_value=MAX_MONETARY_VALUE)
     if sav is None:
         saved_sav = preferences.saved_decimal(prefs, "available_savings")
         if saved_sav is not None:
-            sav = _prompt_decimal_with_default(_("prompt.savings"), saved_sav, allow_zero=True, positive=False)
+            sav = _prompt_decimal_with_default(_("prompt.savings"), saved_sav, allow_zero=True, positive=False, max_value=MAX_MONETARY_VALUE)
         else:
-            sav = _prompt_decimal(_("prompt.savings"), allow_zero=True, positive=False, help_text=_("help.savings"))
+            sav = _prompt_decimal(_("prompt.savings"), allow_zero=True, positive=False, help_text=_("help.savings"), max_value=MAX_MONETARY_VALUE)
 
     # --- Profile summary + two-stage gate ---
     country_code = (country or DEFAULT_COUNTRY).upper()
@@ -885,9 +913,11 @@ def main(
             sys.exit(1)
 
     # --- Stage 2: optional inputs (only asked in detailed mode) ---
-    pt = _parse_opt(purchase_taxes, "purchase-taxes")
-    preferred_dp: Decimal | None = _parse_opt(down_payment, "down-payment")
-    opp_rate_decimal = _parse_opt(opp_rate, "opp-rate")
+    pt = _parse_opt(purchase_taxes, "purchase-taxes", positive=False, allow_zero=True, max_value=MAX_MONETARY_VALUE)
+    preferred_dp: Decimal | None = _parse_opt(
+        down_payment, "down-payment", positive=False, allow_zero=True, max_value=MAX_MONETARY_VALUE
+    )
+    opp_rate_decimal = _parse_opt(opp_rate, "opp-rate", positive=True)
 
     if not use_defaults:
         # Purchase taxes with inline estimate hint

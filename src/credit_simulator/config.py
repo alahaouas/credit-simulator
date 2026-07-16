@@ -53,6 +53,7 @@ FETCH_TIMEOUT_SECONDS: int = 10       # HTTP request timeout for online rate fet
 # ── Input validation bounds ──────────────────────────────────────────────────
 
 MAX_MONETARY_VALUE = Decimal("1_000_000_000")   # 1 billion — sanity cap on amounts
+MAX_RATIO_VALUE = Decimal("1")                  # sanity cap on ratio inputs (100%)
 MIN_LOAN_DURATION_MONTHS: int = 12              # minimum accepted loan duration
 
 # ── Numeric convenience ───────────────────────────────────────────────────────

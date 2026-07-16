@@ -6,11 +6,12 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import {
   listSimulations, deleteSimulation, getSimulation, updateSimulationMeta,
-  getSimulationStats, generateShareToken, revokeShareToken,
+  getSimulationStats,
   ApiError, SimulateRequest, SimulationStats, SavedSimulation,
 } from '@/lib/api'
 import { DEFAULT_COUNTRY, SESSION_RESULT_KEY, SESSION_CLONE_KEY } from '@/lib/constants'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
+import { useShareToken } from '@/hooks/useShareToken'
 import { LocaleToggle } from '@/components/LocaleToggle'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
 
@@ -77,55 +78,19 @@ export default function HistoryPage() {
   const [saving, setSaving] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [sharing, setSharing] = useState<string | null>(null)
-  const [shareTokens, setShareTokens] = useState<Record<string, string | null>>({})
-  const [shareLoading, setShareLoading] = useState(false)
-  const [copied, setCopied] = useState(false)
   const [search, setSearch] = useState('')
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  function shareUrl(token: string) {
-    return `${window.location.origin}/share/${token}`
-  }
-
-  async function handleGenerateToken(id: string) {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    setShareLoading(true)
-    try {
-      const token = await generateShareToken(id, session.access_token)
-      setShareTokens(prev => ({ ...prev, [id]: token }))
-      setItems(prev => prev.map(s => s.id === id ? { ...s, share_token: token } : s))
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : t('error.generic'))
-    } finally {
-      setShareLoading(false)
-    }
-  }
-
-  async function handleRevokeToken(id: string) {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    setShareLoading(true)
-    try {
-      await revokeShareToken(id, session.access_token)
-      setShareTokens(prev => ({ ...prev, [id]: null }))
-      setItems(prev => prev.map(s => s.id === id ? { ...s, share_token: null } : s))
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : t('error.generic'))
-    } finally {
-      setShareLoading(false)
-    }
-  }
-
-  async function handleCopy(token: string) {
-    await navigator.clipboard.writeText(shareUrl(token))
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+  const {
+    shareTokens, shareLoading, copied, shareUrl,
+    generateToken: handleGenerateToken, revokeToken: handleRevokeToken, copy: handleCopy,
+  } = useShareToken({
+    genericErrorMessage: t('error.generic'),
+    onTokenChange: (id, token) => setItems(prev => prev.map(s => s.id === id ? { ...s, share_token: token } : s)),
+    onError: setError,
+  })
 
   function toggleSelect(id: string) {
     setSelected(prev => {

@@ -11,6 +11,12 @@
  *   RESEND_API_KEY   — Resend API key for transactional email
  *   FRED_API_KEY     — FRED API key (required for US rate fetch only)
  *   RESEND_FROM      — Sender address, e.g. "alerts@yourdomain.com"
+ *   CRON_SECRET      — Shared secret; the pg_cron job must send it as the
+ *                      `x-cron-secret` header. Requests without a matching
+ *                      header are rejected with 401. This function is
+ *                      reachable by anyone holding the public anon key, so
+ *                      without this check it can be invoked repeatedly to
+ *                      spam users with emails and hammer upstream rate APIs.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -20,6 +26,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
 const FRED_API_KEY = Deno.env.get('FRED_API_KEY') ?? ''
 const RESEND_FROM = Deno.env.get('RESEND_FROM') ?? 'alerts@creditsimulator.app'
+const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 
 const ECB_COUNTRIES = new Set(['FR', 'DE', 'ES', 'IT', 'PT'])
 
@@ -107,7 +114,7 @@ async function sendEmail(
   }
   const targetPct = (targetRate * 100).toFixed(2)
   const currentPct = (currentRate * 100).toFixed(2)
-  await fetch('https://api.resend.com/emails', {
+  const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -127,13 +134,25 @@ async function sendEmail(
       ].join('\n'),
     }),
   })
+  if (!res.ok) {
+    throw new Error(`Resend API error ${res.status}: ${await res.text()}`)
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Handler
 // ---------------------------------------------------------------------------
 
-Deno.serve(async (_req: Request) => {
+Deno.serve(async (req: Request) => {
+  // Fail closed: if CRON_SECRET isn't configured, reject every request
+  // rather than silently allowing unauthenticated invocations through.
+  if (!CRON_SECRET || req.headers.get('x-cron-secret') !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
   const { data: alerts, error } = await supabase
@@ -163,20 +182,31 @@ Deno.serve(async (_req: Request) => {
 
   let triggered = 0
   for (const alert of alerts) {
-    const currentRate = rates[alert.country]
-    if (currentRate === null) continue
-    if (currentRate > parseFloat(alert.target_rate)) continue
+    try {
+      const currentRate = rates[alert.country]
+      if (currentRate === null) continue
 
-    const { data: { user } } = await supabase.auth.admin.getUserById(alert.user_id)
-    if (!user?.email) continue
+      const targetRate = parseFloat(alert.target_rate)
+      if (!Number.isFinite(targetRate)) {
+        console.error(`Invalid target_rate for alert ${alert.id}: ${alert.target_rate}`)
+        continue
+      }
+      if (currentRate > targetRate) continue
 
-    await sendEmail(user.email, alert.country, parseFloat(alert.target_rate), currentRate)
-    await supabase
-      .from('rate_alerts')
-      .update({ last_notified_at: new Date().toISOString() })
-      .eq('id', alert.id)
+      const { data: { user } } = await supabase.auth.admin.getUserById(alert.user_id)
+      if (!user?.email) continue
 
-    triggered++
+      await sendEmail(user.email, alert.country, targetRate, currentRate)
+      await supabase
+        .from('rate_alerts')
+        .update({ last_notified_at: new Date().toISOString() })
+        .eq('id', alert.id)
+
+      triggered++
+    } catch (err) {
+      // Isolate failures per-alert so one bad send doesn't abort the batch.
+      console.error(`Failed to process alert ${alert.id}:`, err)
+    }
   }
 
   return new Response(JSON.stringify({ triggered, checked: alerts.length }), {
