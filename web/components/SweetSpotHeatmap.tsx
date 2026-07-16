@@ -126,7 +126,7 @@ export default function SweetSpotHeatmap({ result, inputs, currency }: Props) {
           <button
             key={m}
             onClick={() => setMetric(m)}
-            className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+            className={`px-3 py-1 text-xs rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900 ${
               metric === m
                 ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
                 : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
