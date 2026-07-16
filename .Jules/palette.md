@@ -77,3 +77,7 @@
 ## 2026-07-08 - [Add aria-expanded and aria-controls to custom panel toggle buttons]
 **Learning:** Custom UI panels that toggle visibility using a standard `<button>` lack ARIA state, making it impossible for screen reader users to know the panel state or what content the button controls. Use React's `useId()` hook (not hardcoded strings) to generate collision-safe IDs when the component may render multiple times on the same page.
 **Action:** Always add `aria-expanded={boolean}` and `aria-controls={contentId}` to toggle buttons with `const contentId = useId()`, and add `id={contentId}` to the target container. When replacing text loading states in non-button elements, use an SVG spinner with `aria-live="polite"` and `aria-busy="true"` on the wrapper.
+
+## 2026-07-16 - [Add focus-visible pattern to dynamic state toggles]
+**Learning:** Dynamic toggle buttons (like metric selectors that map over an array of states) can easily omit the global `focus-visible` classes if the base string isn't careful, breaking keyboard navigation for those interactive elements.
+**Action:** Always verify that mapped or dynamic buttons still include the standard `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2` classes in their shared className base.
