@@ -91,7 +91,7 @@ export default function WhatIfPanel({ original, originalRequest, currency }: Pro
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [tweaks])
+  }, [tweaks, originalRequest, origRate, origDuration, origDownPayment, t])
 
   const ref = result.plan
   const twk = tweaked?.result.plan

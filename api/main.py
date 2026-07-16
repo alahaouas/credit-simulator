@@ -5,8 +5,11 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from .constants import DEFAULT_CORS_ORIGINS
+from .limiter import limiter
 from .routes import alerts, api_keys, history, preferences, profiles, share, simulate
 
 app = FastAPI(
@@ -18,7 +21,16 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 _extra = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+if "*" in _extra:
+    raise RuntimeError(
+        "ALLOWED_ORIGINS must not contain '*' — this API uses allow_credentials=True, "
+        "and a wildcard origin combined with credentials is invalid per the CORS spec "
+        "and rejected by browsers. List explicit origins instead."
+    )
 _origins = list(DEFAULT_CORS_ORIGINS) + _extra
 
 app.add_middleware(

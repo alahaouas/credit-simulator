@@ -30,13 +30,20 @@ function fmt(val: string, currency = '') {
   return `${currency}${parseFloat(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
+function csvField(value: string | number): string {
+  const s = String(value)
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
 function exportScheduleToCsv(rows: SimulateResponse['schedule'], currency: string) {
   if (!rows) return
   const headers = ['Period', 'Opening Balance', 'Monthly Installment', 'Principal', 'Interest', 'Insurance', 'Closing Balance']
   const lines = [
     headers.join(','),
     ...rows.map(r =>
-      [r.period, r.opening_balance, r.monthly_installment, r.principal_component, r.interest_component, r.insurance_component, r.closing_balance].join(',')
+      [r.period, r.opening_balance, r.monthly_installment, r.principal_component, r.interest_component, r.insurance_component, r.closing_balance]
+        .map(csvField)
+        .join(',')
     ),
   ]
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
@@ -68,11 +75,17 @@ export default function ResultsPage() {
 
   useEffect(() => {
     const raw = sessionStorage.getItem(SESSION_RESULT_KEY)
-    if (raw) setData(JSON.parse(raw))
+    if (raw) {
+      try { setData(JSON.parse(raw)) } catch { /* ignore malformed */ }
+    }
     const rawInputs = sessionStorage.getItem(SESSION_INPUTS_KEY)
-    if (rawInputs) setInputs(JSON.parse(rawInputs))
+    if (rawInputs) {
+      try { setInputs(JSON.parse(rawInputs)) } catch { /* ignore malformed */ }
+    }
     const rawAll = sessionStorage.getItem(SESSION_ALL_PREFS_KEY)
-    if (rawAll) setAllPrefs(JSON.parse(rawAll))
+    if (rawAll) {
+      try { setAllPrefs(JSON.parse(rawAll)) } catch { /* ignore malformed */ }
+    }
   }, [])
 
   async function handleCompareAll() {

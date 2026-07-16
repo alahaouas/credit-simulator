@@ -71,6 +71,7 @@ const TRANSLATIONS = {
     'auth.email_placeholder': 'you@example.com',
     'auth.send': 'Send magic link',
     'auth.check_inbox': 'Check your inbox for the sign-in link.',
+    'auth.callback_failed': 'Sign-in link is invalid or has expired. Please request a new one.',
     // Simulate page
     'simulate.title': 'Run a simulation',
     'simulate.subtitle': 'Enter your financial details to find the optimal loan plan.',
@@ -416,6 +417,7 @@ const TRANSLATIONS = {
     'auth.email_placeholder': 'vous@exemple.com',
     'auth.send': 'Envoyer le lien magique',
     'auth.check_inbox': 'Vérifiez votre boîte mail pour le lien de connexion.',
+    'auth.callback_failed': 'Le lien de connexion est invalide ou a expiré. Veuillez en demander un nouveau.',
     // Simulate page
     'simulate.title': 'Lancer une simulation',
     'simulate.subtitle': 'Saisissez vos détails financiers pour trouver le plan de prêt optimal.',

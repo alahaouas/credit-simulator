@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
+import tempfile
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -35,6 +37,22 @@ _DECIMAL_FIELDS = (
 )
 # Int fields (stored as int, None if not set)
 _INT_FIELDS = ("max_loan_duration_months", "fixed_loan_duration_months")
+
+
+def _atomic_write_json(data: dict) -> None:
+    """Write *data* to _PREFS_FILE atomically (temp file + rename).
+
+    Prevents a corrupted preferences.json if the process is interrupted mid-write.
+    """
+    fd, tmp_path = tempfile.mkstemp(dir=_PREFS_DIR, prefix=".preferences-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp_path, _PREFS_FILE)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.remove(tmp_path)
+        raise
 
 
 def load() -> dict:
@@ -77,12 +95,10 @@ def save(inputs: UserInputs, store: SessionProfileStore) -> None:
 
     manual_rates = [[c, q] for c, q in store._manual_rate_set]
 
-    with _PREFS_FILE.open("w", encoding="utf-8") as f:
-        json.dump(
-            {"version": _VERSION, "inputs": inp,
-             "profile_overrides": profile_overrides, "manual_rates": manual_rates},
-            f, indent=2,
-        )
+    _atomic_write_json({
+        "version": _VERSION, "inputs": inp,
+        "profile_overrides": profile_overrides, "manual_rates": manual_rates,
+    })
 
 
 def save_overrides_only(store: SessionProfileStore) -> None:
@@ -103,16 +119,12 @@ def save_overrides_only(store: SessionProfileStore) -> None:
 
     manual_rates = [[c, q] for c, q in store._manual_rate_set]
 
-    with _PREFS_FILE.open("w", encoding="utf-8") as f:
-        json.dump(
-            {
-                "version": _VERSION,
-                "inputs": existing.get("inputs", {}),
-                "profile_overrides": profile_overrides,
-                "manual_rates": manual_rates,
-            },
-            f, indent=2,
-        )
+    _atomic_write_json({
+        "version": _VERSION,
+        "inputs": existing.get("inputs", {}),
+        "profile_overrides": profile_overrides,
+        "manual_rates": manual_rates,
+    })
 
 
 def apply_to_inputs(prefs: dict, inputs: UserInputs) -> None:

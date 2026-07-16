@@ -43,7 +43,12 @@ function buildGrid(cells: HeatmapCell[]) {
 function loadCached(): HeatmapResponse | null {
   if (typeof window === 'undefined') return null
   const raw = sessionStorage.getItem(SESSION_HEATMAP_KEY)
-  return raw ? JSON.parse(raw) : null
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
 }
 
 export default function SweetSpotHeatmap({ result, inputs, currency }: Props) {

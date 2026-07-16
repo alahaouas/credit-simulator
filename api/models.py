@@ -10,7 +10,9 @@ from decimal import Decimal, InvalidOperation
 
 from pydantic import BaseModel, field_validator
 
-from credit_simulator.config import VALID_PREFERENCES
+from credit_simulator.config import MIN_LOAN_DURATION_MONTHS, VALID_PREFERENCES
+
+MAX_LOAN_DURATION_MONTHS = 600  # 50 years — matches the CLI's own sanity cap
 
 from .constants import CURRENCY_DISPLAY_OPTIONS, SUPPORTED_COUNTRIES
 
@@ -156,6 +158,21 @@ class SimulateRequest(BaseModel):
         if d < 0:
             raise ValueError(f"must be >= 0, got {v!r}")
         return str(v)
+
+    @field_validator("max_loan_duration_months", "fixed_loan_duration_months", mode="before")
+    @classmethod
+    def validate_loan_duration_months(cls, v: object) -> int | None:
+        if v is None:
+            return None
+        try:
+            i = int(v)
+        except (TypeError, ValueError) as err:
+            raise ValueError(f"cannot parse {v!r} as an integer") from err
+        if not (MIN_LOAN_DURATION_MONTHS <= i <= MAX_LOAN_DURATION_MONTHS):
+            raise ValueError(
+                f"must be between {MIN_LOAN_DURATION_MONTHS} and {MAX_LOAN_DURATION_MONTHS}, got {i}"
+            )
+        return i
 
     @field_validator("profile_quality", mode="before")
     @classmethod

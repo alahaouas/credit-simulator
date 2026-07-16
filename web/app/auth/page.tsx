@@ -1,16 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useI18n } from '@/lib/i18n'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
 
-export default function AuthPage() {
+function AuthPageInner() {
   const { t } = useI18n()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'callback_failed') {
+      setError(t('auth.callback_failed'))
+    }
+  }, [searchParams, t])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -74,5 +82,13 @@ export default function AuthPage() {
         </button>
       </form>
     </main>
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={null}>
+      <AuthPageInner />
+    </Suspense>
   )
 }

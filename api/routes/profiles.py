@@ -1,10 +1,12 @@
 """GET /api/profiles, GET /api/profiles/{country}, POST /api/profiles/{country}/refresh (C1, C3)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from credit_simulator.fetcher import FetchError, fetch_rate
 from credit_simulator.profiles import SUPPORTED_COUNTRIES, get_profile
+
+from ..limiter import limiter
 
 router = APIRouter()
 
@@ -46,7 +48,8 @@ def get_country_profile(country: str) -> dict:
 
 
 @router.post("/profiles/{country}/refresh", summary="Fetch the latest live mortgage rate for a country")
-def refresh_country_rate(country: str) -> dict:
+@limiter.limit("5/minute")
+def refresh_country_rate(request: Request, country: str) -> dict:
     """Fetch the current average annual rate from the relevant online source.
 
     Supported: FR, DE, ES, IT, PT (ECB) | GB (Bank of England) | US (FRED).

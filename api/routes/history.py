@@ -1,6 +1,7 @@
 """GET/DELETE /api/simulations — simulation history for authenticated users."""
 from __future__ import annotations
 
+import logging
 import re
 from decimal import Decimal, InvalidOperation
 
@@ -11,6 +12,7 @@ from ..db import get_db
 from ..models import SimulationMetaUpdate
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _to_decimal(value: object) -> Decimal:
@@ -19,6 +21,7 @@ def _to_decimal(value: object) -> Decimal:
     try:
         return Decimal(str(value))
     except (InvalidOperation, ValueError):
+        logger.warning("simulation_stats: could not parse %r as Decimal, treating as 0", value)
         return Decimal(0)
 
 
@@ -28,6 +31,7 @@ def _to_int(value: object) -> int:
     try:
         return int(value)
     except (TypeError, ValueError):
+        logger.warning("simulation_stats: could not parse %r as int, treating as 0", value)
         return 0
 
 
@@ -83,7 +87,7 @@ def list_simulations(
     cursor: str | None = Query(None),
     limit: int = Query(20, ge=1, le=100),
 ) -> dict:
-    safe = re.sub(r"[%{},]", "", search.strip()) if search else None
+    safe = re.sub(r"[^\w\s-]", "", search.strip()) if search else None
     query = (
         db.table("simulations")
         .select("id,created_at,inputs,result,name,tags")

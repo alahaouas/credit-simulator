@@ -356,6 +356,11 @@ def analyze_sweet_spot(
         if _min_ltv <= _t.ltv_max:
             _min_rate_delta = _t.rate_delta
             break
+    else:
+        # LTV exceeds every defined tier — fall back to the worst (last) tier,
+        # matching ResolvedParams.rate_for_ltv's fallback behavior.
+        if params.ltv_rate_tiers:
+            _min_rate_delta = params.ltv_rate_tiers[-1].rate_delta
     effective_floor_dp = min_dp
     if _min_rate_delta > ZERO:
         _non_surcharge = [t for t in params.ltv_rate_tiers if t.rate_delta <= ZERO]

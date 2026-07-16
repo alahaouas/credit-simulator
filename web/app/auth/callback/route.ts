@@ -7,8 +7,13 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createServerSupabaseClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error) {
+      return NextResponse.redirect(`${origin}/`)
+    }
   }
 
-  return NextResponse.redirect(`${origin}/`)
+  // Missing or invalid/expired code — send the user back to sign-in with an
+  // error flag instead of silently landing on the home page logged out.
+  return NextResponse.redirect(`${origin}/auth?error=callback_failed`)
 }
