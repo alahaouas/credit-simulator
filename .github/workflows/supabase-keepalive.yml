@@ -1,5 +1,7 @@
 name: Supabase Keep-Alive
 
+permissions: {}
+
 on:
   schedule:
     # Every day at 06:16 UTC
