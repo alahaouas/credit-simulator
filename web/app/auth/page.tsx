@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { createClient, withAuthTimeout } from '@/lib/supabase'
 import { useI18n } from '@/lib/i18n'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
 
@@ -26,12 +26,16 @@ function AuthPageInner() {
     setLoading(true)
     const supabase = createClient()
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${location.origin}/auth/callback` },
-      })
+      const { error } = await withAuthTimeout(
+        supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: `${location.origin}/auth/callback` },
+        })
+      )
       if (error) setError(error.message)
       else setSubmitted(true)
+    } catch {
+      setError(t('auth.timeout_error'))
     } finally {
       setLoading(false)
     }
