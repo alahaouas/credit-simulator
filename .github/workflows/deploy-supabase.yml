@@ -34,9 +34,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Deploy exactly the commit that passed CI, not whatever main has
-          # moved to by the time this job starts.
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # Always check out main explicitly rather than any workflow_run
+          # event-derived ref (e.g. head_sha). CI also runs on pull_request,
+          # so the triggering run could in principle originate from a PR —
+          # checking out its commit here, in a job that holds production
+          # secrets, is exactly the "pwn request" pattern GitHub Security
+          # Lab warns about. This workflow only ever needs to deploy main,
+          # so there's no reason to trust anything from the event payload
+          # for the checkout ref.
+          ref: main
 
       - uses: supabase/setup-cli@v3
         with:
