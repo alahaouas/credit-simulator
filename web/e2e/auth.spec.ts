@@ -22,6 +22,41 @@ test('auth page: submitting an email shows the check-inbox confirmation', async 
   await expect(page.getByText(/Check your inbox/i)).toBeVisible()
 })
 
+test('auth page: retries once and succeeds after a transient network failure', async ({ page }) => {
+  let attempts = 0
+  await page.route('**/auth/v1/otp*', async (route) => {
+    attempts++
+    if (attempts === 1) {
+      await route.abort('failed')
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '{}',
+    })
+  })
+  await page.goto('/auth')
+
+  await page.getByPlaceholder('you@example.com').fill('user@example.com')
+  await page.getByRole('button', { name: 'Send magic link' }).click()
+
+  await expect(page.getByText(/Check your inbox/i)).toBeVisible()
+  expect(attempts).toBe(2)
+})
+
+test('auth page: shows a timeout error after both attempts fail', async ({ page }) => {
+  await page.route('**/auth/v1/otp*', async (route) => {
+    await route.abort('failed')
+  })
+  await page.goto('/auth')
+
+  await page.getByPlaceholder('you@example.com').fill('user@example.com')
+  await page.getByRole('button', { name: 'Send magic link' }).click()
+
+  await expect(page.getByText(/took too long/i)).toBeVisible()
+})
+
 // ---------------------------------------------------------------------------
 // /auth/callback — PKCE redirect handler
 // ---------------------------------------------------------------------------
