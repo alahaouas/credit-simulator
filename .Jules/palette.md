@@ -81,3 +81,7 @@
 ## 2026-07-16 - [Add focus-visible pattern to dynamic state toggles]
 **Learning:** Dynamic toggle buttons (like metric selectors that map over an array of states) can easily omit the global `focus-visible` classes if the base string isn't careful, breaking keyboard navigation for those interactive elements.
 **Action:** Always verify that mapped or dynamic buttons still include the standard `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2` classes in their shared className base.
+
+## 2026-07-20 - [Add focus-visible pattern to list view actions]
+**Learning:** Secondary actions outside of main lists (like "New simulation" header links or "Load more" pagination buttons) can be overlooked when applying global focus-visible fixes to a page, breaking keyboard navigation for those interactive elements.
+**Action:** When auditing list or table views, specifically check header actions and footer pagination controls to ensure they implement the application's focus states (`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400`).

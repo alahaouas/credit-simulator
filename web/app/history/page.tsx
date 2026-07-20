@@ -255,7 +255,7 @@ export default function HistoryPage() {
               {t('history.compare')} ({selected.size})
             </Link>
           )}
-          <Link href="/simulate" className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <Link href="/simulate" className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400">
             {t('history.new')}
           </Link>
         </div>
@@ -489,7 +489,7 @@ export default function HistoryPage() {
               onClick={handleLoadMore}
               disabled={loadingMore}
               aria-label={loadingMore ? t('aria.loading') : t('history.load_more')}
-              className="text-sm border dark:border-gray-700 rounded-lg px-6 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-40 min-h-[38px] inline-flex items-center justify-center min-w-[120px]"
+              className="text-sm border dark:border-gray-700 rounded-lg px-6 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-40 min-h-[38px] inline-flex items-center justify-center min-w-[120px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
             >
               {loadingMore ? (
                 <svg aria-hidden="true" className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
