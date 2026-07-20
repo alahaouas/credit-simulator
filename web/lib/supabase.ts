@@ -21,3 +21,18 @@ export function withAuthTimeout<T>(promise: Promise<T>, ms = AUTH_TIMEOUT_MS): P
     )
   })
 }
+
+// A stalled first attempt is more often a transient client-side blip (cold
+// DNS/TLS, a flaky connection) than a genuinely unreachable backend — retry
+// once before giving up, so the caller's timeout handling only fires for a
+// request that fails twice in a row.
+export async function signInWithMagicLink(email: string, emailRedirectTo: string) {
+  const supabase = createClient()
+  const attempt = () =>
+    withAuthTimeout(supabase.auth.signInWithOtp({ email, options: { emailRedirectTo } }))
+  try {
+    return await attempt()
+  } catch {
+    return await attempt()
+  }
+}
