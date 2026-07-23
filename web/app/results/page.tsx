@@ -132,12 +132,20 @@ export default function ResultsPage() {
             <button
               onClick={handleCompareAll}
               disabled={allPrefsLoading}
-              className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+              aria-label={allPrefsLoading ? t('aria.loading') : t('results.compare_all')}
+              className="inline-flex items-center justify-center min-w-[130px] min-h-[38px] text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900"
             >
-              {allPrefsLoading ? t('results.all_prefs_loading') : t('results.compare_all')}
+              {allPrefsLoading ? (
+                <svg aria-hidden="true" className="animate-spin h-4 w-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                t('results.compare_all')
+              )}
             </button>
           )}
-          <Link href="/simulate" className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <Link href="/simulate" className="inline-flex items-center justify-center min-h-[38px] text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900">
             {t('results.new')}
           </Link>
         </div>
@@ -190,7 +198,7 @@ export default function ResultsPage() {
                 <button
                   key={pref}
                   onClick={() => setActiveTab(pref)}
-                  className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                  className={`px-3 py-1.5 text-sm rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900 ${
                     activeTab === pref
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
                       : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
@@ -272,7 +280,7 @@ export default function ResultsPage() {
             <span />
             <button
               onClick={() => exportScheduleToCsv(schedule, c)}
-              className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900"
             >
               {t('results.export_csv')}
             </button>

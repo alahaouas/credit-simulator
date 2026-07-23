@@ -81,3 +81,7 @@
 ## 2026-07-16 - [Add focus-visible pattern to dynamic state toggles]
 **Learning:** Dynamic toggle buttons (like metric selectors that map over an array of states) can easily omit the global `focus-visible` classes if the base string isn't careful, breaking keyboard navigation for those interactive elements.
 **Action:** Always verify that mapped or dynamic buttons still include the standard `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2` classes in their shared className base.
+
+## 2026-07-25 - [Apply focus-visible and loading states to result page actions]
+**Learning:** The result page actions (like Compare All, New simulation, Export CSV, and preference toggles) lacked proper focus states and used text for loading, causing layout shift.
+**Action:** Always replace text loading states with a visual SVG spinner and add `focus-visible` classes to all interactive secondary actions across the UI.
