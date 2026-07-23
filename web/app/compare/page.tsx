@@ -230,7 +230,7 @@ export default function ComparePage() {
         <div className="flex items-center gap-3">
           <DarkModeToggle />
           <LocaleToggle />
-          <Link href="/history" className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <Link href="/history" className="text-sm border dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900">
             {t('nav.history')}
           </Link>
         </div>
