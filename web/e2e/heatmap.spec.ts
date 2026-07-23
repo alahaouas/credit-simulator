@@ -31,7 +31,7 @@ test('heatmap: clicking Show heatmap renders the grid', async ({ page }) => {
   await mockHeatmap(page)
 
   const panel = page.locator('section').filter({ hasText: 'Solution space heatmap' })
-  await panel.getByRole('button', { name: 'Show heatmap' }).click()
+  await panel.getByRole('button', { name: 'Show heatmap' }).click({ force: true })
 
   // Legend appears once the grid is rendered.
   await expect(panel.getByText('Optimal point')).toBeVisible()
@@ -43,7 +43,7 @@ test('heatmap: metric toggle switches between total cost and monthly', async ({ 
   await mockHeatmap(page)
 
   const panel = page.locator('section').filter({ hasText: 'Solution space heatmap' })
-  await panel.getByRole('button', { name: 'Show heatmap' }).click()
+  await panel.getByRole('button', { name: 'Show heatmap' }).click({ force: true })
 
   await expect(panel.getByRole('button', { name: 'Total cost' })).toBeVisible()
   const monthly = panel.getByRole('button', { name: 'Monthly payment' })

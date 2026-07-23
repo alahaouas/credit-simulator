@@ -85,7 +85,7 @@ export default function SweetSpotHeatmap({ result, inputs, currency }: Props) {
         <button
           onClick={handleLoad}
           disabled={loading}
-          aria-label={loading ? t('aria.loading') : t('heatmap.load')}
+          aria-label={loading ? t('heatmap.loading') : t('heatmap.load')}
           className="flex items-center justify-center min-h-[40px] px-5 py-2 text-sm rounded-lg bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400"
         >
           {loading ? (
