@@ -184,6 +184,7 @@ const TRANSLATIONS = {
     // Heatmap panel
     'heatmap.title': 'Solution space heatmap',
     'heatmap.subtitle': 'Color-coded grid of every (down payment × duration) combination the optimizer evaluated.',
+    'heatmap.close': 'Close',
     'heatmap.load': 'Show heatmap',
     'heatmap.loading': 'Computing…',
     'heatmap.metric_total_cost': 'Total cost',
@@ -531,6 +532,7 @@ const TRANSLATIONS = {
     // Heatmap panel
     'heatmap.title': "Carte de l'espace solution",
     'heatmap.subtitle': "Grille colorée de toutes les combinaisons (apport × durée) évaluées par l'optimiseur.",
+    'heatmap.close': 'Fermer',
     'heatmap.load': 'Afficher la carte',
     'heatmap.loading': 'Calcul en cours…',
     'heatmap.metric_total_cost': 'Coût total',

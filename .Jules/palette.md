@@ -81,3 +81,7 @@
 ## 2026-07-16 - [Add focus-visible pattern to dynamic state toggles]
 **Learning:** Dynamic toggle buttons (like metric selectors that map over an array of states) can easily omit the global `focus-visible` classes if the base string isn't careful, breaking keyboard navigation for those interactive elements.
 **Action:** Always verify that mapped or dynamic buttons still include the standard `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2` classes in their shared className base.
+
+## 2026-07-25 - Localizing Screen Reader Content for Icons
+**Learning:** Found an icon-only button (a close button with a ✕ character) that relied on a hardcoded English `aria-label="Close"`. Since the application supports multiple locales (English and French), a hardcoded English string means that non-English screen reader users would hear an English word for that specific button, breaking the immersive localized experience.
+**Action:** When adding ARIA labels to icon-only buttons in a multi-lingual application, always ensure the label uses the translation mechanism (e.g., `t('heatmap.close')`) rather than a hardcoded string.
