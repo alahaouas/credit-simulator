@@ -15,6 +15,10 @@ const TRANSLATIONS = {
     'nav.home': '← Home',
     'nav.api_docs': 'API docs',
     'nav.toggle_lang': 'Toggle language',
+    'nav.theme_light': 'Light',
+    'nav.theme_dark': 'Dark',
+    'nav.theme_to_light': 'Switch to light mode',
+    'nav.theme_to_dark': 'Switch to dark mode',
     // Home
     'home.tagline':
       'Find the optimal mortgage plan for your property purchase — down-payment analysis, amortization schedule, and sweet-spot breakdown.',
@@ -361,6 +365,10 @@ const TRANSLATIONS = {
     'nav.home': '← Accueil',
     'nav.api_docs': 'Docs API',
     'nav.toggle_lang': 'Changer de langue',
+    'nav.theme_light': 'Clair',
+    'nav.theme_dark': 'Sombre',
+    'nav.theme_to_light': 'Passer en mode clair',
+    'nav.theme_to_dark': 'Passer en mode sombre',
     // Home
     'home.tagline':
       "Trouvez le plan de prêt optimal pour votre achat immobilier — analyse de l'apport, tableau d'amortissement et point optimal.",
