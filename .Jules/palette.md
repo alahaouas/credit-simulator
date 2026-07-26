@@ -81,3 +81,7 @@
 ## 2026-07-16 - [Add focus-visible pattern to dynamic state toggles]
 **Learning:** Dynamic toggle buttons (like metric selectors that map over an array of states) can easily omit the global `focus-visible` classes if the base string isn't careful, breaking keyboard navigation for those interactive elements.
 **Action:** Always verify that mapped or dynamic buttons still include the standard `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2` classes in their shared className base.
+
+## 2026-07-26 - [Replace hardcoded aria-label strings with localized keys]
+**Learning:** Hardcoding aria-label strings like "Close" in UI components creates accessibility issues for non-English users, as screen readers announce the English word regardless of the application's current locale.
+**Action:** Always avoid hardcoded UI strings in aria-labels. Create and use existing localization utilities (e.g., `aria-label={t('your.key')}`) and add new localized keys to the appropriate translation dictionaries (e.g., `web/lib/i18n.tsx`) to ensure proper localization.
