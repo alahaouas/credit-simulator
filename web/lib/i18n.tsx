@@ -194,6 +194,7 @@ const TRANSLATIONS = {
     'heatmap.duration_axis': 'Duration (months)',
     'heatmap.legend_low': 'Low',
     'heatmap.legend_high': 'High',
+    'heatmap.close': 'Close',
     // Sweet-spot table headers
     'sweet.down_payment': 'Down payment',
     'sweet.label': 'Label',
@@ -541,6 +542,7 @@ const TRANSLATIONS = {
     'heatmap.duration_axis': 'Durée (mois)',
     'heatmap.legend_low': 'Bas',
     'heatmap.legend_high': 'Haut',
+    'heatmap.close': 'Fermer',
     // Sweet-spot table headers
     'sweet.down_payment': 'Apport',
     'sweet.label': 'Libellé',
