@@ -31,6 +31,7 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
 | Tests | ~200 unit + integration tests; branch coverage gate ≥ 90% on core modules (actual: ~94%) |
 | CI/CD | Local coverage gate via `pytest-cov`; no remote CI pipeline yet |
 | Linting | `ruff` configured (rules E/F/W/I/UP/B/SIM, py311, 100-char line length) |
+| TypeScript toolchain (`web/`) | **Two TypeScript packages on purpose**: `typescript@6.0.3` (JS API — needed by `next build`, `typescript-eslint`, IDE) + `typescript-native` (npm alias of `typescript@7.0.2`) for `npm run typecheck`, ~6.4× faster. Both pinned caret-free. Use `npm run typecheck`, never `npx tsc`. See [docs/typescript-toolchain.md](docs/typescript-toolchain.md). |
 | Documentation | Requirements doc complete (`docs/requirements.md`) |
 | BE mortgage rates | Manually maintained in `profiles.py` (May 2026 data; Belgium excluded from ECB MIR endpoint — unreliable, see `fetcher.py:17`). Refresh at runtime with `credit-simulator rates set ...` (see [docs/runtime-rates.md](docs/runtime-rates.md)). |
 | Localisation | EN/FR via `i18n.py`; locale auto-detected from env/system; override with `--locale` flag |
