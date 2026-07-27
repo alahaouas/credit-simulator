@@ -44,7 +44,7 @@ jobs:
         run: pytest
 
   web:
-    name: Web — lint + build
+    name: Web — lint + typecheck + build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -68,6 +68,11 @@ jobs:
 
       - name: Lint (ESLint flat config)
         run: npm run lint
+
+      # Native TypeScript 7 — fails in ~0.4 s instead of waiting for the build.
+      # Does not replace the check inside `next build`, which still runs TS 6.
+      - name: Type check (TypeScript 7 native)
+        run: npm run typecheck
 
       - name: Build (Next.js)
         run: npm run build
