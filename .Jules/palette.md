@@ -85,3 +85,7 @@
 ## 2026-07-26 - [Replace hardcoded aria-label strings with localized keys]
 **Learning:** Hardcoding aria-label strings like "Close" in UI components creates accessibility issues for non-English users, as screen readers announce the English word regardless of the application's current locale.
 **Action:** Always avoid hardcoded UI strings in aria-labels. Create and use existing localization utilities (e.g., `aria-label={t('your.key')}`) and add new localized keys to the appropriate translation dictionaries (e.g., `web/lib/i18n.tsx`) to ensure proper localization.
+
+## 2026-08-01 - [Apply focus-visible to inline secondary actions consistently]
+**Learning:** Inline secondary actions like "Cancel" or "Copy" in list or settings pages often miss the global `focus-visible` classes during initial development, making them inaccessible to keyboard users.
+**Action:** Always verify every button in secondary flows (like edit menus, settings lists) includes standard `focus-visible:outline-none focus-visible:ring-2` styles.
