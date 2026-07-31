@@ -20,20 +20,15 @@ This file provides context and conventions for AI assistants (e.g. Claude Code) 
 
 ---
 
-## Repository State (as of 2026-05-17)
+## Repository State
 
-| Item | Status |
+Stack, tooling versions and lint rules are declared in `pyproject.toml` and `web/package.json` — read those rather than duplicating them here. The non-obvious constraints:
+
+| Item | Constraint |
 |---|---|
-| CLI source | **Complete** — all modules implemented and tested |
-| Web stack | FastAPI (`api/`) + Next.js 14 (`web/`) + Supabase auth/DB — see [docs/web-interface-plan.md](docs/web-interface-plan.md) for layer status |
-| Framework / language | **Python 3.11+** (CLI + API); **TypeScript / Next.js 14** (web) |
-| Build system | `pyproject.toml` (PEP 517/518, `hatchling`) |
-| Tests | ~200 unit + integration tests; branch coverage gate ≥ 90% on core modules (actual: ~94%) |
-| CI/CD | Local coverage gate via `pytest-cov`; no remote CI pipeline yet |
-| Linting | `ruff` configured (rules E/F/W/I/UP/B/SIM, py311, 100-char line length) |
-| TypeScript toolchain (`web/`) | **Two TypeScript packages on purpose**: `typescript@6.0.3` (JS API — needed by `next build`, `typescript-eslint`, IDE) + `typescript-native` (npm alias of `typescript@7.0.2`) for `npm run typecheck`, ~6.4× faster. Both pinned caret-free. Use `npm run typecheck`, never `npx tsc`. See [docs/typescript-toolchain.md](docs/typescript-toolchain.md). |
-| Documentation | Requirements doc complete (`docs/requirements.md`) |
-| BE mortgage rates | Manually maintained in `profiles.py` (May 2026 data; Belgium excluded from ECB MIR endpoint — unreliable, see `fetcher.py:17`). Refresh at runtime with `credit-simulator rates set ...` (see [docs/runtime-rates.md](docs/runtime-rates.md)). |
+| Web stack | FastAPI (`api/`) + Next.js (`web/`) + Supabase auth/DB — see [docs/web-interface-plan.md](docs/web-interface-plan.md) for layer status |
+| TypeScript toolchain (`web/`) | **Two TypeScript packages on purpose**: `typescript` (JS API — needed by `next build`, `typescript-eslint`, IDE) + `typescript-native` (npm alias of TypeScript 7) for `npm run typecheck`, ~6.4× faster. Both pinned caret-free. Use `npm run typecheck`, never `npx tsc`. See [docs/typescript-toolchain.md](docs/typescript-toolchain.md). |
+| BE mortgage rates | Manually maintained in `profiles.py` (Belgium is excluded from the ECB MIR endpoint — unreliable, see `fetcher.py:17`). Refresh at runtime with `credit-simulator rates set ...` (see [docs/runtime-rates.md](docs/runtime-rates.md)). |
 | Localisation | EN/FR via `i18n.py`; locale auto-detected from env/system; override with `--locale` flag |
 
 ---
@@ -106,57 +101,19 @@ Never commit API keys.
 
 ---
 
-## Project Structure
+## Core Modules
 
-```
-credit-simulator/
-├── CLAUDE.md                   # This file
-├── README.md                   # Human-facing project overview
-├── pyproject.toml              # Package metadata, dependencies, pytest/coverage/ruff config
-├── .gitignore
-├── docs/
-│   ├── requirements.md         # Full product specification
-│   └── runtime-rates.md        # `credit-simulator rates` subcommand reference
-├── src/
-│   └── credit_simulator/
-│       ├── __main__.py         # Entry point: `python -m credit_simulator`
-│       ├── cli.py              # click CLI definition and interactive loop (Group with `rates` subcommand)
-│       ├── rate_cli.py         # `rates set/show/clear/list/path` subcommand group
-│       ├── config.py           # Application-wide constants and tuneable defaults
-│       ├── i18n.py             # Translation registry (EN/FR), locale detection, _() helper
-│       ├── profiles.py         # Static country profiles + SessionProfileStore
-│       ├── resolver.py         # Parameter resolution (§4.1) and feasibility check (§4.2)
-│       ├── calculator.py       # EMI, amortization schedule, APR (§4.4)
-│       ├── optimizer.py        # Grid-search optimizer (§4.3) + sweet-spot analysis (§4.5)
-│       └── fetcher.py          # Online rate fetch — ECB / BoE / FRED (§5.4)
-└── tests/
-    ├── unit/
-    │   ├── test_calculator.py  # EMI, APR, amortization schedule
-    │   ├── test_profiles.py    # Country profiles, LTV tiers, SessionProfileStore
-    │   ├── test_optimizer.py   # Grid-search optimizer and sweet-spot analysis
-    │   ├── test_resolver.py    # Parameter resolution and feasibility
-    │   ├── test_fetcher.py     # Online rate fetch (mocked HTTP)
-    │   └── test_rate_cli.py    # `credit-simulator rates` subcommand tests
-    └── integration/
-        └── test_cli.py         # End-to-end CLI smoke tests
-```
+Under `src/credit_simulator/` (section refs point at `docs/requirements.md`). Glob for anything not listed; `tests/` mirrors these names (`unit/test_<module>.py`, plus `integration/test_cli.py`).
 
----
-
-## Domain Concepts
-
-When implementing features, be aware of these credit-domain terms:
-
-| Term | Meaning |
-|---|---|
-| Principal | The original loan amount borrowed |
-| Interest rate | The percentage charged on the principal |
-| APR | Annual Percentage Rate — total yearly cost of a loan |
-| Amortization | Spreading loan payments over a schedule |
-| EMI | Equated Monthly Installment |
-| LTV | Loan-to-Value ratio |
-| Credit score | Numerical representation of creditworthiness |
-| Default | Failure to repay a loan per agreed terms |
+- `cli.py` — click CLI definition and interactive loop (Group with the `rates` subcommand)
+- `rate_cli.py` — `rates set/show/clear/list/path` subcommand group
+- `config.py` — application-wide constants and tuneable defaults
+- `i18n.py` — translation registry (EN/FR), locale detection, `_()` helper
+- `profiles.py` — static country profiles + `SessionProfileStore`
+- `resolver.py` — parameter resolution (§4.1) and feasibility check (§4.2)
+- `calculator.py` — EMI, amortization schedule, APR (§4.4)
+- `optimizer.py` — grid-search optimizer (§4.3) + sweet-spot analysis (§4.5)
+- `fetcher.py` — online rate fetch, ECB / BoE / FRED (§5.4)
 
 ---
 
