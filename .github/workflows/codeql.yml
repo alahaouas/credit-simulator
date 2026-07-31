@@ -1,0 +1,77 @@
+name: CodeQL
+
+# Advanced setup, replacing GitHub's code-scanning *default* setup.
+#
+# Default setup is configured in repository settings and has no workflow file,
+# so its triggers cannot be path-filtered — a docs-only PR still paid for a
+# full multi-language analysis. Advanced setup puts the triggers here, which
+# lets paths-ignore apply (see PR that introduced this file).
+#
+# IMPORTANT: default setup must be disabled in repository settings before this
+# workflow can run. While default setup is enabled, GitHub rejects results
+# uploaded by an advanced configuration and this workflow fails.
+#
+# Language set, query suite and cadence mirror what default setup was running
+# as of 2026-07-20: actions + javascript-typescript + python, default queries,
+# weekly schedule. ("javascript" and "typescript" are reported separately by
+# the settings API but are analysed as the single javascript-typescript pack.)
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.github/*.md'
+      - 'LICENSE'
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.github/*.md'
+      - 'LICENSE'
+  schedule:
+    # Weekly, Monday 04:23 UTC. Offset from the daily Supabase keep-alive
+    # (06:16 UTC) so the two never contend for a runner.
+    - cron: '23 4 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, javascript-typescript, python]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          # No compiled languages here, so nothing needs building — this also
+          # keeps the analysis from trying to run npm/pip install.
+          build-mode: none
+          # No `queries:` — that leaves the default query suite, matching what
+          # default setup ran. Switching to security-extended is a separate
+          # decision: it widens the alert set and is not part of this move.
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
