@@ -85,3 +85,6 @@
 ## 2026-07-26 - [Replace hardcoded aria-label strings with localized keys]
 **Learning:** Hardcoding aria-label strings like "Close" in UI components creates accessibility issues for non-English users, as screen readers announce the English word regardless of the application's current locale.
 **Action:** Always avoid hardcoded UI strings in aria-labels. Create and use existing localization utilities (e.g., `aria-label={t('your.key')}`) and add new localized keys to the appropriate translation dictionaries (e.g., `web/lib/i18n.tsx`) to ensure proper localization.
+## 2026-08-01 - [Add browser confirmation dialog for share token revocation]
+**Learning:** Found a missing confirmation dialog on the "Revoke Link" button in the history list. Destructive actions on secondary workflows (like share panels) are easily missed and should follow the same pattern as primary deletes. Without confirmation, users might accidentally invalidate active sharing links.
+**Action:** When implementing destructive frontend actions (like revoking tokens or deleting items), always wrap the API calls in `window.confirm()` dialogs with localized text to prevent accidental data loss and improve user experience. Update corresponding Playwright tests with a dialog handler (e.g. `page.once('dialog', dialog => dialog.accept())`) before the trigger action.

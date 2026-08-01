@@ -355,7 +355,11 @@ export default function HistoryPage() {
                         </div>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleRevokeToken(sim.id)}
+                            onClick={() => {
+                              if (window.confirm(t('history.confirm_revoke') || 'Are you sure you want to revoke this share token?')) {
+                                handleRevokeToken(sim.id)
+                              }
+                            }}
                             disabled={shareLoading}
                             aria-label={shareLoading ? t('aria.loading') : t('history.share_revoke')}
                             className="text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 min-h-[32px] min-w-[100px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
