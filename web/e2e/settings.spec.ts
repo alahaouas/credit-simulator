@@ -32,5 +32,5 @@ test('settings page lists existing API keys', async ({ page }) => {
   })
   await page.goto('/settings')
 
-  await expect(page.getByText('my-script')).toBeVisible()
+  await expect(page.getByText('my-script', { exact: true })).toBeVisible()
 })
