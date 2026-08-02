@@ -85,3 +85,7 @@
 ## 2026-07-26 - [Replace hardcoded aria-label strings with localized keys]
 **Learning:** Hardcoding aria-label strings like "Close" in UI components creates accessibility issues for non-English users, as screen readers announce the English word regardless of the application's current locale.
 **Action:** Always avoid hardcoded UI strings in aria-labels. Create and use existing localization utilities (e.g., `aria-label={t('your.key')}`) and add new localized keys to the appropriate translation dictionaries (e.g., `web/lib/i18n.tsx`) to ensure proper localization.
+
+## 2026-08-01 - Add screen-reader-only labels to visually implicit inputs
+**Learning:** When an input field's purpose is visually implied by its layout but lacks a visible text label (e.g., inline forms, search bars, or API key generators), explicitly provide an accessible name for screen readers. Simply adding a placeholder is not sufficient for accessibility standards.
+**Action:** Always provide an accessible name for inputs by adding a `<label>` with Tailwind's `sr-only` class, correctly mapped to the input via `htmlFor` and `id`, ensuring screen reader support without disrupting the visual design.
