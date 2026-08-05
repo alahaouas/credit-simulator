@@ -127,7 +127,9 @@ export default function SettingsPage() {
 
       {/* Create form */}
       <form onSubmit={handleCreate} className="flex gap-2 mb-8">
+        <label htmlFor="newKeyName" className="sr-only">{t('settings.name_placeholder')}</label>
         <input
+          id="newKeyName"
           type="text"
           value={newKeyName}
           onChange={e => setNewKeyName(e.target.value)}
