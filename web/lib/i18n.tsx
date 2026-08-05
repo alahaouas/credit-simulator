@@ -246,6 +246,7 @@ const TRANSLATIONS = {
     'history.share_revoke': 'Revoke',
     'history.share_revoking': 'Revoking…',
     'history.share_hint': 'Anyone with this link can view the simulation without signing in.',
+    'history.share_url_label': 'Public share link',
     // History — search & pagination (A6)
     'history.search_placeholder': 'Search by name or tag',
     'history.load_more': 'Load more',
@@ -599,6 +600,7 @@ const TRANSLATIONS = {
     'history.share_revoke': 'Révoquer',
     'history.share_revoking': 'Révocation…',
     'history.share_hint': 'Toute personne ayant ce lien peut voir la simulation sans se connecter.',
+    'history.share_url_label': 'Lien de partage public',
     // History — search & pagination (A6)
     'history.search_placeholder': 'Rechercher par nom ou étiquette',
     'history.load_more': 'Charger plus',

@@ -69,6 +69,7 @@ test.describe('history page (A6)', () => {
     await mockList(page, [SIM_A, SIM_B])
     await page.goto('/history')
     await expect(page.getByPlaceholder('Search by name or tag')).toBeVisible()
+    await expect(page.getByLabel('Search by name or tag')).toBeVisible()
   })
 
   test('renders simulation names from API', async ({ page }) => {
