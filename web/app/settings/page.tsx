@@ -117,7 +117,7 @@ export default function SettingsPage() {
             </code>
             <button
               onClick={handleCopy}
-              className="shrink-0 rounded border dark:border-gray-600 px-3 py-1.5 text-xs hover:bg-white dark:hover:bg-gray-700 transition-colors"
+              className="shrink-0 rounded border dark:border-gray-600 px-3 py-1.5 text-xs hover:bg-white dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
             >
               {copied ? t('settings.copied') : t('settings.copy')}
             </button>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
                 onClick={() => handleDelete(k.id)}
                 disabled={deleting === k.id}
                 aria-label={deleting === k.id ? t('aria.loading') : t('settings.revoke')}
-                className="shrink-0 text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 min-h-[32px] flex items-center justify-center min-w-[60px]"
+                className="shrink-0 text-sm px-3 py-1.5 rounded border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 min-h-[32px] flex items-center justify-center min-w-[60px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
                 {deleting === k.id ? (
                   <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

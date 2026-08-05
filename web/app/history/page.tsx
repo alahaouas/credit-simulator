@@ -327,7 +327,7 @@ export default function HistoryPage() {
                     <button
                       onClick={cancelEdit}
                       disabled={saving}
-                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40"
+                      className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                     >
                       {t('history.cancel')}
                     </button>
