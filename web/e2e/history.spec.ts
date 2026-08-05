@@ -69,6 +69,7 @@ test.describe('history page (A6)', () => {
     await mockList(page, [SIM_A, SIM_B])
     await page.goto('/history')
     await expect(page.getByPlaceholder('Search by name or tag')).toBeVisible()
+    await expect(page.getByLabel('Search by name or tag')).toBeVisible()
   })
 
   test('renders simulation names from API', async ({ page }) => {
@@ -326,6 +327,7 @@ test.describe('history share panel (A5)', () => {
     await page.locator('ul li').first().getByRole('button', { name: 'Share' }).click()
     await expect(page.getByRole('button', { name: 'Revoke' })).toBeVisible()
 
+    page.once('dialog', dialog => dialog.accept())
     await page.getByRole('button', { name: 'Revoke' }).click()
 
     await expect(page.getByRole('button', { name: 'Generate public link' })).toBeVisible({ timeout: 3000 })
