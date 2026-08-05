@@ -89,3 +89,7 @@
 ## 2026-08-01 - Add screen-reader-only labels to visually implicit inputs
 **Learning:** When an input field's purpose is visually implied by its layout but lacks a visible text label (e.g., inline forms, search bars, or API key generators), explicitly provide an accessible name for screen readers. Simply adding a placeholder is not sufficient for accessibility standards.
 **Action:** Always provide an accessible name for inputs by adding a `<label>` with Tailwind's `sr-only` class, correctly mapped to the input via `htmlFor` and `id`, ensuring screen reader support without disrupting the visual design.
+
+## 2026-08-01 - [Add browser confirmation dialog for share token revocation]
+**Learning:** Found a missing confirmation dialog on the "Revoke Link" button in the history list. Destructive actions on secondary workflows (like share panels) are easily missed and should follow the same pattern as primary deletes. Without confirmation, users might accidentally invalidate active sharing links.
+**Action:** When implementing destructive frontend actions (like revoking tokens or deleting items), always wrap the API calls in `window.confirm()` dialogs with localized text to prevent accidental data loss and improve user experience. Update corresponding Playwright tests with a dialog handler (e.g. `page.once('dialog', dialog => dialog.accept())`) before the trigger action.
