@@ -126,13 +126,14 @@ export default function PreferencesPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <span id="currencyDisplayLabel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {t('prefs.currency_display')}
-          </label>
-          <div className="flex gap-4">
+          </span>
+          <div className="flex gap-4" role="radiogroup" aria-labelledby="currencyDisplayLabel">
             {CURRENCY_DISPLAY_OPTIONS.map(opt => (
-              <label key={opt} className="flex items-center gap-2 cursor-pointer">
+              <label key={opt} htmlFor={`currencyDisplay-${opt}`} className="flex items-center gap-2 cursor-pointer">
                 <input
+                  id={`currencyDisplay-${opt}`}
                   type="radio"
                   name="currency_display"
                   value={opt}

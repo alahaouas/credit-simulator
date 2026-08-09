@@ -73,6 +73,7 @@ const TRANSLATIONS = {
     // Auth
     'aria.loading': 'Loading, please wait',
     'auth.title': 'Sign in',
+    'auth.email_label': 'Email address',
     'auth.email_placeholder': 'you@example.com',
     'auth.send': 'Send magic link',
     'auth.check_inbox': 'Check your inbox for the sign-in link.',
@@ -427,6 +428,7 @@ const TRANSLATIONS = {
     // Auth
     'aria.loading': 'Chargement, veuillez patienter',
     'auth.title': 'Se connecter',
+    'auth.email_label': 'Adresse e-mail',
     'auth.email_placeholder': 'vous@exemple.com',
     'auth.send': 'Envoyer le lien magique',
     'auth.check_inbox': 'Vérifiez votre boîte mail pour le lien de connexion.',

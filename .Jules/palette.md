@@ -101,3 +101,7 @@
 ## 2026-08-05 - Add explicit labels to list selection checkboxes
 **Learning:** While `aria-label` on checkboxes works for basic accessibility, explicit `<label>` elements with `htmlFor` matching the input's `id` provide the most robust support across all screen readers. When checkboxes are used in list items (like for multi-selection) without visible text labels, wrapping or preceding them with a screen-reader-only (`sr-only`) label improves accessibility without affecting layout.
 **Action:** Always provide an explicit `<label className="sr-only">` properly mapped via `htmlFor` and `id` for standalone selection checkboxes in lists, even if an `aria-label` is present, to ensure maximum compatibility.
+
+## 2026-08-09 - A `<label>` with no control is invisible to assistive tech
+**Learning:** Sweeping the whole `web/` tree for the checkbox-label pattern surfaced two variants the per-component pass missed. A group heading written as `<label>` with neither `htmlFor` nor a wrapped control (the currency-display radios in `preferences/page.tsx`) is announced by nothing — the radios had no group name at all. And an `sr-only` label is still user-facing copy: `auth/page.tsx` shipped a hardcoded English `Email` that never switched to FR.
+**Action:** When a heading labels a *set* of controls rather than one, use a `<span id>` plus `role="radiogroup" aria-labelledby` (or `<fieldset>`/`<legend>`) — never a bare `<label>`. Give each option an `id` and point the wrapping `<label>` at it with `htmlFor`. Run every `sr-only` label through `t()` like any other string.
