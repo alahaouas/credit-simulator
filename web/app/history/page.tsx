@@ -418,12 +418,15 @@ export default function HistoryPage() {
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-4">
+                  <label htmlFor={`compare-${sim.id}`} className="sr-only">
+                    {t('history.compare')}
+                  </label>
                   <input
+                    id={`compare-${sim.id}`}
                     type="checkbox"
                     checked={selected.has(sim.id)}
                     onChange={() => toggleSelect(sim.id)}
                     disabled={!selected.has(sim.id) && selected.size >= 3}
-                    aria-label={t('history.compare')}
                     className="shrink-0 h-4 w-4 rounded border-gray-300 dark:border-gray-600 accent-black dark:accent-white disabled:opacity-40 cursor-pointer disabled:cursor-default"
                   />
                   <div className="min-w-0 flex-1">

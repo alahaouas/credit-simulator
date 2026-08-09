@@ -51,7 +51,7 @@ function AuthPageInner() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
         <h1 className="text-2xl font-semibold">{t('auth.title')}</h1>
         <div className="flex flex-col gap-1">
-          <label htmlFor="email" className="sr-only">Email</label>
+          <label htmlFor="email" className="sr-only">{t('auth.email_label')}</label>
           <input
             id="email"
             type="email"
