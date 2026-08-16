@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
-    "@supabase/supabase-js": "^2.112.2",
+    "@supabase/supabase-js": "^2.112.3",
     "next": "15.5.23",
     "react": "^18",
     "react-dom": "^18",
@@ -28,12 +28,12 @@
     "@types/node": "^26",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "eslint": "^10.8.0",
+    "eslint": "^10.8.1",
     "eslint-config-next": "16.3.0",
     "postcss": "^8.5.10",
     "tailwindcss": "^4.3.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "^8.66.0",
+    "typescript-eslint": "^8.67.0",
     "typescript-native": "npm:typescript@7.0.2"
   },
   "overrides": {
