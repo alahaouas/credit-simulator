@@ -1,0 +1,27 @@
+
+> web@0.1.0 dev /app/web
+> next dev
+
+   ▲ Next.js 15.5.23
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+   - Experiments (use with caution):
+     · optimizePackageImports
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1423ms (170 modules)
+ ○ Compiling /settings ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (107kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (258kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled /settings in 7s (779 modules)
+ GET /settings 200 in 7868ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 758ms (766 modules)
+ GET /test-copy 404 in 1327ms
+ ✓ Compiled in 768ms (806 modules)
+ ✓ Compiled /test-copy in 452ms (643 modules)
+ GET /test-copy 200 in 951ms
+ ✓ Compiled in 183ms (308 modules)
+ ✓ Compiled in 138ms (464 modules)
