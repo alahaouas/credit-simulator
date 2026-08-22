@@ -105,3 +105,7 @@
 ## 2026-08-09 - A `<label>` with no control is invisible to assistive tech
 **Learning:** Sweeping the whole `web/` tree for the checkbox-label pattern surfaced two variants the per-component pass missed. A group heading written as `<label>` with neither `htmlFor` nor a wrapped control (the currency-display radios in `preferences/page.tsx`) is announced by nothing — the radios had no group name at all. And an `sr-only` label is still user-facing copy: `auth/page.tsx` shipped a hardcoded English `Email` that never switched to FR.
 **Action:** When a heading labels a *set* of controls rather than one, use a `<span id>` plus `role="radiogroup" aria-labelledby` (or `<fieldset>`/`<legend>`) — never a bare `<label>`. Give each option an `id` and point the wrapping `<label>` at it with `htmlFor`. Run every `sr-only` label through `t()` like any other string.
+
+## 2026-08-22 - [Add aria-live and min-w to copy buttons]
+**Learning:** When a button's text changes temporarily to indicate a transient state (e.g., from 'Copy' to 'Copied!'), the change is not announced by screen readers. Furthermore, the changing text length can cause layout jumps.
+**Action:** Always add `aria-live="polite"` to buttons that change text temporarily so assistive technologies announce the change, and apply structural boundaries (e.g., `min-w-[90px]`) to prevent layout jumping when string lengths differ.
