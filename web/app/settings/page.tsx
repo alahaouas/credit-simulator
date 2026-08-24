@@ -117,7 +117,8 @@ export default function SettingsPage() {
             </code>
             <button
               onClick={handleCopy}
-              className="shrink-0 rounded border dark:border-gray-600 px-3 py-1.5 text-xs hover:bg-white dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+              aria-live="polite"
+              className="shrink-0 min-w-[90px] rounded border dark:border-gray-600 px-3 py-1.5 text-xs hover:bg-white dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
             >
               {copied ? t('settings.copied') : t('settings.copy')}
             </button>

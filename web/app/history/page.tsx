@@ -356,7 +356,8 @@ export default function HistoryPage() {
                           />
                           <button
                             onClick={() => handleCopy(token)}
-                            className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+                            aria-live="polite"
+                            className="text-sm min-w-[90px] px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                           >
                             {copied ? t('history.share_copied') : t('history.share_copy')}
                           </button>
