@@ -117,9 +117,18 @@ export default function SettingsPage() {
             </code>
             <button
               onClick={handleCopy}
+              aria-live="polite"
               className="shrink-0 rounded border dark:border-gray-600 px-3 py-1.5 text-xs hover:bg-white dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
             >
-              {copied ? t('settings.copied') : t('settings.copy')}
+              {/* Both labels share one grid cell, so the button keeps the width of
+                  the longest one in every locale and never shifts on toggle. */}
+              <span className="grid place-items-center">
+                <span aria-hidden="true" className="col-start-1 row-start-1 invisible whitespace-nowrap">{t('settings.copy')}</span>
+                <span aria-hidden="true" className="col-start-1 row-start-1 invisible whitespace-nowrap">{t('settings.copied')}</span>
+                <span className="col-start-1 row-start-1 whitespace-nowrap">
+                  {copied ? t('settings.copied') : t('settings.copy')}
+                </span>
+              </span>
             </button>
           </div>
         </div>
