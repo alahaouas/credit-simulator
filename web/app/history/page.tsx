@@ -356,9 +356,18 @@ export default function HistoryPage() {
                           />
                           <button
                             onClick={() => handleCopy(token)}
+                            aria-live="polite"
                             className="text-sm px-3 py-1.5 rounded border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                           >
-                            {copied ? t('history.share_copied') : t('history.share_copy')}
+                            {/* Both labels share one grid cell, so the button keeps the width of
+                                the longest one in every locale and never shifts on toggle. */}
+                            <span className="grid place-items-center">
+                              <span aria-hidden="true" className="col-start-1 row-start-1 invisible whitespace-nowrap">{t('history.share_copy')}</span>
+                              <span aria-hidden="true" className="col-start-1 row-start-1 invisible whitespace-nowrap">{t('history.share_copied')}</span>
+                              <span className="col-start-1 row-start-1 whitespace-nowrap">
+                                {copied ? t('history.share_copied') : t('history.share_copy')}
+                              </span>
+                            </span>
                           </button>
                         </div>
                         <div className="flex gap-2">

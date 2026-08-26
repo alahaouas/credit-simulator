@@ -150,6 +150,7 @@ export default function PreferencesPage() {
         <button
           type="submit"
           disabled={saving}
+          aria-live="polite"
           aria-label={saving ? t('aria.loading') : saved ? t('prefs.saved') : t('prefs.save')}
           className="w-full flex items-center justify-center min-h-[44px] rounded-lg bg-black text-white dark:bg-white dark:text-black py-2.5 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
         >
