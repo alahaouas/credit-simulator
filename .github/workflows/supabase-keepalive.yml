@@ -4,33 +4,73 @@ permissions: {}
 
 on:
   schedule:
-    # Every day at 06:16 UTC
+    # Every day at 06:16 UTC. Supabase free-tier pauses a project after ~7 days
+    # without activity, so daily leaves a wide margin for missed/delayed runs.
+    # NOTE: GitHub disables scheduled workflows after 60 days without any repo
+    # activity — if the repo ever goes quiet, re-enable this from the Actions tab.
     - cron: "16 6 * * *"
   # Allow manual trigger from the Actions tab
   workflow_dispatch:
 
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
+
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Ping Supabase REST API
+      - name: Query Supabase REST API
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
             echo "::error::Missing SUPABASE_URL or SUPABASE_ANON_KEY repository secret"
             exit 1
           fi
 
-          status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/" || echo "000")
+          # Hit a real table, not the /rest/v1/ root: that root is service_role-only
+          # and answers an anon key with a gateway 401 that never reaches Postgres,
+          # so it does not reset the inactivity timer. This SELECT does run in the
+          # database; RLS returns an empty array, which is the expected 200 body.
+          url="${SUPABASE_URL%/}/rest/v1/simulations?select=id&limit=1"
+          body="$RUNNER_TEMP/keepalive-body.txt"
 
-          echo "Supabase REST API responded with HTTP $status"
+          status=000
+          for attempt in 1 2 3; do
+            # Truncate first: a retry that never connects leaves the previous
+            # attempt's body on disk and would print a misleading error.
+            : > "$body"
+            status=$(curl -sS -o "$body" -w '%{http_code}' --max-time 20 \
+              -H "apikey: $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+              "$url") || status=000
 
-          if [ "$status" -lt 200 ] || [ "$status" -ge 500 ] || [ "$status" = "000" ]; then
-            echo "::error::Supabase project looks unreachable (HTTP $status) - it may be paused. Check https://supabase.com/dashboard/project/dqfdjtrcxobhwdnxmorh"
+            echo "Attempt $attempt: HTTP $status"
+
+            if [ "$status" = "200" ]; then
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep 15
+            fi
+          done
+
+          # Only 200 proves the query reached Postgres. 401/404 mean a stale secret
+          # or a renamed table; 000 means the host did not resolve, which is what a
+          # paused project looks like.
+          if [ "$status" != "200" ]; then
+            echo "Response body:"
+            if [ -s "$body" ]; then
+              cat "$body"
+              echo
+            else
+              echo "(empty — the request never completed)"
+            fi
+            echo "::error::Supabase keep-alive query failed (HTTP $status). The project may be paused, or SUPABASE_URL/SUPABASE_ANON_KEY may be stale. https://supabase.com/dashboard/project/dqfdjtrcxobhwdnxmorh"
             exit 1
           fi
+
+          echo "Supabase project is awake — REST query returned HTTP 200."
