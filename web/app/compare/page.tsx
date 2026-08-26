@@ -214,7 +214,15 @@ function CompareInner() {
 
   if (!sims || sims.length < 2) {
     return (
-      <p className="text-gray-500 dark:text-gray-400">{t('compare.no_data')}</p>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="text-gray-500 dark:text-gray-400 mb-6">{t('compare.no_data')}</p>
+        <Link
+          href="/history"
+          className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
+        >
+          {t('nav.history')}
+        </Link>
+      </div>
     )
   }
 
