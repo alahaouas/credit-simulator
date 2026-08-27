@@ -6,8 +6,10 @@ full precision for all intermediate steps.
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from functools import lru_cache
 
 from .config import APR_MAX_ITERATIONS, APR_PRECISION, APR_TOLERANCE, CENT, MONTHS_IN_YEAR, ZERO
 
@@ -82,13 +84,19 @@ def compute_monthly_insurance(
     return _round(original_principal * annual_insurance_rate / MONTHS_IN_YEAR)
 
 
+@lru_cache(maxsize=8192)
 def compute_loan_plan(
     principal: Decimal,
     annual_interest_rate: Decimal,
     annual_insurance_rate: Decimal,
     duration_months: int,
 ) -> LoanPlan:
-    """Compute the full loan plan summary (no amortization schedule)."""
+    """Compute the full loan plan summary (no amortization schedule).
+
+    Memoized: the optimizer, the heatmap and the sweet-spot analysis all sweep
+    overlapping (principal, rate, duration) grids within a single simulation,
+    and LoanPlan is immutable so sharing instances is safe.
+    """
     emi = compute_emi(principal, annual_interest_rate, duration_months)
     monthly_insurance = compute_monthly_insurance(principal, annual_insurance_rate)
     monthly_installment = _round(emi + monthly_insurance)
@@ -97,12 +105,13 @@ def compute_loan_plan(
     r = annual_interest_rate / MONTHS_IN_YEAR
     monthly_interest_first = _round(principal * r)
 
-    # Total interest computed precisely via the amortization schedule to avoid accumulated rounding.
-    schedule = build_amortization_schedule(
-        principal, annual_interest_rate, annual_insurance_rate, duration_months
-    )
+    # Total interest follows the exact amortization rounding sequence (no accumulated
+    # drift), but without materialising the schedule rows — this is the optimizer hot path.
     total_interest_paid = sum(
-        (row.interest_component for row in schedule), ZERO
+        (interest for _p, _o, _pc, interest, _c in _amortization_steps(
+            principal, annual_interest_rate, duration_months
+        )),
+        ZERO,
     )
     total_insurance_paid = _round(monthly_insurance * Decimal(duration_months))
     total_cost_of_credit = _round(total_interest_paid + total_insurance_paid)
@@ -127,18 +136,18 @@ def compute_loan_plan(
     )
 
 
-def build_amortization_schedule(
+def _amortization_steps(
     principal: Decimal,
     annual_interest_rate: Decimal,
-    annual_insurance_rate: Decimal,
     duration_months: int,
-) -> list[AmortizationRow]:
-    """Build the full month-by-month amortization schedule."""
-    emi = compute_emi(principal, annual_interest_rate, duration_months)
-    monthly_insurance = compute_monthly_insurance(principal, annual_insurance_rate)
-    r = annual_interest_rate / MONTHS_IN_YEAR
+) -> Iterator[tuple[int, Decimal, Decimal, Decimal, Decimal]]:
+    """Yield (period, opening, principal_component, interest, closing) month by month.
 
-    rows: list[AmortizationRow] = []
+    Shared by build_amortization_schedule and compute_loan_plan so both derive
+    interest from exactly the same rounding sequence. Allocates no row objects.
+    """
+    emi = compute_emi(principal, annual_interest_rate, duration_months)
+    r = annual_interest_rate / MONTHS_IN_YEAR
     balance = principal
 
     for period in range(1, duration_months + 1):
@@ -155,20 +164,33 @@ def build_amortization_schedule(
                 principal_component = opening
         closing = _round(opening - principal_component)
 
-        rows.append(
-            AmortizationRow(
-                period=period,
-                opening_balance=opening,
-                monthly_installment=_round(principal_component + interest + monthly_insurance),
-                principal_component=principal_component,
-                interest_component=interest,
-                insurance_component=monthly_insurance,
-                closing_balance=closing,
-            )
-        )
+        yield period, opening, principal_component, interest, closing
         balance = closing
 
-    return rows
+
+def build_amortization_schedule(
+    principal: Decimal,
+    annual_interest_rate: Decimal,
+    annual_insurance_rate: Decimal,
+    duration_months: int,
+) -> list[AmortizationRow]:
+    """Build the full month-by-month amortization schedule."""
+    monthly_insurance = compute_monthly_insurance(principal, annual_insurance_rate)
+
+    return [
+        AmortizationRow(
+            period=period,
+            opening_balance=opening,
+            monthly_installment=_round(principal_component + interest + monthly_insurance),
+            principal_component=principal_component,
+            interest_component=interest,
+            insurance_component=monthly_insurance,
+            closing_balance=closing,
+        )
+        for period, opening, principal_component, interest, closing in _amortization_steps(
+            principal, annual_interest_rate, duration_months
+        )
+    ]
 
 
 def compute_apr(

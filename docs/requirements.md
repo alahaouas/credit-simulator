@@ -113,7 +113,7 @@ The buyer may optionally specify which objective to prioritize. Defaults to `bal
 | `minimize_monthly_payment` | Minimize the monthly installment |
 | `minimize_duration` | Repay the loan as fast as possible |
 | `minimize_down_payment` | Preserve savings by contributing as little upfront as possible |
-| `balanced` | System-driven trade-off across all dimensions (default) |
+| `balanced` | Trade-off between total cost and monthly payment (default). Both metrics are min-max normalised over the feasible grid and summed, so neither dominates by magnitude; the result lands between the `minimize_total_cost` and `minimize_monthly_payment` plans. |
 
 ---
 

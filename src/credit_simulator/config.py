@@ -25,7 +25,7 @@ DEFAULT_MAX_MONTHLY_PAYMENT = Decimal("2200")
 DEFAULT_LOAN_DURATION_MONTHS: int = 240  # 20 years
 
 STEP_DOWN_PAYMENT = Decimal("1000")
-STEP_DURATION: int = 12          # reserved for future duration grid-search
+STEP_DURATION: int = 12          # duration grid-search step (months)
 VALID_PREFERENCES: frozenset[str] = frozenset({
     "minimize_total_cost",
     "minimize_monthly_payment",
