@@ -88,12 +88,17 @@ class ResolvedParams:
     sources: dict[str, str] = field(default_factory=dict)
 
     def rate_for_ltv(self, ltv: Decimal) -> Decimal:
-        """Effective annual rate for the given LTV (base rate + tier delta)."""
+        """Effective annual rate for the given LTV (base rate + tier delta).
+
+        Clamped at zero: a base rate lower than the deepest tier discount would
+        otherwise produce a negative rate, which the calculator rejects. This
+        simulator does not model negative-rate lending.
+        """
         for tier in self.ltv_rate_tiers:
             if ltv <= tier.ltv_max:
-                return self.annual_interest_rate + tier.rate_delta
+                return max(ZERO, self.annual_interest_rate + tier.rate_delta)
         if self.ltv_rate_tiers:
-            return self.annual_interest_rate + self.ltv_rate_tiers[-1].rate_delta
+            return max(ZERO, self.annual_interest_rate + self.ltv_rate_tiers[-1].rate_delta)
         return self.annual_interest_rate
 
 

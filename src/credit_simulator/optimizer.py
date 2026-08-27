@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
-from .calculator import LoanPlan, compute_loan_plan
+from .calculator import LoanPlan, compute_emi, compute_loan_plan, compute_monthly_insurance
 from .config import (
     MIN_LOAN_DURATION_MONTHS,
     STEP_DOWN_PAYMENT,
@@ -46,36 +46,71 @@ class OptimizedResult:
     parameters_source: dict[str, str]
 
 
+# One evaluated point of the search grid.
+Candidate = tuple[Decimal, int, LoanPlan]   # (down_payment, duration, plan)
+
+
 def _score(
     preference: str,
     plan: LoanPlan,
     down_payment: Decimal,
     duration: int,
 ) -> tuple:
-    """Return a sort key (lower is better) for the given plan."""
+    """Return a sort key (lower is better) for the given plan.
+
+    Every key ends with the same tie-breakers, so at equal primary metric the
+    cheapest plan wins and the buyer keeps the most cash.
+    """
     tc = plan.total_cost_of_credit
     mp = plan.monthly_installment
     dp = down_payment
 
-    if preference == "minimize_total_cost":
-        return (tc, mp, dp)
-    elif preference == "minimize_monthly_payment":
-        return (mp, tc, -dp)
-    elif preference == "minimize_duration":
-        # Duration grid-search is active; sort by duration first, then total cost.
-        return (duration, tc, mp)
-    elif preference == "minimize_down_payment":
-        return (dp, tc, mp)
-    else:  # balanced
-        return (tc + mp * Decimal(duration), mp, dp)
+    keys: dict[str, tuple] = {
+        "minimize_total_cost": (tc, mp, dp),
+        "minimize_monthly_payment": (mp, tc, dp),
+        "minimize_duration": (duration, tc, mp, dp),
+        "minimize_down_payment": (dp, tc, mp),
+    }
+    return keys[preference]
+
+
+def _select_balanced(candidates: list[Candidate]) -> Candidate:
+    """Pick the best compromise between total cost and monthly payment.
+
+    Both metrics are min-max normalised over the feasible grid, so the score is
+    scale-free and neither term dominates purely because of its magnitude.
+
+    The previous key, total_cost + monthly_payment * duration, reduced
+    algebraically to 2 * total_cost - down_payment + constant, so "balanced"
+    returned the same plan as "minimize_total_cost" in every scenario.
+    """
+    costs = [c[2].total_cost_of_credit for c in candidates]
+    payments = [c[2].monthly_installment for c in candidates]
+    min_tc, max_tc = min(costs), max(costs)
+    min_mp, max_mp = min(payments), max(payments)
+    tc_span = max_tc - min_tc
+    mp_span = max_mp - min_mp
+
+    def key(candidate: Candidate) -> tuple:
+        dp, _duration, plan = candidate
+        tc_norm = (plan.total_cost_of_credit - min_tc) / tc_span if tc_span else ZERO
+        mp_norm = (plan.monthly_installment - min_mp) / mp_span if mp_span else ZERO
+        return (tc_norm + mp_norm, plan.total_cost_of_credit, plan.monthly_installment, dp)
+
+    return min(candidates, key=key)
 
 
 def _build_dp_candidates(params: ResolvedParams) -> list:
     """Return the ordered list of down-payment amounts to evaluate.
 
     Starts from min_down_payment (exact), then steps in STEP_DOWN_PAYMENT
-    increments up to available_savings (always included as the last entry).
+    increments up to the ceiling (always included as the last entry).
+
+    The ceiling is capped at total_acquisition_cost: a buyer whose savings exceed
+    the purchase price cannot put more than the price down, and proposing more
+    yields a negative loan principal.
     """
+    ceiling = min(params.available_savings, params.total_acquisition_cost)
     dp = params.min_down_payment
     if dp % STEP_DOWN_PAYMENT != ZERO:
         dp_aligned = (dp // STEP_DOWN_PAYMENT + 1) * STEP_DOWN_PAYMENT
@@ -83,11 +118,11 @@ def _build_dp_candidates(params: ResolvedParams) -> list:
         dp = dp_aligned
     else:
         candidates = []
-    while dp <= params.available_savings:
+    while dp <= ceiling:
         candidates.append(dp)
         dp += STEP_DOWN_PAYMENT
-    if not candidates or candidates[-1] < params.available_savings:
-        candidates.append(params.available_savings)
+    if not candidates or candidates[-1] < ceiling:
+        candidates.append(ceiling)
     return candidates
 
 
@@ -117,11 +152,6 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         params.max_monthly_payment,
     )
 
-    best_plan: LoanPlan | None = None
-    best_down_payment = ZERO
-    best_duration = 0
-    best_score: tuple | None = None
-
     # If the user pinned a down payment, evaluate only that; otherwise grid-search.
     if params.preferred_down_payment is not None:
         candidates_dp = [params.preferred_down_payment]
@@ -133,36 +163,56 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
     else:
         duration_candidates = _build_duration_candidates(params)
 
+    feasible: list[Candidate] = []
+    needs_no_loan = False
+
     for down_payment in candidates_dp:
         principal = params.total_acquisition_cost - down_payment
         if principal <= ZERO:
+            needs_no_loan = True
             continue
 
         ltv = principal / params.property_price
         effective_rate = params.rate_for_ltv(ltv)
+        insurance = compute_monthly_insurance(principal, params.insurance_rate)
 
         for duration in duration_candidates:
+            # Reject on the cheap EMI first: computing the full plan (amortization
+            # sweep + APR) for a grid point that busts the cap is wasted work.
+            if compute_emi(principal, effective_rate, duration) + insurance > effective_cap:
+                continue
+
             plan = compute_loan_plan(
                 principal,
                 effective_rate,
                 params.insurance_rate,
                 duration,
             )
-
             if plan.monthly_installment > effective_cap:
                 continue
 
-            score = _score(preference, plan, down_payment, duration)
-            if best_score is None or score < best_score:
-                best_score = score
-                best_plan = plan
-                best_down_payment = down_payment
-                best_duration = duration
+            feasible.append((down_payment, duration, plan))
 
-    if best_plan is None:
-        raise ValueError(
-            "No feasible loan plan found within the given constraints. "
-            "Try increasing savings, income, or maximum duration."
+    if not feasible:
+        if needs_no_loan:
+            # Every candidate down payment covered the whole acquisition cost, so
+            # there is nothing left to borrow — not an affordability problem.
+            raise ValueError(
+                "The down payment covers the full acquisition cost: no loan is needed. "
+                "Lower the down payment to simulate a mortgage."
+            )
+        hint = (
+            "Try increasing savings or income, or unpinning the loan duration."
+            if params.sources.get("fixed_loan_duration_months") == "user"
+            else "Try increasing savings, income, or maximum duration."
+        )
+        raise ValueError(f"No feasible loan plan found within the given constraints. {hint}")
+
+    if preference == "balanced":
+        best_down_payment, best_duration, best_plan = _select_balanced(feasible)
+    else:
+        best_down_payment, best_duration, best_plan = min(
+            feasible, key=lambda c: _score(preference, c[2], c[0], c[1])
         )
 
     principal = params.total_acquisition_cost - best_down_payment
@@ -204,6 +254,8 @@ class HeatmapCell:
 
 def _subsample(items: list, max_n: int) -> list:
     """Return at most max_n evenly spaced items, always including first and last."""
+    if max_n <= 1:
+        return items[:1]
     if len(items) <= max_n:
         return items
     indices = sorted({round(i * (len(items) - 1) / (max_n - 1)) for i in range(max_n)})
@@ -230,8 +282,12 @@ def build_heatmap_grid(params: ResolvedParams) -> list[HeatmapCell]:
 
         ltv = principal / params.property_price
         effective_rate = params.rate_for_ltv(ltv)
+        insurance = compute_monthly_insurance(principal, params.insurance_rate)
 
         for dur in dur_candidates:
+            if compute_emi(principal, effective_rate, dur) + insurance > effective_cap:
+                cells.append(HeatmapCell(dp, dur, None, None))
+                continue
             plan = compute_loan_plan(principal, effective_rate, params.insurance_rate, dur)
             if plan.monthly_installment > effective_cap:
                 cells.append(HeatmapCell(dp, dur, None, None))
@@ -325,10 +381,12 @@ def analyze_sweet_spot(
         is_uc: bool = False,
     ) -> SweetSpotMilestone:
         principal = params.total_acquisition_cost - dp
-        ltv = (principal / params.property_price).quantize(
-            Decimal("0.0001"), rounding=ROUND_HALF_UP
-        )
-        eff_rate = params.rate_for_ltv(ltv)
+        exact_ltv = principal / params.property_price
+        # Tier lookup uses the exact LTV (as optimize() does); the rounded value is
+        # display-only. Rounding first can jump a milestone into a tier the
+        # optimizer never grants it, showing a rate the buyer would not get.
+        eff_rate = params.rate_for_ltv(exact_ltv)
+        ltv = exact_ltv.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
         plan = compute_loan_plan(principal, eff_rate, params.insurance_rate, duration)
         dti = (plan.monthly_installment / params.monthly_net_income).quantize(
             Decimal("0.0001"), rounding=ROUND_HALF_UP
@@ -351,16 +409,7 @@ def analyze_sweet_spot(
     min_dp = candidates[0]
     _min_principal = params.total_acquisition_cost - min_dp
     _min_ltv = _min_principal / params.property_price
-    _min_rate_delta = ZERO
-    for _t in params.ltv_rate_tiers:
-        if _min_ltv <= _t.ltv_max:
-            _min_rate_delta = _t.rate_delta
-            break
-    else:
-        # LTV exceeds every defined tier — fall back to the worst (last) tier,
-        # matching ResolvedParams.rate_for_ltv's fallback behavior.
-        if params.ltv_rate_tiers:
-            _min_rate_delta = params.ltv_rate_tiers[-1].rate_delta
+    _min_rate_delta = params.rate_for_ltv(_min_ltv) - params.annual_interest_rate
     effective_floor_dp = min_dp
     if _min_rate_delta > ZERO:
         _non_surcharge = [t for t in params.ltv_rate_tiers if t.rate_delta <= ZERO]
@@ -390,9 +439,10 @@ def analyze_sweet_spot(
     ref_ltv = ref_principal / params.property_price
     ref_rate = params.rate_for_ltv(ref_ltv)
     plan_ref = compute_loan_plan(ref_principal, ref_rate, params.insurance_rate, duration)
-    alt_principal = ref_principal - Decimal("1000")
-    alt_ltv = alt_principal / params.property_price
-    alt_rate = params.rate_for_ltv(alt_ltv)
+    # An extra STEP_DOWN_PAYMENT of down payment cannot shrink the loan past zero;
+    # on a loan smaller than one step the marginal saving is the whole credit cost.
+    alt_principal = max(ref_principal - STEP_DOWN_PAYMENT, ZERO)
+    alt_rate = params.rate_for_ltv(alt_principal / params.property_price)
     plan_ref_minus1k = compute_loan_plan(alt_principal, alt_rate, params.insurance_rate, duration)
     marginal_saving_per_1k = (
         plan_ref.total_cost_of_credit - plan_ref_minus1k.total_cost_of_credit
@@ -408,10 +458,12 @@ def analyze_sweet_spot(
             lower_ltv = tiers_sorted[i - 1].ltv_max if i > 0 else ZERO
             upper_ltv = tier.ltv_max
             mid_ltv = (lower_ltv + upper_ltv) / 2
-            p_mid = max(params.property_price * mid_ltv, Decimal("2000"))
-            eff = params.annual_interest_rate + tier.rate_delta
+            p_mid = max(params.property_price * mid_ltv, STEP_DOWN_PAYMENT * 2)
+            eff = max(ZERO, params.annual_interest_rate + tier.rate_delta)
             plan_mid = compute_loan_plan(p_mid, eff, params.insurance_rate, duration)
-            plan_mid_m1 = compute_loan_plan(p_mid - Decimal("1000"), eff, params.insurance_rate, duration)
+            plan_mid_m1 = compute_loan_plan(
+                p_mid - STEP_DOWN_PAYMENT, eff, params.insurance_rate, duration
+            )
             tier_save = plan_mid.total_cost_of_credit - plan_mid_m1.total_cost_of_credit
             if tier.rate_delta == ZERO:
                 delta_label = _("tier.base")
@@ -575,7 +627,13 @@ def analyze_sweet_spot(
         _add(reserve_dp, _("milestone.reserve_cap", n=SWEET_SPOT_RESERVE_MONTHS))
     _add(candidates[-1], _("milestone.maximum"))
 
-    if params.preferred_down_payment is not None:
+    # check_feasibility rejects an out-of-range preferred down payment with a clear
+    # message; analyze_sweet_spot can be called without it, so skip rather than
+    # build a milestone whose loan principal would be negative.
+    if (
+        params.preferred_down_payment is not None
+        and params.min_down_payment <= params.preferred_down_payment <= candidates[-1]
+    ):
         pref = params.preferred_down_payment
         if pref in spec:
             old_label, old_sweet, old_rf, _uc = spec[pref]

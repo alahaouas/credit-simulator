@@ -1,4 +1,5 @@
 """Unit tests for calculator.py — EMI, amortization, APR."""
+import dataclasses
 from decimal import Decimal
 from unittest import mock
 
@@ -230,3 +231,75 @@ class TestComputeAprDirect:
         apr = compute_apr(Decimal("100000"), Decimal("1000"), 120)
         assert isinstance(apr, Decimal)
         mock_abs.assert_called()
+
+
+# ── Hot-path refactor invariants ──────────────────────────────────────────────
+
+_PLAN_CASES = [
+    (Decimal("250000"), Decimal("0.0325"), Decimal("0.0035"), 240),
+    (Decimal("99999.37"), Decimal("0.0412"), Decimal("0.0028"), 360),
+    (Decimal("60000"), Decimal("0"), Decimal("0"), 60),
+    (Decimal("1000"), Decimal("0.12"), Decimal("0.01"), 1),
+    (Decimal("500000"), Decimal("0.001"), Decimal("0"), 12),
+    (Decimal("0"), Decimal("0.03"), Decimal("0.003"), 240),
+    (Decimal("100000"), Decimal("0.25"), Decimal("0.005"), 360),
+]
+
+
+class TestPlanMatchesSchedule:
+    """compute_loan_plan sums interest without materialising the schedule.
+
+    It must stay byte-identical to the schedule it replaced, or the optimizer
+    would rank plans on figures the amortization table then contradicts.
+    """
+
+    @pytest.mark.parametrize("principal,rate,insurance,months", _PLAN_CASES)
+    def test_total_interest_equals_schedule_sum(self, principal, rate, insurance, months):
+        plan = compute_loan_plan(principal, rate, insurance, months)
+        schedule = build_amortization_schedule(principal, rate, insurance, months)
+        expected = sum((row.interest_component for row in schedule), Decimal("0"))
+        assert plan.total_interest_paid == expected
+
+    @pytest.mark.parametrize("principal,rate,insurance,months", _PLAN_CASES)
+    def test_schedule_closes_at_exactly_zero(self, principal, rate, insurance, months):
+        schedule = build_amortization_schedule(principal, rate, insurance, months)
+        assert schedule[-1].closing_balance == Decimal("0.00")
+
+    @pytest.mark.parametrize("principal,rate,insurance,months", _PLAN_CASES)
+    def test_principal_components_sum_to_principal(self, principal, rate, insurance, months):
+        schedule = build_amortization_schedule(principal, rate, insurance, months)
+        assert sum((row.principal_component for row in schedule), Decimal("0")) == principal
+
+    @pytest.mark.parametrize("principal,rate,insurance,months", _PLAN_CASES)
+    def test_row_count_matches_duration(self, principal, rate, insurance, months):
+        assert len(build_amortization_schedule(principal, rate, insurance, months)) == months
+
+
+class TestPlanMemoization:
+    """compute_loan_plan is lru_cached; a cached hit must be indistinguishable."""
+
+    def test_repeated_call_returns_equal_plan(self):
+        args = (Decimal("250000"), Decimal("0.0325"), Decimal("0.0035"), 240)
+        assert compute_loan_plan(*args) == compute_loan_plan(*args)
+
+    def test_cache_clear_does_not_change_the_result(self):
+        args = (Decimal("187654.21"), Decimal("0.0399"), Decimal("0.0031"), 300)
+        first = compute_loan_plan(*args)
+        compute_loan_plan.cache_clear()
+        assert compute_loan_plan(*args) == first
+
+    def test_distinct_inputs_are_not_conflated(self):
+        base = compute_loan_plan(Decimal("200000"), Decimal("0.03"), Decimal("0.003"), 240)
+        for other in [
+            compute_loan_plan(Decimal("200001"), Decimal("0.03"), Decimal("0.003"), 240),
+            compute_loan_plan(Decimal("200000"), Decimal("0.031"), Decimal("0.003"), 240),
+            compute_loan_plan(Decimal("200000"), Decimal("0.03"), Decimal("0.004"), 240),
+            compute_loan_plan(Decimal("200000"), Decimal("0.03"), Decimal("0.003"), 241),
+        ]:
+            assert other != base
+
+    def test_plan_is_immutable(self):
+        """Sharing cached instances is only safe while LoanPlan stays frozen."""
+        plan = compute_loan_plan(Decimal("100000"), Decimal("0.03"), Decimal("0.003"), 120)
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            plan.total_cost_of_credit = Decimal("1")
