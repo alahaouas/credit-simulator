@@ -164,10 +164,12 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
         duration_candidates = _build_duration_candidates(params)
 
     feasible: list[Candidate] = []
+    needs_no_loan = False
 
     for down_payment in candidates_dp:
         principal = params.total_acquisition_cost - down_payment
         if principal <= ZERO:
+            needs_no_loan = True
             continue
 
         ltv = principal / params.property_price
@@ -192,6 +194,13 @@ def optimize(params: ResolvedParams) -> OptimizedResult:
             feasible.append((down_payment, duration, plan))
 
     if not feasible:
+        if needs_no_loan:
+            # Every candidate down payment covered the whole acquisition cost, so
+            # there is nothing left to borrow — not an affordability problem.
+            raise ValueError(
+                "The down payment covers the full acquisition cost: no loan is needed. "
+                "Lower the down payment to simulate a mortgage."
+            )
         hint = (
             "Try increasing savings or income, or unpinning the loan duration."
             if params.sources.get("fixed_loan_duration_months") == "user"
@@ -450,7 +459,7 @@ def analyze_sweet_spot(
             upper_ltv = tier.ltv_max
             mid_ltv = (lower_ltv + upper_ltv) / 2
             p_mid = max(params.property_price * mid_ltv, STEP_DOWN_PAYMENT * 2)
-            eff = params.annual_interest_rate + tier.rate_delta
+            eff = max(ZERO, params.annual_interest_rate + tier.rate_delta)
             plan_mid = compute_loan_plan(p_mid, eff, params.insurance_rate, duration)
             plan_mid_m1 = compute_loan_plan(
                 p_mid - STEP_DOWN_PAYMENT, eff, params.insurance_rate, duration
@@ -618,7 +627,13 @@ def analyze_sweet_spot(
         _add(reserve_dp, _("milestone.reserve_cap", n=SWEET_SPOT_RESERVE_MONTHS))
     _add(candidates[-1], _("milestone.maximum"))
 
-    if params.preferred_down_payment is not None:
+    # check_feasibility rejects an out-of-range preferred down payment with a clear
+    # message; analyze_sweet_spot can be called without it, so skip rather than
+    # build a milestone whose loan principal would be negative.
+    if (
+        params.preferred_down_payment is not None
+        and params.min_down_payment <= params.preferred_down_payment <= candidates[-1]
+    ):
         pref = params.preferred_down_payment
         if pref in spec:
             old_label, old_sweet, old_rf, _uc = spec[pref]

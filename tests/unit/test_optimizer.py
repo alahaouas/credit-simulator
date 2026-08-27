@@ -6,9 +6,17 @@ import pytest
 from credit_simulator.config import (
     SWEET_SPOT_OPPORTUNITY_COST_RATE,
     SWEET_SPOT_RESERVE_MONTHS,
+    VALID_PREFERENCES,
 )
-from credit_simulator.optimizer import TierEconomics, analyze_sweet_spot, optimize
-from credit_simulator.profiles import SessionProfileStore
+from credit_simulator.optimizer import (
+    TierEconomics,
+    _build_dp_candidates,
+    _subsample,
+    analyze_sweet_spot,
+    build_heatmap_grid,
+    optimize,
+)
+from credit_simulator.profiles import SUPPORTED_COUNTRIES, SessionProfileStore
 from credit_simulator.resolver import ResolvedParams, UserInputs, resolve
 
 
@@ -736,3 +744,291 @@ class TestIsUserChoiceField:
         analysis = analyze_sweet_spot(self._params(preferred_down_payment=Decimal("100000")))
         dps = [m.down_payment for m in analysis.milestones]
         assert dps == sorted(dps)
+
+
+# ── Edge cases and regressions ────────────────────────────────────────────────
+
+
+def _resolved(**kwargs):
+    """Resolve params from the standard scenario, overriding any field."""
+    defaults = dict(
+        property_price=Decimal("350000"),
+        monthly_net_income=Decimal("6000"),
+        available_savings=Decimal("80000"),
+    )
+    defaults.update(kwargs)
+    return resolve(UserInputs(**defaults), SessionProfileStore())
+
+
+class TestBalancedIsDistinct:
+    """`balanced` must trade cost against payment, not mirror minimize_total_cost.
+
+    The former key, total_cost + monthly_payment * duration, reduced to
+    2 * total_cost - down_payment + constant and so returned the cost-optimal plan.
+    """
+
+    def _three(self):
+        return (
+            optimize(_resolved(optimization_preference="balanced")),
+            optimize(_resolved(optimization_preference="minimize_total_cost")),
+            optimize(_resolved(optimization_preference="minimize_monthly_payment")),
+        )
+
+    def test_differs_from_cost_optimal(self):
+        balanced, cost, _payment = self._three()
+        assert (balanced.loan_duration_months, balanced.down_payment) != (
+            cost.loan_duration_months,
+            cost.down_payment,
+        )
+
+    def test_payment_between_the_two_extremes(self):
+        balanced, cost, payment = self._three()
+        assert payment.plan.monthly_installment <= balanced.plan.monthly_installment
+        assert balanced.plan.monthly_installment <= cost.plan.monthly_installment
+
+    def test_total_cost_between_the_two_extremes(self):
+        balanced, cost, payment = self._three()
+        assert cost.plan.total_cost_of_credit <= balanced.plan.total_cost_of_credit
+        assert balanced.plan.total_cost_of_credit <= payment.plan.total_cost_of_credit
+
+    def test_still_respects_the_payment_cap(self):
+        balanced = optimize(_resolved(optimization_preference="balanced"))
+        params = _resolved()
+        cap = min(params.monthly_net_income * params.max_debt_ratio, params.max_monthly_payment)
+        assert balanced.plan.monthly_installment <= cap
+
+    def test_single_feasible_point_does_not_divide_by_zero(self):
+        """A one-point grid gives both metrics a zero span; normalisation must cope."""
+        params = _resolved(
+            available_savings=Decimal("78750"),
+            fixed_loan_duration_months=240,
+            optimization_preference="balanced",
+        )
+        assert optimize(params).loan_duration_months == 240
+
+
+class TestCashRichBuyer:
+    """Savings above the acquisition cost must not produce a negative loan principal."""
+
+    def _params(self):
+        # 350 000 + BE taxes -> ~393 750; 500 000 of savings overshoots it.
+        return _resolved(available_savings=Decimal("500000"))
+
+    def test_dp_candidates_capped_at_acquisition_cost(self):
+        params = self._params()
+        candidates = _build_dp_candidates(params)
+        assert candidates[-1] <= params.total_acquisition_cost
+        assert all(c <= params.total_acquisition_cost for c in candidates)
+
+    def test_sweet_spot_does_not_raise(self):
+        analysis = analyze_sweet_spot(self._params())
+        assert analysis.milestones
+
+    def test_no_milestone_has_a_negative_principal(self):
+        analysis = analyze_sweet_spot(self._params())
+        for m in analysis.milestones:
+            assert m.loan_principal >= Decimal("0"), m.label
+
+    def test_heatmap_does_not_raise(self):
+        assert build_heatmap_grid(self._params())
+
+    def test_optimize_still_returns_a_loan(self):
+        result = optimize(self._params())
+        assert result.loan_principal > Decimal("0")
+
+    def test_savings_exactly_equal_to_acquisition_cost(self):
+        params = _resolved()
+        exact = _resolved(available_savings=params.total_acquisition_cost)
+        assert _build_dp_candidates(exact)[-1] == exact.total_acquisition_cost
+        assert optimize(exact).loan_principal > Decimal("0")
+
+
+class TestFullCashDownPayment:
+    """Pinning the down payment at the full price is not an affordability failure."""
+
+    def test_message_says_no_loan_is_needed(self):
+        params = _resolved(
+            available_savings=Decimal("500000"),
+            preferred_down_payment=Decimal("393750.00"),
+        )
+        with pytest.raises(ValueError, match="no loan is needed"):
+            optimize(params)
+
+    def test_ordinary_infeasibility_keeps_its_own_message(self):
+        params = _resolved(max_monthly_payment=Decimal("100"))
+        with pytest.raises(ValueError, match="No feasible loan plan"):
+            optimize(params)
+
+    def test_pinned_duration_gets_a_pinned_duration_hint(self):
+        params = _resolved(max_monthly_payment=Decimal("100"), fixed_loan_duration_months=120)
+        with pytest.raises(ValueError, match="unpinning the loan duration"):
+            optimize(params)
+
+
+class TestOutOfRangePreferredDownPayment:
+    """analyze_sweet_spot may run without check_feasibility; it must not crash."""
+
+    def test_above_savings_does_not_raise(self):
+        analysis = analyze_sweet_spot(_resolved(preferred_down_payment=Decimal("999999")))
+        assert analysis.milestones
+
+    def test_above_savings_adds_no_user_choice_milestone(self):
+        analysis = analyze_sweet_spot(_resolved(preferred_down_payment=Decimal("999999")))
+        assert not any(m.is_user_choice for m in analysis.milestones)
+
+    def test_below_minimum_adds_no_user_choice_milestone(self):
+        analysis = analyze_sweet_spot(_resolved(preferred_down_payment=Decimal("1")))
+        assert not any(m.is_user_choice for m in analysis.milestones)
+
+    def test_in_range_still_adds_the_milestone(self):
+        analysis = analyze_sweet_spot(_resolved(preferred_down_payment=Decimal("79000")))
+        assert sum(m.is_user_choice for m in analysis.milestones) == 1
+
+
+class TestEffectiveRateNeverNegative:
+    """A tier discount must not push the rate below zero (calculator rejects it)."""
+
+    def test_rate_for_ltv_clamped_across_the_ltv_range(self):
+        params = _resolved(annual_interest_rate=Decimal("0"))
+        for pct in range(0, 130, 5):
+            ltv = Decimal(pct) / Decimal("100")
+            assert params.rate_for_ltv(ltv) >= Decimal("0"), f"LTV {ltv}"
+
+    def test_optimize_survives_a_zero_base_rate(self):
+        assert optimize(_resolved(annual_interest_rate=Decimal("0"))).loan_principal > 0
+
+    def test_sweet_spot_survives_a_zero_base_rate(self):
+        analysis = analyze_sweet_spot(_resolved(annual_interest_rate=Decimal("0")))
+        assert analysis.milestones
+
+    def test_tier_economics_rates_are_non_negative(self):
+        analysis = analyze_sweet_spot(_resolved(annual_interest_rate=Decimal("0")))
+        for te in analysis.tier_economics:
+            assert te.effective_rate >= Decimal("0"), te.ltv_range
+
+    def test_rate_below_the_deepest_discount(self):
+        """BE's best tier discounts 0.30 %; a 0.10 % base rate would go negative."""
+        params = _resolved(annual_interest_rate=Decimal("0.001"))
+        assert optimize(params).plan.annual_interest_rate >= Decimal("0")
+
+
+class TestMilestoneRateMatchesOptimizer:
+    """The table must quote the rate the optimizer would actually grant.
+
+    _milestone used to round the LTV to 4 dp before the tier lookup, so a
+    milestone sitting just above a boundary could be shown a tier it does not
+    qualify for.
+    """
+
+    def test_effective_rate_uses_the_exact_ltv(self):
+        params = _sweet_params()
+        for m in analyze_sweet_spot(params).milestones:
+            exact_ltv = m.loan_principal / params.property_price
+            assert m.effective_rate == params.rate_for_ltv(exact_ltv), m.label
+
+    def test_optimizer_result_rate_matches_its_own_ltv(self):
+        params = _resolved()
+        result = optimize(params)
+        exact_ltv = result.loan_principal / params.property_price
+        assert result.plan.annual_interest_rate == params.rate_for_ltv(exact_ltv)
+
+
+class TestTinyLoanMarginalSaving:
+    """A loan smaller than one down-payment step used to build a negative principal."""
+
+    def test_does_not_raise(self):
+        params = _resolved(property_price=Decimal("30000"), available_savings=Decimal("40000"))
+        assert analyze_sweet_spot(params).marginal_saving_per_1k >= Decimal("0")
+
+    def test_marginal_saving_is_capped_by_total_credit_cost(self):
+        params = _resolved(property_price=Decimal("30000"), available_savings=Decimal("40000"))
+        analysis = analyze_sweet_spot(params)
+        worst = max(m.plan.total_cost_of_credit for m in analysis.milestones)
+        assert analysis.marginal_saving_per_1k <= worst
+
+
+class TestSubsample:
+    def test_returns_everything_below_the_cap(self):
+        assert _subsample([1, 2, 3], 5) == [1, 2, 3]
+
+    def test_keeps_first_and_last(self):
+        out = _subsample(list(range(100)), 10)
+        assert out[0] == 0 and out[-1] == 99
+        assert len(out) <= 10
+
+    def test_max_one_does_not_divide_by_zero(self):
+        assert _subsample([1, 2, 3], 1) == [1]
+
+    def test_empty_input(self):
+        assert _subsample([], 5) == []
+
+
+class TestGridInvariantsEveryCountry:
+    """Structural invariants must hold for every supported country, not just BE."""
+
+    @pytest.mark.parametrize("country", sorted(SUPPORTED_COUNTRIES))
+    def test_optimize_and_sweet_spot_are_consistent(self, country):
+        params = _resolved(
+            country=country,
+            property_price=Decimal("300000"),
+            monthly_net_income=Decimal("9000"),
+            available_savings=Decimal("150000"),
+            max_monthly_payment=Decimal("9000"),
+        )
+        result = optimize(params)
+        cap = min(params.monthly_net_income * params.max_debt_ratio, params.max_monthly_payment)
+
+        assert result.loan_principal > Decimal("0")
+        assert result.plan.monthly_installment <= cap
+        assert params.min_down_payment <= result.down_payment <= params.available_savings
+        assert result.loan_principal == params.total_acquisition_cost - result.down_payment
+
+        analysis = analyze_sweet_spot(params)
+        dps = [m.down_payment for m in analysis.milestones]
+        assert dps == sorted(dps)
+        assert len(dps) == len(set(dps))
+        for m in analysis.milestones:
+            assert m.loan_principal >= Decimal("0")
+            assert m.down_payment <= params.total_acquisition_cost
+            assert m.effective_rate >= Decimal("0")
+        assert sum(m.is_sweet_spot for m in analysis.milestones) == 1
+
+    @pytest.mark.parametrize("country", sorted(SUPPORTED_COUNTRIES))
+    def test_heatmap_cells_are_capped_and_gridded(self, country):
+        params = _resolved(
+            country=country,
+            property_price=Decimal("300000"),
+            monthly_net_income=Decimal("9000"),
+            available_savings=Decimal("150000"),
+        )
+        cap = min(params.monthly_net_income * params.max_debt_ratio, params.max_monthly_payment)
+        cells = build_heatmap_grid(params)
+        assert cells
+        for cell in cells:
+            if cell.monthly_installment is not None:
+                assert cell.monthly_installment <= cap
+                assert cell.total_cost is not None
+            else:
+                assert cell.total_cost is None
+
+
+class TestPreferenceKeysAreCoherent:
+    """Each preference must actually optimise the metric it names."""
+
+    @pytest.mark.parametrize(
+        "preference,metric",
+        [
+            ("minimize_total_cost", lambda r: r.plan.total_cost_of_credit),
+            ("minimize_monthly_payment", lambda r: r.plan.monthly_installment),
+            ("minimize_duration", lambda r: Decimal(r.loan_duration_months)),
+            ("minimize_down_payment", lambda r: r.down_payment),
+        ],
+    )
+    def test_no_other_preference_beats_it_on_its_own_metric(self, preference, metric):
+        winner = metric(optimize(_resolved(optimization_preference=preference)))
+        for other in VALID_PREFERENCES:
+            assert winner <= metric(optimize(_resolved(optimization_preference=other)))
+
+    def test_unknown_preference_rejected(self):
+        with pytest.raises(ValueError, match="Unknown optimization preference"):
+            optimize(_resolved(optimization_preference="minimize_regret"))
