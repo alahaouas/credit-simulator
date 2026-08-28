@@ -94,7 +94,7 @@ export default function RatesPage() {
 
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <Link href="/" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+          <Link href="/" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900 rounded">
             {t('nav.home')}
           </Link>
         </div>
