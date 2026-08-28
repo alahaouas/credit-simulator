@@ -86,7 +86,7 @@ export default function AlertsPage() {
 
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
-          <Link href="/" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+          <Link href="/" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900 rounded">
             {t('nav.home')}
           </Link>
         </div>
@@ -97,7 +97,7 @@ export default function AlertsPage() {
         {!accessToken && !loading ? (
           <p className="text-gray-500 dark:text-gray-400">
             {t('alerts.signin_required')}{' '}
-            <Link href="/auth" className="underline">{t('nav.signin')}</Link>
+            <Link href="/auth" className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900 rounded">{t('nav.signin')}</Link>
           </p>
         ) : (
           <>
