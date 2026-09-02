@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { signInWithMagicLink } from '@/lib/supabase'
 import { useI18n } from '@/lib/i18n'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
@@ -37,8 +38,11 @@ function AuthPageInner() {
 
   if (submitted) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-lg">{t('auth.check_inbox')}</p>
+      <main className="flex min-h-screen flex-col gap-6 items-center justify-center p-8 text-center">
+        <p className="text-lg text-gray-500 dark:text-gray-400">{t('auth.check_inbox')}</p>
+        <Link href="/" className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900">
+          {t('nav.home')}
+        </Link>
       </main>
     )
   }
