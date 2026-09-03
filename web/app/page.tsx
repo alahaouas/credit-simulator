@@ -57,24 +57,24 @@ export default function Home() {
 
       {user && (
         <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <Link href="/preferences" className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+          <Link href="/preferences" className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:focus-visible:ring-gray-600 rounded">
             {t('nav.preferences')}
           </Link>
           <span>·</span>
-          <Link href="/settings" className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+          <Link href="/settings" className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:focus-visible:ring-gray-600 rounded">
             {t('nav.settings')}
           </Link>
         </div>
       )}
 
       <div className="flex gap-4 text-sm text-gray-400 dark:text-gray-500">
-        <Link href="/rates" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+        <Link href="/rates" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:focus-visible:ring-gray-600 rounded">
           {t('nav.rates')}
         </Link>
         {user && (
           <>
             <span>·</span>
-            <Link href="/alerts" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+            <Link href="/alerts" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:focus-visible:ring-gray-600 rounded">
               {t('nav.alerts')}
             </Link>
           </>
@@ -86,7 +86,7 @@ export default function Home() {
           href={`${API_BASE}/api/docs`}
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
+          className="hover:text-gray-500 dark:hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:focus-visible:ring-gray-600 rounded"
         >
           {t('nav.api_docs')} ↗
         </a>
