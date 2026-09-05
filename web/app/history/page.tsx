@@ -530,7 +530,7 @@ export default function HistoryPage() {
       )}
 
       <div className="mt-6 text-center">
-        <Link href="/" className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">{t('nav.home')}</Link>
+        <Link href="/" className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:focus-visible:ring-gray-600 rounded">{t('nav.home')}</Link>
       </div>
     </main>
   )
