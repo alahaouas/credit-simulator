@@ -112,4 +112,4 @@
 
 ## 2026-09-08 - [Apply focus-visible to basic text navigation links]
 **Learning:** Basic text navigation links like 'Home' or 'Sign In' often miss standard focus states during development, making them inaccessible to keyboard users navigating through the page structure.
-**Action:** Always ensure that every Next.js `<Link>` and `<a>` element includes Tailwind's `focus-visible` utility classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:focus-visible:ring-gray-600`) and a `rounded` constraint for proper focus ring alignment, even if they aren't styled as buttons.
+**Action:** Always ensure that every Next.js `<Link>` and `<a>` element includes Tailwind's `focus-visible` utility classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:focus-visible:ring-offset-gray-900 focus-visible:ring-offset-2`) and a `rounded` constraint for proper focus ring alignment, even if they aren't styled as buttons.
