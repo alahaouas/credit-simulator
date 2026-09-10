@@ -9,6 +9,7 @@ import { useI18n, type TranslationKey } from '@/lib/i18n'
 import dynamic from 'next/dynamic'
 import AmortizationTable from '@/components/AmortizationTable'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
+import { LocaleToggle } from '@/components/LocaleToggle'
 import WhatIfPanel from '@/components/WhatIfPanel'
 import EarlyRepaymentPanel from '@/components/EarlyRepaymentPanel'
 import RefinancingBreakEvenPanel from '@/components/RefinancingBreakEvenPanel'
@@ -128,6 +129,7 @@ export default function ResultsPage() {
         <h1 className="text-3xl font-bold tracking-tight">{t('results.title')}</h1>
         <div className="flex flex-wrap items-center gap-3">
           <DarkModeToggle />
+          <LocaleToggle />
           {inputs && (
             <button
               onClick={handleCompareAll}
