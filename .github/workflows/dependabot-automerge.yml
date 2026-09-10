@@ -44,8 +44,9 @@ jobs:
           echo "SKIP=1" >> "$GITHUB_ENV"
 
       # Waits on every check on the PR head except this workflow's own job. gh pr
-      # checks --watch is not usable here: a pull_request_target run can surface in
-      # the PR's own check list, and waiting on itself never returns.
+      # checks --watch is not usable here: a pull_request_target run DOES appear in
+      # the PR's own check list (measured on #240), so it would wait on itself until
+      # the job timeout and never merge.
       - name: Wait for all other checks
         if: env.SKIP != '1'
         env:
@@ -59,9 +60,18 @@ jobs:
             checks=$(gh pr checks "$PR_URL" --json name,state \
               --jq '[.[] | select(.name | test("Auto-merge patch and minor bumps") | not)]' 2>/dev/null || true)
             [ -n "$checks" ] || checks='[]'
+            # Allowlist, not denylist. gh reports at least a dozen states — REQUESTED,
+            # ERROR and STALE among them — and treating "not in my list of pending
+            # states" as done would merge on a check that had errored or not started.
+            # Only these three count as finished-and-fine; only these count as failed;
+            # anything else keeps the loop waiting, which is the safe direction.
             total=$(jq 'length' <<<"$checks")
-            pending=$(jq '[.[] | select(.state == "PENDING" or .state == "QUEUED" or .state == "IN_PROGRESS")] | length' <<<"$checks")
-            failed=$(jq -r '[.[] | select(.state == "FAILURE" or .state == "TIMED_OUT" or .state == "CANCELLED" or .state == "ACTION_REQUIRED" or .state == "STARTUP_FAILURE")] | map(.name) | join(", ")' <<<"$checks")
+            # `index($s) != null` is deliberate: index returns 0 for a first-position
+            # match, and a bare `select(index(...))` happens to work only because jq
+            # treats 0 as truthy. Explicit is safer than relying on that.
+            ok=$(jq '[.[] | select(.state as $s | ["SUCCESS","SKIPPED","NEUTRAL"] | index($s) != null)] | length' <<<"$checks")
+            failed=$(jq -r '[.[] | select(.state as $s | ["FAILURE","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE","ERROR","STALE"] | index($s) != null)] | map(.name) | join(", ")' <<<"$checks")
+            pending=$((total - ok))
 
             if [ -n "$failed" ]; then
               echo "::notice::Not merging — failing checks: $failed"
