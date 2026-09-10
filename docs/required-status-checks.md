@@ -9,6 +9,21 @@
 
 CodeQL is deliberately **not** required — see below.
 
+Verified on PR #240, a documentation-only change (2026-09-10):
+
+```
+Python — ruff + pytest             skipping
+Web — Playwright E2E               skipping
+Web — lint + typecheck + build     skipping
+Detect code changes                pass
+                                   →  MERGEABLE / CLEAN
+```
+
+Three required checks skipped, the PR still mergeable. That is the behaviour the whole
+refactor depends on — see the note below on skipped versus absent. CodeQL did not run at
+all (it keeps its `paths-ignore`) and blocked nothing, which is why it must stay off the
+required list.
+
 ## Why `paths-ignore` had to go from the `pull_request` trigger
 
 A workflow filtered out by `paths-ignore` does not run at all. Its checks therefore never

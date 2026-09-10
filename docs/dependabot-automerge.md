@@ -37,8 +37,23 @@ the group holds the whole PR back.
 ## Two details that are easy to get wrong
 
 **The wait step excludes this workflow's own job by name.** A `pull_request_target` run
-can surface in the PR's own check list, so `gh pr checks --watch` can end up waiting on
-itself and never returns.
+surfaces in the PR's own check list, so `gh pr checks --watch` would end up waiting on
+itself and never return.
+
+This is confirmed, not theoretical. On PR #240 — a documentation-only change — the check
+list read:
+
+```
+Auto-merge patch and minor bumps   skipping
+Python — ruff + pytest             skipping
+Web — Playwright E2E               skipping
+Web — lint + typecheck + build     skipping
+Detect code changes                pass
+```
+
+The first row is this workflow, listed among the PR's own checks. On a real Dependabot
+PR that row is *pending* for as long as the job runs, so without the name filter the
+wait would block on itself until the 30-minute job timeout and never merge anything.
 
 **`gh pr checks` exits non-zero when checks are pending (8) or failing (1).** Under
 `set -e` that aborts the step before the JSON is read, so the call tolerates a non-zero
