@@ -6,12 +6,16 @@ left open for a human.
 
 ## Why a workflow rather than GitHub's own auto-merge
 
-`gh pr merge --auto` needs two things this repository does not have: `allow_auto_merge`
-on the repository, and branch protection on `main` with required status checks. Without
-required checks there is nothing for auto-merge to wait on, so it merges immediately —
-which is the opposite of the intent. Enabling protection is the cleaner long-term fix,
-but it changes how everyone pushes to `main`, so the workflow polls the checks itself
-instead.
+`gh pr merge --auto` needs two things: `allow_auto_merge` on the repository, and branch
+protection on `main` with required status checks. Without required checks there is
+nothing for auto-merge to wait on, so it merges immediately — which is the opposite of
+the intent.
+
+Half of that is now satisfied: `main` requires four CI contexts as of 2026-09-10 (see
+[required-status-checks.md](required-status-checks.md)). `allow_auto_merge` is still
+off at the repository level, which is a settings toggle rather than a code change. Turn
+it on and this whole workflow collapses to a single `gh pr merge --auto` call — the
+polling exists only to cover that gap.
 
 It also runs entirely on `GITHUB_TOKEN` and GitHub's Actions budget. A Claude-driven
 alternative would authenticate with `CLAUDE_CODE_OAUTH_TOKEN`, which draws on the same
