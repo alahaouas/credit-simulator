@@ -1,0 +1,86 @@
+name: Dependabot auto-merge
+
+# Squash-merges Dependabot PRs that are patch or minor once every other check is
+# green. Majors are left open on purpose: a major bump is work to do, not a rubber
+# stamp.
+#
+# pull_request_target runs with the base repository's token, so this workflow must
+# never check out or execute the PR's code. It does not: every step below talks to
+# the GitHub API only.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependabot-automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  automerge:
+    name: Auto-merge patch and minor bumps
+    # user.login rather than github.actor: on a synchronize the actor is whoever
+    # pushed, which is not always Dependabot even on a Dependabot branch.
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Read Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # For a grouped PR this is the highest update-type in the group, so one major
+      # anywhere in the group holds the whole PR back.
+      - name: Skip majors
+        if: steps.meta.outputs.update-type == 'version-update:semver-major'
+        run: |
+          echo "::notice::${{ steps.meta.outputs.dependency-names }} is a major update — leaving this PR for a human."
+          echo "SKIP=1" >> "$GITHUB_ENV"
+
+      # Waits on every check on the PR head except this workflow's own job. gh pr
+      # checks --watch is not usable here: a pull_request_target run can surface in
+      # the PR's own check list, and waiting on itself never returns.
+      - name: Wait for all other checks
+        if: env.SKIP != '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -uo pipefail
+          for _ in $(seq 1 50); do
+            # gh pr checks exits 8 while checks are pending and 1 when any fails, so
+            # its status is not an error here — the JSON is what decides.
+            checks=$(gh pr checks "$PR_URL" --json name,state \
+              --jq '[.[] | select(.name | test("Auto-merge patch and minor bumps") | not)]' 2>/dev/null || true)
+            [ -n "$checks" ] || checks='[]'
+            total=$(jq 'length' <<<"$checks")
+            pending=$(jq '[.[] | select(.state == "PENDING" or .state == "QUEUED" or .state == "IN_PROGRESS")] | length' <<<"$checks")
+            failed=$(jq -r '[.[] | select(.state == "FAILURE" or .state == "TIMED_OUT" or .state == "CANCELLED" or .state == "ACTION_REQUIRED" or .state == "STARTUP_FAILURE")] | map(.name) | join(", ")' <<<"$checks")
+
+            if [ -n "$failed" ]; then
+              echo "::notice::Not merging — failing checks: $failed"
+              echo "SKIP=1" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            if [ "$total" -gt 0 ] && [ "$pending" -eq 0 ]; then
+              echo "All $total checks green."
+              exit 0
+            fi
+            echo "waiting — $pending of $total still running"
+            sleep 30
+          done
+          echo "::notice::Timed out waiting for checks; leaving this PR open."
+          echo "SKIP=1" >> "$GITHUB_ENV"
+
+      - name: Squash-merge
+        if: env.SKIP != '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge "$PR_URL" --squash --delete-branch

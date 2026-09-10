@@ -30,6 +30,7 @@ Stack, tooling versions and lint rules are declared in `pyproject.toml` and `web
 | TypeScript toolchain (`web/`) | **Two TypeScript packages on purpose**: `typescript` (JS API — needed by `next build`, `typescript-eslint`, IDE) + `typescript-native` (npm alias of TypeScript 7) for `npm run typecheck`, ~6.4× faster. Both pinned caret-free. Use `npm run typecheck`, never `npx tsc`. See [docs/typescript-toolchain.md](docs/typescript-toolchain.md). |
 | BE mortgage rates | Manually maintained in `profiles.py` (Belgium is excluded from the ECB MIR endpoint — unreliable, see `fetcher.py:17`). Refresh at runtime with `credit-simulator rates set ...` (see [docs/runtime-rates.md](docs/runtime-rates.md)). |
 | Localisation | EN/FR via `i18n.py`; locale auto-detected from env/system; override with `--locale` flag |
+| Dependabot PRs | Patch/minor auto-merge once checks are green; majors are left open on purpose. Never add `actions/checkout` to that workflow — see [docs/dependabot-automerge.md](docs/dependabot-automerge.md). |
 
 ---
 
