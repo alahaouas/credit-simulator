@@ -1,13 +1,13 @@
 name: CI
 
 on:
+  # No paths-ignore on pull_request, on purpose. These jobs are required status
+  # checks on main, and a workflow filtered out by paths-ignore never runs at all —
+  # so its checks never report, and a docs-only PR stays unmergeable forever. The
+  # saving is kept instead by the `changes` job below: the workflow always starts,
+  # and the expensive jobs skip in seconds when nothing but docs moved. A skipped
+  # job satisfies a required check; an absent one does not.
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
-      - '.github/*.md'
-      - 'LICENSE'
   push:
     branches: [main]
     paths-ignore:
@@ -25,8 +25,43 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Replaces the pull_request paths-ignore filter. Same list, applied per job so the
+  # workflow still reports on every PR.
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Any non-documentation file touched?
+        id: filter
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BASE:-}" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "No usable base ref — running everything."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --name-only "$BASE" "$GITHUB_SHA")
+          echo "$changed"
+          code=$(echo "$changed" | grep -vE '(\.md$|^docs/|^\.gitignore$|^\.github/[^/]*\.md$|^LICENSE$)' || true)
+          if [ -n "$code" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Documentation-only change — skipping build jobs."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   python:
     name: Python — ruff + pytest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -51,6 +86,8 @@ jobs:
 
   web:
     name: Web — lint + typecheck + build
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -72,6 +109,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Deliberately NOT --omit=dev: a dev-only advisory still ships in whatever this
+      # repo builds, and omitting them is how a tree with high-severity findings reads
+      # as clean. Blocking at high, so a moderate landing against a dev tool does not
+      # stop unrelated PRs — check `npm audit` output for those.
+      #
+      # This gate went in from a measured 0 vulnerabilities (2026-09-10), so a red run
+      # means the change under review reintroduced something. `npm audit fix` is not
+      # the answer — it can add more advisories than it removes. Pin or override the
+      # offending package to a fixed version instead, and re-count before and after.
+      - name: Audit (dev-inclusive, high and above)
+        run: npm audit --audit-level=high
+
       - name: Lint (ESLint flat config)
         run: npm run lint
 
@@ -85,6 +134,8 @@ jobs:
 
   e2e:
     name: Web — Playwright E2E
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:

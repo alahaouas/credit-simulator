@@ -30,6 +30,8 @@ Stack, tooling versions and lint rules are declared in `pyproject.toml` and `web
 | TypeScript toolchain (`web/`) | **Two TypeScript packages on purpose**: `typescript` (JS API — needed by `next build`, `typescript-eslint`, IDE) + `typescript-native` (npm alias of TypeScript 7) for `npm run typecheck`, ~6.4× faster. Both pinned caret-free. Use `npm run typecheck`, never `npx tsc`. See [docs/typescript-toolchain.md](docs/typescript-toolchain.md). |
 | BE mortgage rates | Manually maintained in `profiles.py` (Belgium is excluded from the ECB MIR endpoint — unreliable, see `fetcher.py:17`). Refresh at runtime with `credit-simulator rates set ...` (see [docs/runtime-rates.md](docs/runtime-rates.md)). |
 | Localisation | EN/FR via `i18n.py`; locale auto-detected from env/system; override with `--locale` flag |
+| Dependency audit | CI runs `npm audit --audit-level=high` **dev-inclusive**, from a clean 0 baseline. Pin or override to fix a red run — never the automatic fixer. The `postcss` override is pinned exactly on purpose — see [docs/dependency-audit-gate.md](docs/dependency-audit-gate.md). |
+| Required checks | `main` requires the four CI contexts, so `ci.yml` must keep running on every PR — do **not** add `paths-ignore` back to its `pull_request` trigger; the `changes` job replaces it. See [docs/required-status-checks.md](docs/required-status-checks.md). |
 
 ---
 
