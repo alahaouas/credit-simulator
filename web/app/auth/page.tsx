@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { signInWithMagicLink } from '@/lib/supabase'
 import { useI18n } from '@/lib/i18n'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
+import { LocaleToggle } from '@/components/LocaleToggle'
 
 function AuthPageInner() {
   const { t } = useI18n()
@@ -45,8 +46,9 @@ function AuthPageInner() {
 
   return (
     <main className="flex min-h-screen items-center justify-center">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-3">
         <DarkModeToggle />
+        <LocaleToggle />
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
         <h1 className="text-2xl font-semibold">{t('auth.title')}</h1>
