@@ -32,7 +32,7 @@ Stack, tooling versions and lint rules are declared in `pyproject.toml` and `web
 | Localisation | EN/FR via `i18n.py`; locale auto-detected from env/system; override with `--locale` flag |
 | Dependency audit | CI runs `npm audit --audit-level=high` **dev-inclusive**, from a clean 0 baseline. Pin or override to fix a red run — never the automatic fixer. The `postcss` override is pinned exactly on purpose — see [docs/dependency-audit-gate.md](docs/dependency-audit-gate.md). |
 | Required checks | `main` requires the four CI contexts, so `ci.yml` must keep running on every PR — do **not** add `paths-ignore` back to its `pull_request` trigger; the `changes` job replaces it. See [docs/required-status-checks.md](docs/required-status-checks.md). |
-
+| Dependabot PRs | Patch/minor auto-merge once checks are green; majors are left open on purpose. Never add `actions/checkout` to that workflow — see [docs/dependabot-automerge.md](docs/dependabot-automerge.md). |
 ---
 
 ## Git Workflow
