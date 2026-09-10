@@ -9,6 +9,10 @@
 
 CodeQL is deliberately **not** required — see below.
 
+Verified on a documentation-only PR (2026-09-10): the three build jobs report `skipped`,
+`Detect code changes` reports `success`, and the PR is `MERGEABLE / CLEAN`. That is the
+behaviour the refactor depends on — see the note below on skipped versus absent.
+
 ## Why `paths-ignore` had to go from the `pull_request` trigger
 
 A workflow filtered out by `paths-ignore` does not run at all. Its checks therefore never
