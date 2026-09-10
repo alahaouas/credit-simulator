@@ -2,9 +2,11 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { signInWithMagicLink } from '@/lib/supabase'
 import { useI18n } from '@/lib/i18n'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
+import { LocaleToggle } from '@/components/LocaleToggle'
 
 function AuthPageInner() {
   const { t } = useI18n()
@@ -37,16 +39,27 @@ function AuthPageInner() {
 
   if (submitted) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
+      <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
+        <div className="absolute top-4 right-4 flex items-center gap-3">
+          <DarkModeToggle />
+          <LocaleToggle />
+        </div>
         <p className="text-lg">{t('auth.check_inbox')}</p>
+        <Link
+          href="/"
+          className="rounded-lg bg-black text-white dark:bg-white dark:text-black px-6 py-3 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-gray-900"
+        >
+          {t('nav.home')}
+        </Link>
       </main>
     )
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-3">
         <DarkModeToggle />
+        <LocaleToggle />
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
         <h1 className="text-2xl font-semibold">{t('auth.title')}</h1>
