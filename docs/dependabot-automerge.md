@@ -55,6 +55,13 @@ The first row is this workflow, listed among the PR's own checks. On a real Depe
 PR that row is *pending* for as long as the job runs, so without the name filter the
 wait would block on itself until the 30-minute job timeout and never merge anything.
 
+**Check states are matched by allowlist, not denylist.** `gh` reports well over a dozen
+states — `REQUESTED`, `ERROR` and `STALE` among them. An earlier version listed the
+pending states and treated everything else as finished, which would have merged on a
+check that had errored or had not started yet. Only `SUCCESS`, `SKIPPED` and `NEUTRAL`
+count as done-and-fine; a named set counts as failed; anything else keeps the loop
+waiting, which is the safe direction to be wrong in.
+
 **`gh pr checks` exits non-zero when checks are pending (8) or failing (1).** Under
 `set -e` that aborts the step before the JSON is read, so the call tolerates a non-zero
 status and the parsed state is what decides. A PR with no checks reported yet parses as
