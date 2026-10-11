@@ -1,15 +1,5 @@
 # CLAUDE.md — AI Assistant Guide for credit-simulator
 
-## Cost-Efficiency Rules
-
-- No sub-agents unless genuine parallel isolation is required.
-- Grep/Glob before Read; use `offset`+`limit` to read only needed lines.
-- Read a file only when about to edit it.
-- Batch independent tool calls in one message.
-- Short responses — no recaps, no preambles.
-
----
-
 This file provides context and conventions for AI assistants (e.g. Claude Code) working on this repository.
 
 ---
@@ -152,6 +142,7 @@ Under `src/credit_simulator/` (section refs point at `docs/requirements.md`). Gl
 5. **Minimal footprint**: Do not create extra files, helper utilities, or abstractions that are not required by the current task.
 6. **Update this file**: When significant architectural decisions are made (stack choice, database, API design), update the relevant sections of this CLAUDE.md.
 7. **Commit on the right branch**: All Claude Code work goes to the `claude/`-prefixed branch for the active session.
+8. **Merging and cleanup**: see [AGENTS.md](AGENTS.md). Never `gh pr merge --delete-branch`.
 
 ---
 
