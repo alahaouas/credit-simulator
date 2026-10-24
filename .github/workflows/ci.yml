@@ -95,7 +95,6 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://ci.placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
-      NEXT_PUBLIC_API_URL: http://localhost:8000
     steps:
       - uses: actions/checkout@v7
 
@@ -143,7 +142,6 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://ci.placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
-      NEXT_PUBLIC_API_URL: http://localhost:8000
     steps:
       - uses: actions/checkout@v7
 

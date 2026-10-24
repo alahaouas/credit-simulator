@@ -45,7 +45,7 @@ Both services send security headers. See [security-headers.md](security-headers.
 | `ALLOWED_ORIGINS` | Secret | api | optional, only for browser apps on other origins calling the API |
 
 - Vercel refuses a `NEXT_PUBLIC_` variable of type *Secret* ("Remove the public framework prefix..."). Those names are inlined into the browser bundle, so they must be type **Config**. Both Supabase values above are public by design (RLS protects the data). Never give a `NEXT_PUBLIC_` name to anything secret.
-- Leave `NEXT_PUBLIC_API_URL` and `BACKEND_URL` unset on Vercel. `BACKEND_URL` only feeds the local-dev `/api` rewrite in `next.config.mjs`.
+- Leave `BACKEND_URL` unset on Vercel: it only feeds the local-dev `/api` rewrite in `next.config.mjs`.
 - **Supabase's Vercel integration** creates names the app does not read (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`), plus `POSTGRES_*`, `SUPABASE_JWT_SECRET` and `SUPABASE_SECRET_KEY`. Keep only the variables in the table: the database password and the JWT signing secret must not sit in the project. If the integration keeps re-adding them, disconnect it.
 - Environment-variable changes take effect on the next deployment.
 

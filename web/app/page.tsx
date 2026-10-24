@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useI18n } from '@/lib/i18n'
-import { API_BASE } from '@/lib/constants'
 import { LocaleToggle } from '@/components/LocaleToggle'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
 
@@ -83,7 +82,7 @@ export default function Home() {
 
       <div className="mt-2 text-xs text-gray-300 dark:text-gray-600">
         <a
-          href={`${API_BASE}/api/docs`}
+          href="/api/docs"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-gray-500 dark:hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
