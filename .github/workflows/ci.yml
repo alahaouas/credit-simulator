@@ -158,6 +158,7 @@ jobs:
         run: npm ci
 
       - name: Cache Playwright browsers
+        id: pw-cache
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
@@ -165,8 +166,18 @@ jobs:
           restore-keys: |
             playwright-${{ runner.os }}-
 
-      - name: Install Playwright (Chromium + system deps)
-        run: npx playwright install --with-deps chromium
+      # `--with-deps` ran apt-get on every run (~20 s even on a cache hit). ubuntu-latest
+      # already has Chromium's shared libraries, so system deps are only installed when
+      # the exact cache key misses (a restore-key match also reports a miss).
+      - name: Install Playwright system deps
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 8
+        run: npx playwright install-deps chromium
+
+      # No-op when the cached browser matches the installed @playwright/test.
+      - name: Install Playwright browsers
+        timeout-minutes: 8
+        run: npx playwright install chromium
 
       - name: Run E2E tests
         run: npm run test:e2e
