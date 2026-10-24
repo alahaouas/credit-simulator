@@ -23,6 +23,8 @@ Both services send security headers; the web CSP only allows the Supabase and AP
 | `SUPABASE_URL` | Project URL from Supabase dashboard → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (keep secret — server-side only) |
 | `ALLOWED_ORIGINS` | Comma-separated list of allowed frontend origins, e.g. `https://your-app.vercel.app` |
+| `API_PROXY_SECRET` | Shared secret with the Vercel project (same value there); lets the rate limiter trust the client address the web app forwards. See [rate-limiting.md](rate-limiting.md). |
+| `TRUSTED_PROXY_HOPS` | Proxies in front of the API that append to `X-Forwarded-For`; measure it as described in [rate-limiting.md](rate-limiting.md). Unset = direct anonymous calls get 503. |
 
 4. Deploy. The service URL will be `https://credit-simulator-api.onrender.com` (or similar).
 
