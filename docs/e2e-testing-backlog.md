@@ -9,8 +9,12 @@ Audit of the Playwright e2e suite (`web/e2e/`). Use this to resume work later.
 - CI runs against a production build (`npm run build && npm run start`), locally
   against `next dev`. Measured 2026-10-24 on CI (2 runs each): job 215-227 s with
   `next dev` vs 97-126 s with the production build; 4 workers instead of the default
-  2 was no faster and gave a flaky test. System deps are only installed on a
-  Playwright cache miss.
+  2 was no faster. System deps are only installed on a Playwright cache miss.
+- Watch: in 1 of 8 benchmark runs (production build, 4 workers),
+  `[mobile-chrome] csv-export.spec.ts:26` failed once with "Element is outside of
+  the viewport" on the "Show amortization schedule" button, then passed on retry.
+  That points at mobile layout or scroll timing, not worker count. If it recurs,
+  read the call log and screenshot in the `playwright-report` artifact.
 - Shared fixtures in `web/e2e/fixtures.ts` (mock responses, `goToResults()`,
   Supabase session injection).
 

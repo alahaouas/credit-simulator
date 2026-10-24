@@ -34,8 +34,7 @@ export default defineConfig({
   webServer: {
     // CI tests a production build: `next dev` compiles each route on its first visit,
     // which made the suite ~3x slower (161 s vs 39-52 s of tests, measured 2026-10-24).
-    // Workers stay at Playwright's default (2 on the 4-vCPU runner): 4 was no faster
-    // and produced a flaky test.
+    // Workers stay at Playwright's default (2 on the 4-vCPU runner): 4 was no faster.
     command: process.env.CI ? 'npm run build && npm run start' : 'npm run dev',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
