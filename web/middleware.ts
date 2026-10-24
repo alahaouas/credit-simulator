@@ -38,6 +38,9 @@ export async function middleware(request: NextRequest) {
 // middleware overhead on every request. /api/* never reaches Next.js on Vercel:
 // vercel.json routes it to the FastAPI service.
 export const config = {
+  // Vercel Services reject Edge Function output ("Edge Runtime is not supported in
+  // services"), and middleware defaults to the Edge runtime.
+  runtime: 'nodejs',
   matcher: [
     '/auth/:path*',
     '/history/:path*',
