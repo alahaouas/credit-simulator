@@ -1,8 +1,6 @@
 // Single source of truth for frontend-side constants.
 // Backend mirrors are in api/constants.py and src/credit_simulator/config.py.
 
-export const API_BASE: string = process.env.NEXT_PUBLIC_API_URL ?? ''
-
 export const SESSION_RESULT_KEY = 'simulator_result'
 export const SESSION_INPUTS_KEY = 'simulator_inputs'
 export const SESSION_CLONE_KEY = 'simulator_clone'

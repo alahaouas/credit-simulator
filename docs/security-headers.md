@@ -6,7 +6,7 @@ Every response, including errors and redirects, carries:
 
 | Header | Value |
 |---|---|
-| `Content-Security-Policy` | `default-src 'self'`; scripts and styles from `'self'` plus `'unsafe-inline'` (Next.js hydration scripts, inline styles); `connect-src` = `'self'` + the origins of `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_API_URL`; `frame-ancestors 'none'`, `object-src 'none'`, `base-uri` and `form-action 'self'` |
+| `Content-Security-Policy` | `default-src 'self'`; scripts and styles from `'self'` plus `'unsafe-inline'` (Next.js hydration scripts, inline styles); `connect-src` = `'self'` + the origin of `NEXT_PUBLIC_SUPABASE_URL` (the API is same-origin under `/api`); `frame-ancestors 'none'`, `object-src 'none'`, `base-uri` and `form-action 'self'` |
 | `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |

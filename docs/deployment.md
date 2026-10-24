@@ -6,7 +6,7 @@
 Vercel (Next.js)  ──fetch──▶  Render (FastAPI)  ──supabase-py──▶  Supabase
 ```
 
-Both services send security headers; the web CSP only allows the Supabase and API hosts set in `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_API_URL` at build time. See [security-headers.md](security-headers.md).
+Both services send security headers; the web CSP only allows the Supabase host set in `NEXT_PUBLIC_SUPABASE_URL` at build time; the browser reaches the API on the site's own origin (`/api/*`). See [security-headers.md](security-headers.md).
 
 ---
 
@@ -63,7 +63,7 @@ Vercel refuses a `NEXT_PUBLIC_` variable of type *Secret* ("Remove the public fr
 
 **Supabase's Vercel integration** creates other names than the app reads: `SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (the code reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`), plus `POSTGRES_*` and `SUPABASE_JWT_SECRET`. The web app uses none of them. Add the two names above yourself, check that `SUPABASE_URL` points at the existing project (not a new empty one the integration created), and delete the unused `POSTGRES_*` and `SUPABASE_JWT_SECRET`: the database password and the JWT signing secret do not belong in the web project.
 
-Leave `NEXT_PUBLIC_API_URL` unset in production. The browser then calls `/api/...` on the site's own origin and Next.js forwards it to `BACKEND_URL` server-side, so Render needs no CORS entry for the site, the CSP `connect-src` stays `'self'` + Supabase, and the Render URL is not in the browser bundle. Setting `NEXT_PUBLIC_API_URL` instead makes the browser call Render directly: add the site's origin to Render's `ALLOWED_ORIGINS` then, and the CSP picks the API origin up at build time.
+The browser always calls `/api/...` on the site's own origin; Next.js forwards it to `BACKEND_URL` server-side. Render needs no CORS entry for the site, the CSP `connect-src` stays `'self'` + Supabase, and the Render URL is not in the browser bundle.
 
 4. Deploy. Vercel reads `web/vercel.json` for build settings.
 5. Add the deployment URL to Supabase → Authentication → URL Configuration (Site URL and redirect URLs), see [supabase-setup.md](supabase-setup.md).
@@ -80,7 +80,6 @@ Requires `web/.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
-NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ---

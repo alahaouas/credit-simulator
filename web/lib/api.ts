@@ -1,4 +1,3 @@
-import { API_BASE } from './constants'
 
 // All monetary/rate values are decimal strings to preserve precision.
 
@@ -133,7 +132,7 @@ export async function simulate(
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
 
-  const res = await fetch(`${API_BASE}/api/simulate`, {
+  const res = await fetch(`/api/simulate`, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -148,7 +147,7 @@ export async function simulate(
 }
 
 export async function simulateHeatmap(body: SimulateRequest): Promise<HeatmapResponse> {
-  const res = await fetch(`${API_BASE}/api/simulate/heatmap`, {
+  const res = await fetch(`/api/simulate/heatmap`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -167,7 +166,7 @@ export async function simulateAll(
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
 
-  const res = await fetch(`${API_BASE}/api/simulate/all`, {
+  const res = await fetch(`/api/simulate/all`, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -204,7 +203,7 @@ export async function listSimulations(
   if (params?.cursor) qs.set('cursor', params.cursor)
   if (params?.limit) qs.set('limit', String(params.limit))
   const qStr = qs.toString()
-  const res = await fetch(`${API_BASE}/api/simulations${qStr ? `?${qStr}` : ''}`, {
+  const res = await fetch(`/api/simulations${qStr ? `?${qStr}` : ''}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
@@ -219,7 +218,7 @@ export async function updateSimulationMeta(
   meta: { name?: string | null; tags?: string[] },
   accessToken: string
 ) {
-  const res = await fetch(`${API_BASE}/api/simulations/${id}`, {
+  const res = await fetch(`/api/simulations/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(meta),
@@ -232,7 +231,7 @@ export async function updateSimulationMeta(
 }
 
 export async function getSimulation(id: string, accessToken: string) {
-  const res = await fetch(`${API_BASE}/api/simulations/${id}`, {
+  const res = await fetch(`/api/simulations/${id}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
@@ -243,7 +242,7 @@ export async function getSimulation(id: string, accessToken: string) {
 }
 
 export async function deleteSimulation(id: string, accessToken: string) {
-  const res = await fetch(`${API_BASE}/api/simulations/${id}`, {
+  const res = await fetch(`/api/simulations/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
   })
@@ -256,7 +255,7 @@ export async function deleteSimulation(id: string, accessToken: string) {
 // --- Share tokens (A5) ---
 
 export async function generateShareToken(id: string, accessToken: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/simulations/${id}/share`, {
+  const res = await fetch(`/api/simulations/${id}/share`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}` },
   })
@@ -269,7 +268,7 @@ export async function generateShareToken(id: string, accessToken: string): Promi
 }
 
 export async function revokeShareToken(id: string, accessToken: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/simulations/${id}/share`, {
+  const res = await fetch(`/api/simulations/${id}/share`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
   })
@@ -285,7 +284,7 @@ export async function getSharedSimulation(token: string): Promise<{
   name?: string | null
   result: SimulateResponse
 }> {
-  const res = await fetch(`${API_BASE}/api/share/${token}`)
+  const res = await fetch(`/api/share/${token}`)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new ApiError(res.status, err.detail ?? res.statusText)
@@ -304,7 +303,7 @@ export interface SimulationStats {
 }
 
 export async function getSimulationStats(accessToken: string): Promise<SimulationStats> {
-  const res = await fetch(`${API_BASE}/api/simulations/stats`, {
+  const res = await fetch(`/api/simulations/stats`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
@@ -323,7 +322,7 @@ export interface UserPreferences {
 }
 
 export async function getPreferences(accessToken: string): Promise<UserPreferences> {
-  const res = await fetch(`${API_BASE}/api/preferences`, {
+  const res = await fetch(`/api/preferences`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
@@ -337,7 +336,7 @@ export async function updatePreferences(
   prefs: Partial<UserPreferences>,
   accessToken: string
 ): Promise<UserPreferences> {
-  const res = await fetch(`${API_BASE}/api/preferences`, {
+  const res = await fetch(`/api/preferences`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(prefs),
@@ -377,7 +376,7 @@ export interface ProfilesResponse {
 }
 
 export async function listProfiles(): Promise<ProfilesResponse> {
-  const res = await fetch(`${API_BASE}/api/profiles`)
+  const res = await fetch(`/api/profiles`)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new ApiError(res.status, err.detail ?? res.statusText)
@@ -386,7 +385,7 @@ export async function listProfiles(): Promise<ProfilesResponse> {
 }
 
 export async function getProfile(country: string): Promise<CountryProfile> {
-  const res = await fetch(`${API_BASE}/api/profiles/${country}`)
+  const res = await fetch(`/api/profiles/${country}`)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new ApiError(res.status, err.detail ?? res.statusText)
@@ -397,7 +396,7 @@ export async function getProfile(country: string): Promise<CountryProfile> {
 export async function refreshRate(
   country: string,
 ): Promise<{ country: string; annual_rate_average: string }> {
-  const res = await fetch(`${API_BASE}/api/profiles/${country}/refresh`, { method: 'POST' })
+  const res = await fetch(`/api/profiles/${country}/refresh`, { method: 'POST' })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new ApiError(res.status, err.detail ?? res.statusText)
@@ -417,7 +416,7 @@ export interface RateAlert {
 }
 
 export async function listAlerts(accessToken: string): Promise<{ alerts: RateAlert[] }> {
-  const res = await fetch(`${API_BASE}/api/alerts`, {
+  const res = await fetch(`/api/alerts`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
@@ -432,7 +431,7 @@ export async function createAlert(
   target_rate: string,
   accessToken: string,
 ): Promise<RateAlert> {
-  const res = await fetch(`${API_BASE}/api/alerts`, {
+  const res = await fetch(`/api/alerts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ country, target_rate }),
@@ -445,7 +444,7 @@ export async function createAlert(
 }
 
 export async function deleteAlert(id: string, accessToken: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/alerts/${id}`, {
+  const res = await fetch(`/api/alerts/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
   })
@@ -470,7 +469,7 @@ export interface CreatedApiKey extends ApiKey {
 }
 
 export async function listApiKeys(accessToken: string): Promise<ApiKey[]> {
-  const res = await fetch(`${API_BASE}/api/keys`, {
+  const res = await fetch(`/api/keys`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
@@ -481,7 +480,7 @@ export async function listApiKeys(accessToken: string): Promise<ApiKey[]> {
 }
 
 export async function createApiKey(name: string, accessToken: string): Promise<CreatedApiKey> {
-  const res = await fetch(`${API_BASE}/api/keys`, {
+  const res = await fetch(`/api/keys`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ name }),
@@ -494,7 +493,7 @@ export async function createApiKey(name: string, accessToken: string): Promise<C
 }
 
 export async function deleteApiKey(id: string, accessToken: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/keys/${id}`, {
+  const res = await fetch(`/api/keys/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
   })

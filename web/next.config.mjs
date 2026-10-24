@@ -13,8 +13,8 @@ function origin(url) {
   }
 }
 
-// The browser talks to Supabase and, when NEXT_PUBLIC_API_URL is set, to the API host directly.
-const connectSrc = ["'self'", origin(process.env.NEXT_PUBLIC_SUPABASE_URL), origin(process.env.NEXT_PUBLIC_API_URL)]
+// The browser talks to Supabase directly; the API is same-origin (/api/*).
+const connectSrc = ["'self'", origin(process.env.NEXT_PUBLIC_SUPABASE_URL)]
   .filter(Boolean)
   .join(' ')
 
