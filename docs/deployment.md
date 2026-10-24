@@ -50,11 +50,15 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 2. Check that **Root Directory** is `web` and the framework is Next.js.
 3. Add the environment variables in the dashboard, for Production and Preview. `web/vercel.json` holds build settings only: its old `@secret` references were removed because Vercel retired Secrets.
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `BACKEND_URL` | Render service URL, e.g. `https://credit-simulator-api.onrender.com`. Read at build time by the `/api/*` rewrite in `next.config.mjs`. |
+| Variable | Vercel type | Description |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | **Config** | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Config** | Supabase publishable (or legacy anon) key |
+| `BACKEND_URL` | Secret | Render service URL, e.g. `https://credit-simulator-api.onrender.com`. Read at build time by the `/api/*` rewrite in `next.config.mjs`. |
+
+Vercel refuses a `NEXT_PUBLIC_` variable of type *Secret* ("Remove the public framework prefix..."): those names are inlined into the browser bundle, so they must be type **Config**. Both Supabase values above are public by design (RLS protects the data). Never give a `NEXT_PUBLIC_` name to anything secret.
+
+**Supabase's Vercel integration** creates other names than the app reads: `SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (the code reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`), plus `POSTGRES_*` and `SUPABASE_JWT_SECRET`. The web app uses none of them. Add the two names above yourself, check that `SUPABASE_URL` points at the existing project (not a new empty one the integration created), and delete the unused `POSTGRES_*` and `SUPABASE_JWT_SECRET`: the database password and the JWT signing secret do not belong in the web project.
 
 Leave `NEXT_PUBLIC_API_URL` unset in production. The browser then calls `/api/...` on the site's own origin and Next.js forwards it to `BACKEND_URL` server-side, so Render needs no CORS entry for the site, the CSP `connect-src` stays `'self'` + Supabase, and the Render URL is not in the browser bundle. Setting `NEXT_PUBLIC_API_URL` instead makes the browser call Render directly: add the site's origin to Render's `ALLOWED_ORIGINS` then, and the CSP picks the API origin up at build time.
 
