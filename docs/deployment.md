@@ -46,17 +46,20 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 
 ### One-time setup
 
-1. Import the GitHub repo in the [Vercel dashboard](https://vercel.com/new).
-2. Set **Root Directory** to `web`.
-3. Add the following environment variables:
+1. Import the GitHub repo in the [Vercel dashboard](https://vercel.com/new). Vercel detects two services (it reads `render.yaml`) and offers a multi-service project: choose **Import single project** on `web` instead. The API stays on Render, and the suggested multi-service `vercel.json` would route every path, pages included, to the API.
+2. Check that **Root Directory** is `web` and the framework is Next.js.
+3. Add the environment variables in the dashboard, for Production and Preview. `web/vercel.json` holds build settings only: its old `@secret` references were removed because Vercel retired Secrets.
 
 | Variable | Description |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `NEXT_PUBLIC_API_URL` | Render service URL, e.g. `https://credit-simulator-api.onrender.com` |
+| `BACKEND_URL` | Render service URL, e.g. `https://credit-simulator-api.onrender.com`. Read at build time by the `/api/*` rewrite in `next.config.mjs`. |
+
+Leave `NEXT_PUBLIC_API_URL` unset in production. The browser then calls `/api/...` on the site's own origin and Next.js forwards it to `BACKEND_URL` server-side, so Render needs no CORS entry for the site, the CSP `connect-src` stays `'self'` + Supabase, and the Render URL is not in the browser bundle. Setting `NEXT_PUBLIC_API_URL` instead makes the browser call Render directly: add the site's origin to Render's `ALLOWED_ORIGINS` then, and the CSP picks the API origin up at build time.
 
 4. Deploy. Vercel reads `web/vercel.json` for build settings.
+5. Add the deployment URL to Supabase → Authentication → URL Configuration (Site URL and redirect URLs), see [supabase-setup.md](supabase-setup.md).
 
 ### Local dev
 
