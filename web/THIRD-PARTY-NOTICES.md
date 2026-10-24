@@ -14,14 +14,14 @@ Platform-specific binaries are listed only for the platform the file was generat
 - @reduxjs/toolkit@2.11.2 (MIT)
 - @standard-schema/spec@1.1.0 (MIT)
 - @standard-schema/utils@0.3.0 (MIT)
-- @supabase/auth-js@2.117.1 (MIT)
-- @supabase/functions-js@2.117.1 (MIT)
+- @supabase/auth-js@2.118.0 (MIT)
+- @supabase/functions-js@2.118.0 (MIT)
 - @supabase/phoenix@0.4.5 (MIT)
-- @supabase/postgrest-js@2.117.1 (MIT)
-- @supabase/realtime-js@2.117.1 (MIT)
+- @supabase/postgrest-js@2.118.0 (MIT)
+- @supabase/realtime-js@2.118.0 (MIT)
 - @supabase/ssr@0.12.7 (MIT)
-- @supabase/storage-js@2.117.1 (MIT)
-- @supabase/supabase-js@2.117.1 (MIT)
+- @supabase/storage-js@2.118.0 (MIT)
+- @supabase/supabase-js@2.118.0 (MIT)
 - @swc/helpers@0.5.15 (Apache-2.0)
 - @types/d3-array@3.2.2 (MIT)
 - @types/d3-color@3.1.3 (MIT)
@@ -56,10 +56,10 @@ Platform-specific binaries are listed only for the platform the file was generat
 - internmap@2.0.3 (ISC)
 - js-tokens@4.0.0 (MIT)
 - loose-envify@1.4.0 (MIT)
-- nanoid@3.3.18 (MIT)
+- nanoid@3.3.20 (MIT)
 - next@15.5.28 (MIT)
 - picocolors@1.1.1 (ISC)
-- postcss@8.5.28 (MIT)
+- postcss@8.5.31 (MIT)
 - react@18.3.1 (MIT)
 - react-dom@18.3.1 (MIT)
 - react-is@19.2.6 (MIT)
@@ -448,7 +448,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ----------------------------------------
-@supabase/auth-js@2.117.1, @supabase/functions-js@2.117.1, @supabase/postgrest-js@2.117.1, @supabase/realtime-js@2.117.1, @supabase/storage-js@2.117.1, @supabase/supabase-js@2.117.1
+@supabase/auth-js@2.118.0, @supabase/functions-js@2.118.0, @supabase/postgrest-js@2.118.0, @supabase/realtime-js@2.118.0, @supabase/storage-js@2.118.0, @supabase/supabase-js@2.118.0
 (MIT)
 
 MIT License
@@ -1529,7 +1529,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ----------------------------------------
-nanoid@3.3.18
+nanoid@3.3.20
 (MIT)
 
 The MIT License (MIT)
@@ -1600,7 +1600,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ----------------------------------------
-postcss@8.5.28
+postcss@8.5.31
 (MIT)
 
 The MIT License (MIT)
