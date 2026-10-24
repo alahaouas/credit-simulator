@@ -7,6 +7,11 @@ name = "credit-simulator"
 version = "0.1.0"
 description = "Interactive credit / mortgage loan simulator"
 requires-python = ">=3.11"
+classifiers = [
+    "License :: Other/Proprietary License",
+    # Makes PyPI reject any upload of this package.
+    "Private :: Do Not Upload",
+]
 dependencies = [
     "click>=8.1",
     "rich>=13.0",

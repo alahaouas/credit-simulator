@@ -358,6 +358,18 @@ const TRANSLATIONS = {
     'tax.col_amount': 'Amount',
     'tax.total': 'Total',
     'tax.note': 'Rates are indicative. Actual costs depend on the region, property type, and negotiated fees.',
+    // Legal notice
+    'legal.link': 'Legal notice',
+    'legal.title': 'Legal notice',
+    'legal.intro': 'Credit Simulator is published and hosted by the company below.',
+    'legal.missing': 'To be completed',
+    'legal.publisher': 'Publisher',
+    'legal.address': 'Registered office',
+    'legal.email': 'Email',
+    'legal.bce': 'Enterprise number (BCE/KBO)',
+    'legal.vat': 'VAT number',
+    'legal.court': 'Court district (RPM/RPR)',
+    'legal.rights': 'All rights reserved.',
   },
   fr: {
     // Navigation
@@ -714,6 +726,18 @@ const TRANSLATIONS = {
     'tax.col_amount': 'Montant',
     'tax.total': 'Total',
     'tax.note': 'Les taux sont indicatifs. Les frais réels dépendent de la région, du type de bien et des honoraires négociés.',
+    // Mentions légales
+    'legal.link': 'Mentions légales',
+    'legal.title': 'Mentions légales',
+    'legal.intro': 'Credit Simulator est édité et hébergé par la société ci-dessous.',
+    'legal.missing': 'À compléter',
+    'legal.publisher': 'Éditeur',
+    'legal.address': 'Siège social',
+    'legal.email': 'Email',
+    'legal.bce': "Numéro d'entreprise (BCE/KBO)",
+    'legal.vat': 'Numéro de TVA',
+    'legal.court': 'Siège du tribunal (RPM/RPR)',
+    'legal.rights': 'Tous droits réservés.',
   },
 } satisfies Record<Locale, Record<string, string>>
 

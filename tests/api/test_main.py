@@ -44,3 +44,39 @@ class TestCorsOrigins:
     def test_defaults_not_duplicated_when_env_is_empty(self):
         origins = _reload_app({"ALLOWED_ORIGINS": ""})
         assert origins.count("http://localhost:3000") == 1
+
+
+class TestSecurityHeaders:
+    """Every response path carries the same security headers: success, error and CORS preflight."""
+
+    def _client(self):
+        from fastapi.testclient import TestClient  # noqa: PLC0415
+
+        import api.main  # noqa: PLC0415
+
+        return TestClient(api.main.app), api.main.SECURITY_HEADERS
+
+    def _assert_headers(self, response, expected):
+        for name, value in expected.items():
+            assert response.headers.get(name) == value, name
+
+    def test_success_response(self):
+        client, expected = self._client()
+        response = client.get("/api/profiles")
+        assert response.status_code == 200
+        self._assert_headers(response, expected)
+
+    def test_not_found_response(self):
+        client, expected = self._client()
+        response = client.get("/api/does-not-exist")
+        assert response.status_code == 404
+        self._assert_headers(response, expected)
+
+    def test_cors_preflight_response(self):
+        client, expected = self._client()
+        response = client.options(
+            "/api/profiles",
+            headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "GET"},
+        )
+        assert response.status_code == 200
+        self._assert_headers(response, expected)
