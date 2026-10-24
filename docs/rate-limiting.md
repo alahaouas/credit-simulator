@@ -1,37 +1,30 @@
 # API rate limiting
 
-`api/limiter.py` limits the compute-heavy endpoints (`/api/simulate` 20/min, `/api/simulate/all` and `/api/simulate/heatmap` 10/min, profile refresh 5/min) with an in-memory slowapi limiter. What matters is the **bucket key**: if every request gets the same key, one busy client throttles everyone.
+`api/limiter.py` limits the compute-heavy endpoints (`/api/simulate` 20/min, `/api/simulate/all` and `/api/simulate/heatmap` 10/min, profile refresh 5/min) with slowapi. Two things decide whether it actually limits anyone:
 
-## Why the key needed fixing
+- **Where the counters live.** On Vercel the API runs as serverless functions, many short-lived instances each with its own memory. In-memory counters would start from zero on every new instance, so they live in Redis (`RATE_LIMIT_STORAGE_URL`, falling back to `REDIS_URL`; an Upstash `rediss://` URL).
+- **The bucket key.** If every request gets the same key, one busy client throttles everyone. If a client can choose its key, it escapes the limit.
 
-The key used to be the TCP peer address. On Render that peer is the load balancer, and uvicorn only trusts `X-Forwarded-For` from `127.0.0.1` by default, so **all users shared one bucket**. Simply trusting `X-Forwarded-For` would not work either: Render appends to a client-supplied value instead of replacing it, so the leftmost entry is whatever the client sent.
-
-## How the key is chosen now
+## How the key is chosen
 
 In order:
 
 1. **`user:<id>`**: `optional_user` verified a Supabase JWT or an API key (it stores the id on `request.state.user_id`). Only routes that depend on `optional_user` see it: `/api/simulate` and `/api/simulate/all`.
-2. **`ip:<X-Client-IP>`**: the request carries `X-Proxy-Secret` equal to `API_PROXY_SECRET`. The web app's middleware (`web/middleware.ts`) adds both headers when it proxies `/api/*` on Vercel, taking the address from `x-real-ip`, which Vercel overwrites to prevent spoofing. A wrong or unexpected secret is rejected with 403.
-3. **`ip:<X-Forwarded-For entry>`**: counted `TRUSTED_PROXY_HOPS` entries **from the right**. Proxies append on the right, so a client can only add entries on the left and cannot pick its own key.
+2. **`ip:<TRUSTED_CLIENT_IP_HEADER>`**: on Vercel, `x-real-ip`. Vercel [overwrites `x-forwarded-for` / `x-real-ip`](https://vercel.com/docs/headers/request-headers) with the real client address, so a client cannot set it. A missing header is rejected (503). This mode also **requires** the Redis storage: without it, the limited endpoints answer 503.
+3. **`ip:<X-Forwarded-For entry>`**: counted `TRUSTED_PROXY_HOPS` entries **from the right**, for a host behind a proxy chain that appends to the header (the old Render deployment needed `3`). Proxies append on the right, so a client can only add entries on the left.
 4. **`ip:<peer>`**: no `X-Forwarded-For` at all (local dev, tests).
 
-A request that has `X-Forwarded-For` while `TRUSTED_PROXY_HOPS` is unset is **rejected with 503**, never keyed on the proxy's address. The log line says how many entries the header had (never the addresses).
+A request with `X-Forwarded-For` and neither of the settings above is **rejected with 503**, never keyed on the proxy's address. The log line says how many entries the header had (never the addresses), which is how `TRUSTED_PROXY_HOPS` is measured on a new host.
 
-## Configuration
+## Configuration on Vercel
 
-| Where | Variable | Value |
-|---|---|---|
-| Render (API) | `API_PROXY_SECRET` | a long random string, e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
-| Vercel (web) | `API_PROXY_SECRET` | the same string (not `NEXT_PUBLIC_`: it must never reach the browser) |
-| Vercel (web) | `BACKEND_URL` | the Render service URL; the middleware proxies to it |
-| Render (API) | `TRUSTED_PROXY_HOPS` | number of proxies that append to `X-Forwarded-For` in front of the API, for calls that do not come through the web app |
+| Variable | Value |
+|---|---|
+| `TRUSTED_CLIENT_IP_HEADER` | `x-real-ip` |
+| `RATE_LIMIT_STORAGE_URL` (or `REDIS_URL` from the Upstash integration) | `rediss://default:<password>@<host>:6379` |
 
-### Choosing `TRUSTED_PROXY_HOPS`
+## History
 
-Render does not document its proxy chain. Measure it once:
-
-1. Deploy with `TRUSTED_PROXY_HOPS` unset.
-2. Call the API directly, without sending any `X-Forwarded-For` yourself: `curl -X POST https://<api>/api/simulate/heatmap -H "Content-Type: application/json" -d '{"property_price":"300000","monthly_net_income":"4000","available_savings":"80000"}'`. It returns 503.
-3. Render's logs show `X-Forwarded-For has N entries`. Set `TRUSTED_PROXY_HOPS=N`: with no client-supplied entries, all N were added by Render, and the leftmost of them is your address.
-
-Until then, direct anonymous calls get 503; calls through the web app (secret header) and authenticated calls are unaffected.
+- The limiter first keyed on the TCP peer. Behind Render's load balancer that was the balancer itself, so **all users shared one bucket**.
+- A proxy-secret scheme followed (#256): the Next.js middleware forwarded the visitor's address to Render with a shared secret.
+- It was removed when the API moved into the same Vercel project as the web app. The API now reads Vercel's own header directly.

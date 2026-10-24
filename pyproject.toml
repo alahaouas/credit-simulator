@@ -12,18 +12,23 @@ classifiers = [
     # Makes PyPI reject any upload of this package.
     "Private :: Do Not Upload",
 ]
+# The API's runtime packages are base dependencies, not a `web` extra: Vercel installs
+# [project].dependencies, and its docs do not say it installs extras (docs/deployment.md).
 dependencies = [
     "click>=8.1",
     "rich>=13.0",
     "requests>=2.31",
+    "fastapi>=0.111",
+    "supabase>=2.4",
+    "slowapi>=0.1.9",
+    # Shared rate-limit counters on serverless (RATE_LIMIT_STORAGE_URL, rediss://).
+    "redis>=5.0",
 ]
 
 [project.optional-dependencies]
+# Only for running the API as a long-lived local server (`uvicorn api.main:app`).
 web = [
-    "fastapi>=0.111",
     "uvicorn[standard]>=0.29",
-    "supabase>=2.4",
-    "slowapi>=0.1.9",
 ]
 dev = [
     "pytest>=8.0",
@@ -41,6 +46,10 @@ credit-simulator = "credit_simulator.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/credit_simulator"]
+
+[tool.vercel]
+# FastAPI service of the Vercel project (vercel.json `services.api`).
+entrypoint = "api.vercel:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
