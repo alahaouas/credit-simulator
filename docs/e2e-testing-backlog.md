@@ -6,6 +6,11 @@ Audit of the Playwright e2e suite (`web/e2e/`). Use this to resume work later.
 
 - 18 spec files. Wired into CI (`.github/workflows/ci.yml`, `e2e` job).
 - Chromium only; reports uploaded on failure; `reuseExistingServer` locally.
+- CI runs against a production build (`npm run build && npm run start`), locally
+  against `next dev`. Measured 2026-10-24 on CI (2 runs each): job 215-227 s with
+  `next dev` vs 97-126 s with the production build; 4 workers instead of the default
+  2 was no faster and gave a flaky test. System deps are only installed on a
+  Playwright cache miss.
 - Shared fixtures in `web/e2e/fixtures.ts` (mock responses, `goToResults()`,
   Supabase session injection).
 
