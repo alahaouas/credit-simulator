@@ -1,24 +1,25 @@
 """Shared slowapi rate limiter for compute-heavy / external-call endpoints.
 
-Per-process, in-memory limiter. Sufficient for a single-instance deployment;
-a multi-instance deployment would need a shared backend (e.g. Redis) instead.
+Counters live in ``RATE_LIMIT_STORAGE_URL`` (falling back to ``REDIS_URL``), e.g. an
+Upstash Redis ``rediss://`` URL. On Vercel the API runs as serverless functions: many
+short-lived instances, each with its own memory, so in-memory counters would barely
+limit anything. Without a storage URL the counters stay in memory, which is only
+right for local dev and tests (see docs/rate-limiting.md).
 
-The bucket key (see docs/rate-limiting.md) is, in order:
+The bucket key is, in order:
 1. ``user:<id>`` when ``optional_user`` verified a Supabase JWT or API key;
-2. ``ip:<client>`` from ``X-Client-IP`` when the request carries the shared
-   ``API_PROXY_SECRET`` (set by the web app's middleware on Vercel);
-3. ``ip:<client>`` from ``X-Forwarded-For``, counted ``TRUSTED_PROXY_HOPS``
-   entries from the right: proxies append on the right, so a client can only
-   add entries on the left and cannot choose its own key;
+2. ``ip:<value>`` of ``TRUSTED_CLIENT_IP_HEADER`` (``x-real-ip`` on Vercel, which
+   overwrites it with the real client address so a client cannot set it);
+3. ``ip:<entry>`` of ``X-Forwarded-For`` counted ``TRUSTED_PROXY_HOPS`` from the
+   right, for hosts behind a proxy chain that appends to it;
 4. ``ip:<peer>`` when there is no ``X-Forwarded-For`` at all (direct connection).
 
-A proxied request that matches none of these is rejected rather than keyed on
-the proxy's address: that shared key would put every user in one bucket.
+Anything that cannot be resolved is rejected rather than keyed on a shared value
+(a proxy's address), which would put every user in one bucket.
 """
 
 from __future__ import annotations
 
-import hmac
 import logging
 import os
 
@@ -27,8 +28,13 @@ from slowapi import Limiter
 
 logger = logging.getLogger(__name__)
 
-PROXY_SECRET_HEADER = "x-proxy-secret"
-CLIENT_IP_HEADER = "x-client-ip"
+
+def _storage_uri() -> str | None:
+    return (
+        os.environ.get("RATE_LIMIT_STORAGE_URL", "").strip()
+        or os.environ.get("REDIS_URL", "").strip()
+        or None
+    )
 
 
 def _trusted_proxy_hops() -> int | None:
@@ -52,14 +58,16 @@ def client_key(request: Request) -> str:
     if user_id:
         return f"user:{user_id}"
 
-    secret = os.environ.get("API_PROXY_SECRET", "")
-    sent = request.headers.get(PROXY_SECRET_HEADER)
-    if sent is not None:
-        if not secret or not hmac.compare_digest(sent.encode(), secret.encode()):
-            raise HTTPException(status_code=403, detail="Invalid proxy credentials")
-        client_ip = request.headers.get(CLIENT_IP_HEADER, "").strip()
+    header = os.environ.get("TRUSTED_CLIENT_IP_HEADER", "").strip().lower()
+    if header:
+        if _storage_uri() is None:
+            # A trusted platform header means a multi-instance host: per-instance
+            # memory would let every new instance start from zero.
+            logger.error("TRUSTED_CLIENT_IP_HEADER is set but no rate-limit storage is configured")
+            raise HTTPException(status_code=503, detail="Rate limiting is not configured")
+        client_ip = request.headers.get(header, "").split(",")[0].strip()
         if not client_ip:
-            raise HTTPException(status_code=400, detail="Missing client address from proxy")
+            raise HTTPException(status_code=503, detail="Cannot determine client address")
         return f"ip:{client_ip}"
 
     forwarded = request.headers.get("x-forwarded-for")
@@ -84,4 +92,4 @@ def client_key(request: Request) -> str:
     return f"ip:{entries[-hops]}"
 
 
-limiter = Limiter(key_func=client_key)
+limiter = Limiter(key_func=client_key, storage_uri=_storage_uri() or "memory://")

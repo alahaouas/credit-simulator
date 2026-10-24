@@ -31,8 +31,13 @@ def _request(
 
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch):
-    monkeypatch.delenv("API_PROXY_SECRET", raising=False)
-    monkeypatch.delenv("TRUSTED_PROXY_HOPS", raising=False)
+    for name in (
+        "TRUSTED_CLIENT_IP_HEADER",
+        "TRUSTED_PROXY_HOPS",
+        "RATE_LIMIT_STORAGE_URL",
+        "REDIS_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
 
 
 class TestAuthenticatedUser:
@@ -44,34 +49,39 @@ class TestAuthenticatedUser:
         assert client_key(request) == "user:u-1"
 
 
-class TestProxySecret:
-    def test_matching_secret_uses_client_ip_header(self, monkeypatch):
-        monkeypatch.setenv("API_PROXY_SECRET", "s3cret")
-        request = _request({"X-Proxy-Secret": "s3cret", "X-Client-IP": "198.51.100.4"})
+class TestTrustedClientIpHeader:
+    """Vercel: x-real-ip is set by the platform, and a shared counter store is required."""
+
+    @pytest.fixture
+    def on_vercel(self, monkeypatch):
+        monkeypatch.setenv("TRUSTED_CLIENT_IP_HEADER", "x-real-ip")
+        monkeypatch.setenv("RATE_LIMIT_STORAGE_URL", "rediss://example:6379")
+
+    def test_uses_the_trusted_header(self, on_vercel):
+        assert client_key(_request({"X-Real-IP": "198.51.100.4"})) == "ip:198.51.100.4"
+
+    def test_trusted_header_wins_over_forwarded_for(self, on_vercel):
+        request = _request({"X-Real-IP": "198.51.100.4", "X-Forwarded-For": "6.6.6.6"})
         assert client_key(request) == "ip:198.51.100.4"
 
-    def test_wrong_secret_is_rejected(self, monkeypatch):
-        monkeypatch.setenv("API_PROXY_SECRET", "s3cret")
-        request = _request({"X-Proxy-Secret": "guess", "X-Client-IP": "198.51.100.4"})
+    def test_missing_trusted_header_is_rejected(self, on_vercel):
         with pytest.raises(HTTPException) as exc:
-            client_key(request)
-        assert exc.value.status_code == 403
+            client_key(_request())
+        assert exc.value.status_code == 503
 
-    def test_secret_sent_but_not_configured_is_rejected(self):
-        request = _request({"X-Proxy-Secret": "anything", "X-Client-IP": "198.51.100.4"})
+    def test_redis_url_counts_as_storage(self, monkeypatch):
+        monkeypatch.setenv("TRUSTED_CLIENT_IP_HEADER", "x-real-ip")
+        monkeypatch.setenv("REDIS_URL", "rediss://example:6379")
+        assert client_key(_request({"X-Real-IP": "198.51.100.4"})) == "ip:198.51.100.4"
+
+    def test_without_shared_storage_is_rejected(self, monkeypatch):
+        monkeypatch.setenv("TRUSTED_CLIENT_IP_HEADER", "x-real-ip")
         with pytest.raises(HTTPException) as exc:
-            client_key(request)
-        assert exc.value.status_code == 403
+            client_key(_request({"X-Real-IP": "198.51.100.4"}))
+        assert exc.value.status_code == 503
 
-    def test_missing_client_ip_is_rejected(self, monkeypatch):
-        monkeypatch.setenv("API_PROXY_SECRET", "s3cret")
-        with pytest.raises(HTTPException) as exc:
-            client_key(_request({"X-Proxy-Secret": "s3cret"}))
-        assert exc.value.status_code == 400
-
-    def test_client_ip_header_ignored_without_secret(self, monkeypatch):
-        monkeypatch.setenv("API_PROXY_SECRET", "s3cret")
-        assert client_key(_request({"X-Client-IP": "198.51.100.4"})) == "ip:10.0.0.9"
+    def test_header_is_ignored_unless_configured(self):
+        assert client_key(_request({"X-Real-IP": "198.51.100.4"})) == "ip:10.0.0.9"
 
 
 class TestForwardedFor:
