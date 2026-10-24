@@ -40,7 +40,8 @@ def _trusted_proxy_hops() -> int | None:
     except ValueError:
         hops = 0
     if hops < 1:
-        logger.error("TRUSTED_PROXY_HOPS must be a positive integer, got %r", raw)
+        # The value itself is not logged: a secret pasted into the wrong variable must not leak.
+        logger.error("TRUSTED_PROXY_HOPS must be a positive integer")
         raise HTTPException(status_code=503, detail="Rate limiting is misconfigured")
     return hops
 
