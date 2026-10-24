@@ -8,9 +8,9 @@ Platform-specific binaries are listed only for the platform the file was generat
 ## Components (70)
 
 - @img/colour@1.1.0 (MIT)
-- @img/sharp-win32-x64@0.35.4 (Apache-2.0 AND LGPL-3.0-or-later)
-- @next/env@15.5.26 (MIT)
-- @next/swc-win32-x64-msvc@15.5.26 (MIT)
+- @img/sharp-win32-x64@0.35.5 (Apache-2.0 AND LGPL-3.0-or-later)
+- @next/env@15.5.28 (MIT)
+- @next/swc-win32-x64-msvc@15.5.28 (MIT)
 - @reduxjs/toolkit@2.11.2 (MIT)
 - @standard-schema/spec@1.1.0 (MIT)
 - @standard-schema/utils@0.3.0 (MIT)
@@ -57,7 +57,7 @@ Platform-specific binaries are listed only for the platform the file was generat
 - js-tokens@4.0.0 (MIT)
 - loose-envify@1.4.0 (MIT)
 - nanoid@3.3.18 (MIT)
-- next@15.5.26 (MIT)
+- next@15.5.28 (MIT)
 - picocolors@1.1.1 (ISC)
 - postcss@8.5.28 (MIT)
 - react@18.3.1 (MIT)
@@ -70,8 +70,8 @@ Platform-specific binaries are listed only for the platform the file was generat
 - reselect@5.2.0 (MIT)
 - scheduler@0.23.2 (MIT)
 - semver@7.8.5 (ISC)
-- sharp@0.35.4 (Apache-2.0)
-- source-map-js@1.2.1 (BSD-3-Clause)
+- sharp@0.35.5 (Apache-2.0)
+- source-map-js@1.2.2 (BSD-3-Clause)
 - styled-jsx@5.1.6 (MIT)
 - tiny-invariant@1.3.3 (MIT)
 - tslib@2.8.1 (0BSD)
@@ -168,7 +168,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ----------------------------------------
-@img/sharp-win32-x64@0.35.4, sharp@0.35.4
+@img/sharp-win32-x64@0.35.5, sharp@0.35.5
 (Apache-2.0 AND LGPL-3.0-or-later)
 
 Apache License
@@ -364,7 +364,7 @@ third-party archives.
    limitations under the License.
 
 ----------------------------------------
-@next/env@15.5.26, @next/swc-win32-x64-msvc@15.5.26, client-only@0.0.1
+@next/env@15.5.28, @next/swc-win32-x64-msvc@15.5.28, client-only@0.0.1
 (MIT)
 
 No licence file shipped with the package; licence declared in package.json: MIT.
@@ -1554,7 +1554,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ----------------------------------------
-next@15.5.26
+next@15.5.28
 (MIT)
 
 The MIT License (MIT)
@@ -1775,7 +1775,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ----------------------------------------
-source-map-js@1.2.1
+source-map-js@1.2.2
 (BSD-3-Clause)
 
 Copyright (c) 2009-2011, Mozilla Foundation and contributors
