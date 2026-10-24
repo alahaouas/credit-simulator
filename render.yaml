@@ -1,3 +1,5 @@
+# Retired: the API now runs as a Vercel Service (docs/deployment.md). Kept until the
+# Vercel cut-over is verified, then deleted together with the Render service.
 services:
   - type: web
     name: credit-simulator-api
@@ -12,8 +14,6 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: ALLOWED_ORIGINS
-        sync: false
-      - key: API_PROXY_SECRET
         sync: false
       - key: TRUSTED_PROXY_HOPS
         sync: false

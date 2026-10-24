@@ -2,85 +2,89 @@
 
 ## Architecture
 
+One Vercel project with two [Services](https://vercel.com/docs/services) (beta), declared in the root `vercel.json`:
+
 ```
-Vercel (Next.js)  ──fetch──▶  Render (FastAPI)  ──supabase-py──▶  Supabase
+                       ┌── /api/*  ──▶  api  (FastAPI, Python functions) ──supabase-py──▶  Supabase
+browser ──▶  Vercel  ──┤
+                       └── /*      ──▶  web  (Next.js)
 ```
 
-Both services send security headers; the web CSP only allows the Supabase and API hosts set in `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_API_URL` at build time. See [security-headers.md](security-headers.md).
+- The browser calls `/api/...` on the site's own origin: no CORS, and the CSP `connect-src` stays `'self'` + Supabase.
+- The API receives the original path (`/api/simulate`), so its routes keep their `/api` prefix.
+- No always-on server: functions start in about a second when idle, instead of Render's free-tier sleep of 50 s or more.
+- Rate-limit counters live in Redis (Upstash), because each function instance has its own memory. See [rate-limiting.md](rate-limiting.md).
+
+Both services send security headers. See [security-headers.md](security-headers.md).
 
 ---
 
-## 1. FastAPI on Render
+## 1. Vercel project
 
-### One-time setup
+### Settings
 
-1. Connect the GitHub repo to [render.com](https://render.com).
-2. Create a new **Web Service** — Render will detect `render.yaml` automatically.
-3. Set the following environment variables in the Render dashboard:
+- **Root Directory**: `.` (the repository root, where `vercel.json` declares the services). Not `web`.
+- **Framework Preset**: Services (detected from `vercel.json`).
+- `web/vercel.json` only applies when `web` is the Root Directory; with Services it is not used for routing.
 
-| Variable | Description |
-|---|---|
-| `SUPABASE_URL` | Project URL from Supabase dashboard → Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (keep secret — server-side only) |
-| `ALLOWED_ORIGINS` | Comma-separated list of allowed frontend origins, e.g. `https://your-app.vercel.app` |
-| `API_PROXY_SECRET` | Shared secret with the Vercel project (same value there); lets the rate limiter trust the client address the web app forwards. See [rate-limiting.md](rate-limiting.md). |
-| `TRUSTED_PROXY_HOPS` | Proxies in front of the API that append to `X-Forwarded-For`; measure it as described in [rate-limiting.md](rate-limiting.md). Unset = direct anonymous calls get 503. |
+### Python entrypoint and dependencies
 
-4. Deploy. The service URL will be `https://credit-simulator-api.onrender.com` (or similar).
+- `[tool.vercel] entrypoint = "api.vercel:app"` in `pyproject.toml`, repeated in `vercel.json`. `api/vercel.py` puts `src/` on the import path, then imports `api.main:app`.
+- The API's runtime packages (`fastapi`, `supabase`, `slowapi`, `redis`) are in `[project].dependencies`, because Vercel installs those; its docs do not say it installs optional extras. The `web` extra only holds `uvicorn`, for running the API locally.
 
-### Local dev
+### Environment variables
+
+| Variable | Vercel type | Used by | Value |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | **Config** | web | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Config** | web | Supabase publishable (or legacy anon) key |
+| `SUPABASE_URL` | Secret | api | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Secret | api | Supabase **secret key** (`sb_secret_...`), bypasses RLS. Scope it to the `api` service if the dashboard offers service-level variables. |
+| `RATE_LIMIT_STORAGE_URL` | Secret | api | Upstash Redis URL (`rediss://...`). `REDIS_URL` is read as a fallback, which is the name the Upstash integration creates. |
+| `TRUSTED_CLIENT_IP_HEADER` | Secret | api | `x-real-ip`: Vercel overwrites it with the real client address |
+| `ALLOWED_ORIGINS` | Secret | api | optional, only for browser apps on other origins calling the API |
+
+- Vercel refuses a `NEXT_PUBLIC_` variable of type *Secret* ("Remove the public framework prefix..."). Those names are inlined into the browser bundle, so they must be type **Config**. Both Supabase values above are public by design (RLS protects the data). Never give a `NEXT_PUBLIC_` name to anything secret.
+- Leave `NEXT_PUBLIC_API_URL` and `BACKEND_URL` unset on Vercel. `BACKEND_URL` only feeds the local-dev `/api` rewrite in `next.config.mjs`.
+- **Supabase's Vercel integration** creates names the app does not read (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`), plus `POSTGRES_*`, `SUPABASE_JWT_SECRET` and `SUPABASE_SECRET_KEY`. Keep only the variables in the table: the database password and the JWT signing secret must not sit in the project. If the integration keeps re-adding them, disconnect it.
+- Environment-variable changes take effect on the next deployment.
+
+### Rate-limit storage (Upstash Redis)
+
+1. Vercel → **Storage** (or Marketplace) → **Upstash for Redis** → create a database on the free plan, in a region close to the functions (Frankfurt), and connect it to the project.
+2. The integration adds `REDIS_URL` (and REST variables the API does not use). If it is named differently, copy its `rediss://` URL into `RATE_LIMIT_STORAGE_URL`.
+3. With `TRUSTED_CLIENT_IP_HEADER` set and no storage URL, the rate-limited endpoints answer **503** instead of falling back to per-instance memory.
+
+### After the first deploy
+
+- Add the deployment URL to Supabase → Authentication → URL Configuration (Site URL and redirect URLs), see [supabase-setup.md](supabase-setup.md).
+- Check `/api/docs` and run a simulation from the site.
+
+---
+
+## 2. Local dev
+
+API (from the repo root):
 
 ```bash
-# from repo root
-pip install -e ".[web]"
-python -m uvicorn api.main:app --reload
+pip install -e ".[dev,web]"
+python -m uvicorn api.main:app --reload     # http://localhost:8000
 ```
 
-Requires `api/.env`:
-```
-SUPABASE_URL=https://<project>.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
-```
+Requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the environment (or `api/.env`). Without `RATE_LIMIT_STORAGE_URL` and `TRUSTED_CLIENT_IP_HEADER`, the limiter keeps counters in memory and keys on the peer address, which is right for one local process.
 
----
-
-## 2. Next.js on Vercel
-
-### One-time setup
-
-1. Import the GitHub repo in the [Vercel dashboard](https://vercel.com/new). Vercel detects two services (it reads `render.yaml`) and offers a multi-service project: choose **Import single project** on `web` instead. The API stays on Render, and the suggested multi-service `vercel.json` would route every path, pages included, to the API.
-2. Check that **Root Directory** is `web` and the framework is Next.js.
-3. Add the environment variables in the dashboard, for Production and Preview. `web/vercel.json` holds build settings only: its old `@secret` references were removed because Vercel retired Secrets.
-
-| Variable | Vercel type | Description |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | **Config** | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Config** | Supabase publishable (or legacy anon) key |
-| `BACKEND_URL` | Secret | Render service URL, e.g. `https://credit-simulator-api.onrender.com`, no trailing slash. `web/middleware.ts` proxies `/api/*` to it (the `next.config.mjs` rewrite is the fallback when `API_PROXY_SECRET` is unset). |
-| `API_PROXY_SECRET` | Secret | Same random value as on Render. The middleware sends it with the visitor's address so the API rate-limits per visitor; see [rate-limiting.md](rate-limiting.md). Never `NEXT_PUBLIC_`. |
-
-Vercel refuses a `NEXT_PUBLIC_` variable of type *Secret* ("Remove the public framework prefix..."): those names are inlined into the browser bundle, so they must be type **Config**. Both Supabase values above are public by design (RLS protects the data). Never give a `NEXT_PUBLIC_` name to anything secret.
-
-**Supabase's Vercel integration** creates other names than the app reads: `SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (the code reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`), plus `POSTGRES_*` and `SUPABASE_JWT_SECRET`. The web app uses none of them. Add the two names above yourself, check that `SUPABASE_URL` points at the existing project (not a new empty one the integration created), and delete the unused `POSTGRES_*` and `SUPABASE_JWT_SECRET`: the database password and the JWT signing secret do not belong in the web project.
-
-Leave `NEXT_PUBLIC_API_URL` unset in production. The browser then calls `/api/...` on the site's own origin and Next.js forwards it to `BACKEND_URL` server-side, so Render needs no CORS entry for the site, the CSP `connect-src` stays `'self'` + Supabase, and the Render URL is not in the browser bundle. Setting `NEXT_PUBLIC_API_URL` instead makes the browser call Render directly: add the site's origin to Render's `ALLOWED_ORIGINS` then, and the CSP picks the API origin up at build time.
-
-4. Deploy. Vercel reads `web/vercel.json` for build settings.
-5. Add the deployment URL to Supabase → Authentication → URL Configuration (Site URL and redirect URLs), see [supabase-setup.md](supabase-setup.md).
-
-### Local dev
+Web:
 
 ```bash
 cd web
 npm install
-npm run dev        # http://localhost:3000
+npm run dev        # http://localhost:3000, /api/* is rewritten to BACKEND_URL (default http://localhost:8000)
 ```
 
 Requires `web/.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
-NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ---
@@ -94,9 +98,16 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ---
 
-## 4. Post-deployment checklist
+## 4. Render (retired)
 
-- [ ] Set `ALLOWED_ORIGINS` on Render to include the Vercel URL.
-- [ ] Add the Vercel URL to Supabase Auth → URL Configuration → Redirect URLs.
-- [ ] Verify `/api/docs` is reachable on the Render URL.
-- [ ] Run a simulation end-to-end through the production frontend.
+The API used to run on Render (`render.yaml`, free plan). The free instance slept after inactivity and took 50 s or more to wake, which is why it moved to Vercel. `render.yaml` is kept until the Vercel cut-over is verified, then deleted with the Render service.
+
+---
+
+## 5. Post-deployment checklist
+
+- [ ] Vercel Root Directory is `.` and both services built.
+- [ ] Upstash Redis connected; `RATE_LIMIT_STORAGE_URL` (or `REDIS_URL`) and `TRUSTED_CLIENT_IP_HEADER=x-real-ip` set.
+- [ ] The Vercel URL is in Supabase Auth → URL Configuration → Redirect URLs.
+- [ ] `/api/docs` loads on the site's own domain.
+- [ ] A simulation runs end-to-end, and the 11th heatmap call within a minute returns 429.
