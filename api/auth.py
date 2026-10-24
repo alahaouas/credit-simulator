@@ -18,7 +18,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, Request
 
 from .db import get_db
 
@@ -48,6 +48,7 @@ def hash_api_key(key: str) -> str:
 
 
 def optional_user(
+    request: Request,
     authorization: Annotated[str | None, Header()] = None,
     x_api_key: Annotated[str | None, Header()] = None,
     db=Depends(get_db),
@@ -57,7 +58,15 @@ def optional_user(
     Checks Bearer token first, then X-Api-Key.
     Raises 503 if auth material is provided but Supabase is not configured,
     or if the auth backend errors unexpectedly.
+    A verified user id is also stored on ``request.state.user_id``, which the
+    rate limiter uses as the bucket key (api/limiter.py).
     """
+    user_id = _resolve_user(authorization, x_api_key, db)
+    request.state.user_id = user_id
+    return user_id
+
+
+def _resolve_user(authorization: str | None, x_api_key: str | None, db) -> str | None:
     # --- Bearer token (Supabase JWT) ---
     if authorization is not None and authorization.startswith("Bearer "):
         if db is None:

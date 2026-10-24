@@ -13,3 +13,7 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      - key: API_PROXY_SECRET
+        sync: false
+      - key: TRUSTED_PROXY_HOPS
+        sync: false

@@ -23,6 +23,8 @@ Both services send security headers; the web CSP only allows the Supabase and AP
 | `SUPABASE_URL` | Project URL from Supabase dashboard → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (keep secret — server-side only) |
 | `ALLOWED_ORIGINS` | Comma-separated list of allowed frontend origins, e.g. `https://your-app.vercel.app` |
+| `API_PROXY_SECRET` | Shared secret with the Vercel project (same value there); lets the rate limiter trust the client address the web app forwards. See [rate-limiting.md](rate-limiting.md). |
+| `TRUSTED_PROXY_HOPS` | Proxies in front of the API that append to `X-Forwarded-For`; measure it as described in [rate-limiting.md](rate-limiting.md). Unset = direct anonymous calls get 503. |
 
 4. Deploy. The service URL will be `https://credit-simulator-api.onrender.com` (or similar).
 
@@ -54,7 +56,8 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | **Config** | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Config** | Supabase publishable (or legacy anon) key |
-| `BACKEND_URL` | Secret | Render service URL, e.g. `https://credit-simulator-api.onrender.com`. Read at build time by the `/api/*` rewrite in `next.config.mjs`. |
+| `BACKEND_URL` | Secret | Render service URL, e.g. `https://credit-simulator-api.onrender.com`, no trailing slash. `web/middleware.ts` proxies `/api/*` to it (the `next.config.mjs` rewrite is the fallback when `API_PROXY_SECRET` is unset). |
+| `API_PROXY_SECRET` | Secret | Same random value as on Render. The middleware sends it with the visitor's address so the API rate-limits per visitor; see [rate-limiting.md](rate-limiting.md). Never `NEXT_PUBLIC_`. |
 
 Vercel refuses a `NEXT_PUBLIC_` variable of type *Secret* ("Remove the public framework prefix..."): those names are inlined into the browser bundle, so they must be type **Config**. Both Supabase values above are public by design (RLS protects the data). Never give a `NEXT_PUBLIC_` name to anything secret.
 
