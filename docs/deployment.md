@@ -6,6 +6,8 @@
 Vercel (Next.js)  ──fetch──▶  Render (FastAPI)  ──supabase-py──▶  Supabase
 ```
 
+Both services send security headers; the web CSP only allows the Supabase and API hosts set in `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_API_URL` at build time. See [security-headers.md](security-headers.md).
+
 ---
 
 ## 1. FastAPI on Render

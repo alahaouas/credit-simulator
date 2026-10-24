@@ -329,3 +329,9 @@ decimal places for display.
 - Persistent storage
 - Background rate polling
 - PTZ or state-subsidized loan blending
+
+---
+
+## Licence
+
+Proprietary. Copyright CODYNAMICS SRL, all rights reserved. See [LICENSE](LICENSE). The repository being readable does not grant any right to copy, host or reuse the code. Open-source components shipped by the web app are listed in [web/THIRD-PARTY-NOTICES.md](web/THIRD-PARTY-NOTICES.md).
