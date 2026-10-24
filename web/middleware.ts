@@ -18,6 +18,8 @@ function proxyApi(request: NextRequest): NextResponse | null {
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     ''
   const headers = new Headers(request.headers)
+  // The site's Host would make Render's router look for a service by that name.
+  headers.delete('host')
   headers.set('x-proxy-secret', secret)
   headers.set('x-client-ip', clientIp)
 
