@@ -25,7 +25,7 @@ Both services send security headers. See [security-headers.md](security-headers.
 
 - **Root Directory**: `.` (the repository root, where `vercel.json` declares the services). Not `web`.
 - **Framework Preset**: Services (detected from `vercel.json`).
-- `web/vercel.json` only applies when `web` is the Root Directory; with Services it is not used for routing.
+- Each service's build settings come from `vercel.json`; there is no per-service `vercel.json` and no build-command override in the dashboard.
 
 ### Python entrypoint and dependencies
 
@@ -100,7 +100,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
 
 ## 4. Render (retired)
 
-The API used to run on Render (`render.yaml`, free plan). The free instance slept after inactivity and took 50 s or more to wake, which is why it moved to Vercel. `render.yaml` is kept until the Vercel cut-over is verified, then deleted with the Render service.
+The API ran on Render (free plan) until #257. The free instance slept after inactivity and took 50 s or more to wake, which is why it moved to Vercel. The Render service, its Blueprint and `render.yaml` were deleted after the cut-over was verified on production.
 
 ---
 

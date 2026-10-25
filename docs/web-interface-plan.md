@@ -48,7 +48,7 @@ credit-simulator/
 | Database / Auth | Supabase (PostgreSQL + Auth) | Row-level security; JS client on frontend; Python client on backend |
 | Styling | Tailwind CSS | Minimal setup, works well in Next.js |
 | Charts | Recharts | React-native, handles amortization curve well |
-| Deployment | Vercel (frontend) + Railway or Render (FastAPI) | Both have free tiers |
+| Deployment | Vercel (frontend) + Railway or Render (FastAPI) | Both have free tiers. Superseded: since #257 both run in one Vercel project, see [deployment.md](deployment.md) |
 
 ## Architecture
 
@@ -199,8 +199,8 @@ All `Decimal` fields stored as JSON strings to preserve precision.
 
 ### Layer 5 — History & deployment ✅
 - [x] `web/app/history/page.tsx` — saved simulations list
-- [x] `web/vercel.json` — Vercel deployment config
-- [x] `render.yaml` — Render deployment config for FastAPI
+- [x] `web/vercel.json` — Vercel deployment config (removed: replaced by the root `vercel.json` services in #257)
+- [x] `render.yaml` — Render deployment config for FastAPI (removed with the Render service after #257)
 - [x] `docs/deployment.md` — environment variables + deployment steps
 - [x] `api/main.py` — ALLOWED_ORIGINS env var for dynamic CORS
 
