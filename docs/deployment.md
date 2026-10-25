@@ -25,7 +25,7 @@ Both services send security headers. See [security-headers.md](security-headers.
 
 - **Root Directory**: `.` (the repository root, where `vercel.json` declares the services). Not `web`.
 - **Framework Preset**: Services (detected from `vercel.json`).
-- Each service's build settings come from `vercel.json`; there is no per-service `vercel.json` and no build-command override in the dashboard.
+- Each service's build settings come from the root `vercel.json` and framework detection. The dashboard has no build-command overrides for Services.
 
 ### Python entrypoint and dependencies
 
