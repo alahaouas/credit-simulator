@@ -77,7 +77,7 @@ talks to the GitHub API only. Do not add an `actions/checkout` step to this file
 
 `.github/dependabot.yml` already groups npm minor/patch updates into a single
 `web-minor-patch` PR and ignores majors for `next`, `react`, `react-dom` and
-`eslint-config-next`. Grouping matters beyond noise: separate PRs that each touch
+`@next/eslint-plugin-next` (kept on the same major as `next`). Grouping matters beyond noise: separate PRs that each touch
 `web/package-lock.json` conflict with one another, and GitHub reports every one of them
 as mergeable until the first one merges.
 

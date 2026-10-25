@@ -21,7 +21,7 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: react-dom
         update-types: [version-update:semver-major]
-      - dependency-name: eslint-config-next
+      - dependency-name: "@next/eslint-plugin-next"
         update-types: [version-update:semver-major]
     groups:
       web-minor-patch:
