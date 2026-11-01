@@ -18,7 +18,7 @@
 // See docs/seo.md.
 // ============================================================
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
 
@@ -140,6 +140,10 @@ for (const route of routesWithPages()) {
 // imported it would silently get the localhost fallback instead of the real
 // origin — no error, no warning, wrong links. Keep the module server-only.
 function sourceFiles(dir, found = []) {
+  // A directory in the list below may legitimately not exist (or be removed
+  // later); an ENOENT here would abort the whole check with a stack trace.
+  if (!existsSync(dir)) return found;
+
   for (const entry of readdirSync(dir)) {
     const path = join(dir, entry);
     if (statSync(path).isDirectory()) {
@@ -151,14 +155,23 @@ function sourceFiles(dir, found = []) {
   return found;
 }
 
+/**
+ * Any specifier resolving to lib/site: the '@/lib/site' alias the codebase
+ * uses, a relative '../lib/site', and the bare './site' that a sibling inside
+ * lib/ would write. Matching only the alias would let the other two through.
+ */
+function importsLibSite(contents) {
+  return /from\s+['"](?:[^'"]*\/)?lib\/site['"]/.test(contents) || /from\s+['"]\.\/site['"]/.test(contents);
+}
+
 for (const dir of ['app', 'components', 'hooks', 'lib']) {
   for (const file of sourceFiles(join(WEB, dir))) {
     const contents = readFileSync(file, 'utf-8');
     const isClient = /^\s*['"]use client['"]/m.test(contents);
-    const importsSite = /from\s+['"]@\/lib\/site['"]/.test(contents);
+    const importsSite = importsLibSite(contents);
     if (isClient && importsSite) {
       errors.push(
-        `${relative(WEB, file)} is a 'use client' file importing @/lib/site. That module ` +
+        `${relative(WEB, file)} is a 'use client' file importing lib/site. That module ` +
           `reads VERCEL_PROJECT_PRODUCTION_URL, which is undefined in the browser, so ` +
           `SITE_URL would silently fall back to localhost there. Pass the value in from a ` +
           `server component instead.`
