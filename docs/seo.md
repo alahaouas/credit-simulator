@@ -74,6 +74,12 @@ holding a `page.tsx` it requires:
 - `robots.index: false` **and** `alternates: { canonical: null }` on a private
   one — without the second, the page inherits the root layout's canonical of
   `/` while also asking not to be indexed.
+- no public path prefixed by a private one. `robots.txt` `Disallow` matches by
+  prefix, so a private `/share` would also block a public `/shareholders` — and
+  silently: the page would build, render and sit in the sitemap while being
+  uncrawlable. Making the `Disallow` lines exact instead is not an option,
+  because `/results` and `/history` are real pages that a trailing slash would
+  stop matching.
 
 It was verified by adding a throwaway route and confirming each case fails, not
 only by watching it pass.

@@ -64,13 +64,24 @@ function findHost() {
   if (!raw) {
     throw new Error('no site URL: pass --host=https://example.com or set SITE_URL');
   }
-  const { protocol, host } = new URL(raw);
-  if (protocol !== 'https:') {
+  // `new URL` throws on a value with no scheme, which is how a host gets passed
+  // by hand (--host=example.vercel.app). Caught so the message names the input
+  // instead of surfacing a bare TypeError. Not repaired by prepending https://:
+  // that would also "fix" a typo and submit for a host we cannot prove we own.
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error(`site URL is not a valid absolute URL: ${JSON.stringify(raw)} ` +
+      `(expected a scheme, e.g. https://example.com)`);
+  }
+
+  if (parsed.protocol !== 'https:') {
     // IndexNow rejects a non-https host, and a localhost URL means the
     // repository variable was never set.
     throw new Error(`site URL must be https, got ${raw}`);
   }
-  return host;
+  return parsed.host;
 }
 
 function sitemapUrls(xml) {

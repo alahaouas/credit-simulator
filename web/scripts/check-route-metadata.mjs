@@ -70,6 +70,22 @@ const errors = overlap.map(
   (path) => `${path} is in both PUBLIC_PATHS and PRIVATE_PATHS in lib/site.ts`
 );
 
+// robots.txt `Disallow` matches by prefix, so a private '/share' would also block
+// a public '/shareholders' — silently, since the page would still build, render
+// and sit in the sitemap while being uncrawlable. Cheaper to forbid the collision
+// than to make the Disallow lines exact: several private paths ('/results',
+// '/history') are real pages that a trailing slash would stop matching.
+for (const publicPath of publicPaths) {
+  for (const privatePath of privatePaths) {
+    if (publicPath.startsWith(privatePath)) {
+      errors.push(
+        `public ${publicPath} starts with private ${privatePath}, so the robots.txt ` +
+          `"Disallow: ${privatePath}" prefix would block it. Rename one of them.`
+      );
+    }
+  }
+}
+
 for (const route of routesWithPages()) {
   // '/share/[token]' is governed by the '/share' segment: that is where the
   // layout lives and what robots.txt disallows.
