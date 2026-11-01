@@ -48,7 +48,7 @@ Both services send security headers. See [security-headers.md](security-headers.
 - Vercel refuses a `NEXT_PUBLIC_` variable of type *Secret* ("Remove the public framework prefix..."). Those names are inlined into the browser bundle, so they must be type **Config**. Both Supabase values above are public by design (RLS protects the data). Never give a `NEXT_PUBLIC_` name to anything secret.
 - Keep **Automatically expose System Environment Variables** on (Settings → Environment Variables): without it `VERCEL_PROJECT_PRODUCTION_URL` is missing and the origin silently falls back to `http://localhost:3000`. Disabling it also disables Skew Protection.
 - Set an Actions **repository variable** `SITE_URL` (Settings → Secrets and variables → Actions → *Variables* → Repository variables) to the production origin: the IndexNow workflow runs outside Vercel, so it has neither variable. See [indexnow.md](indexnow.md).
-- **Deployment Protection must not cover production.** With Vercel Authentication on production every URL — `/robots.txt` and `/sitemap.xml` included — answers `302` to `vercel.com/sso-api`, so nothing is crawlable and the whole SEO baseline is inert. *Standard Protection* (previews only) is the setting to use.
+- The public site is **https://credit-simulator-xi.vercel.app** (the bare `credit-simulator.vercel.app` is another account’s). Keep **Deployment Protection** on *Standard Protection*: with Vercel Authentication over production, every URL including `/robots.txt` answers `302` to `vercel.com/sso-api` and nothing is crawlable. The long `-alaeddine-haouass-projects` alias does `302`, which is harmless — check the host the site is served on. See [seo.md](seo.md).
 - Leave `BACKEND_URL` unset on Vercel: it only feeds the local-dev `/api` rewrite in `next.config.mjs`.
 - **Supabase's Vercel integration** creates names the app does not read (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`), plus `POSTGRES_*`, `SUPABASE_JWT_SECRET` and `SUPABASE_SECRET_KEY`. Keep only the variables in the table: the database password and the JWT signing secret must not sit in the project. If the integration keeps re-adding them, disconnect it.
 - Environment-variable changes take effect on the next deployment.
@@ -115,6 +115,6 @@ The API ran on Render (free plan) until #257. The free instance slept after inac
 - [ ] Upstash Redis connected; `RATE_LIMIT_STORAGE_URL` (or `REDIS_URL`) and `TRUSTED_CLIENT_IP_HEADER=x-real-ip` set.
 - [ ] The Vercel URL is in Supabase Auth → URL Configuration → Redirect URLs.
 - [ ] `/api/docs` loads on the site's own domain.
-- [ ] `curl -sI https://<domain>/robots.txt` returns `200`, not a `302` to `vercel.com/sso-api`.
+- [ ] `curl -sI https://credit-simulator-xi.vercel.app/robots.txt` returns `200`, not a `302` to `vercel.com/sso-api`.
 - [ ] `/robots.txt` and `/sitemap.xml` show the real domain, not `localhost`.
 - [ ] A simulation runs end-to-end, and the 11th heatmap call within a minute returns 429.

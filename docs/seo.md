@@ -116,22 +116,40 @@ The last resort is localhost rather than a plausible-looking domain on purpose:
 canonicals and a sitemap pointing at a domain nobody owns are much harder to
 notice than an obviously local URL that fails review at a glance.
 
-### Deployment protection must be off for production
+### Which host serves the public site
 
-**Vercel Authentication covering production makes all of this inert.** Every
-URL, `/robots.txt` and `/sitemap.xml` included, answers `302` to
-`vercel.com/sso-api`, so no crawler reaches a single page and IndexNow's
-`--wait` can never settle. Measured on this project on 2026-11-01:
+The production site is **https://credit-simulator-xi.vercel.app**. The bare
+`credit-simulator.vercel.app` belongs to a different account, which is why
+Vercel suffixed this project's short alias; do not type the bare name anywhere.
+
+Verified live on 2026-11-01 — this is the origin the deployed build emits, not
+just the one it was configured with:
 
 ```
-$ curl -sI https://<project-host>/robots.txt
+$ curl -s https://credit-simulator-xi.vercel.app/robots.txt
+Sitemap: https://credit-simulator-xi.vercel.app/sitemap.xml
+$ curl -s https://credit-simulator-xi.vercel.app/sitemap.xml
+<loc>https://credit-simulator-xi.vercel.app/</loc>
+```
+
+### Deployment protection must not cover production
+
+Not currently a problem, but worth knowing how it presents, because the symptom
+is silent from the outside: with Vercel Authentication over production, every
+URL — `/robots.txt` and `/sitemap.xml` included — answers `302` to
+`vercel.com/sso-api`, no crawler reaches a page, and IndexNow's `--wait` never
+settles.
+
+The long team alias does behave that way today, which is harmless because
+nothing public points at it:
+
+```
+$ curl -sI https://credit-simulator-alaeddine-haouass-projects.vercel.app/robots.txt
 HTTP/1.1 302 Found
-Location: https://vercel.com/sso-api?url=...%2Frobots.txt&nonce=...
 ```
 
-Set Vercel → Settings → **Deployment Protection** to *Standard Protection*,
-which covers previews only. Check with `curl -sI https://<domain>/robots.txt`:
-a `200` and the real domain in the body means the baseline is live.
+So check the host the site is actually served on, not any alias Vercel lists.
+*Standard Protection* (previews only) is the setting that keeps production open.
 
 ## IndexNow
 
