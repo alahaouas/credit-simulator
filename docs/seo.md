@@ -117,6 +117,10 @@ After a deploy:
 - `view-source:` on `/results` shows `<meta name="robots" content="noindex, nofollow">`.
 - Submit the sitemap in Search Console.
 
+A preview deployment is behind Vercel Authentication by default, so none of the
+above can be checked on one: every URL redirects to the auth wall. Check on the
+production domain.
+
 **Search Console's "Couldn't fetch" goes stale.** Measured on GammePlay: once a
 sitemap fetch fails, Search Console keeps showing the failure and never retries
 on its own, however healthy the sitemap is. The fix is to remove the sitemap and

@@ -90,6 +90,17 @@ URL is simply not in the live sitemap, so it is never submitted.
 If readiness never settles the script exits non-zero rather than submit: a
 failed job is recoverable, a wrong announcement is not.
 
+### Vercel deployment protection breaks readiness
+
+With Vercel Authentication enabled on the deployment the script is pointed at,
+every URL answers `302` to the auth wall, so `--wait` polls for its full five
+minutes and then exits non-zero. Measured on this PR's preview deployment, which
+is protected by default.
+
+`SITE_URL` must therefore be the **public production domain**, not a preview URL,
+and production must not be behind deployment protection. The failure is loud, so
+there is nothing to detect — just do not point it at a protected deployment.
+
 ## Running it by hand
 
 ```bash
