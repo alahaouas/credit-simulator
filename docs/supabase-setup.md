@@ -43,7 +43,7 @@ This creates the `simulations` table with RLS enabled and the ownership policy.
 1. Go to **Authentication → URL Configuration**.
 2. Set **Site URL**:
    - Local dev: `http://localhost:3000`
-   - Production: your Vercel domain (e.g. `https://credit-simulator.vercel.app`)
+   - Production: the project’s own Vercel domain, from Vercel → Settings → Domains (`credit-simulator.vercel.app` belongs to a different account — do not copy it)
 3. Add to **Redirect URLs**:
    - `http://localhost:3000/auth/callback`
    - `https://<your-vercel-domain>/auth/callback`

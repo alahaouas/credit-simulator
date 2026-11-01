@@ -38,7 +38,7 @@ Both services send security headers. See [security-headers.md](security-headers.
 |---|---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | **Config** | web | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Config** | web | Supabase publishable (or legacy anon) key |
-| `NEXT_PUBLIC_SITE_URL` | **Config** | web | The site’s own origin, no trailing slash. Feeds `metadataBase`, every canonical, `robots.txt` and the sitemap. Unset, they all point at `http://localhost:3000`. See [seo.md](seo.md). |
+| `NEXT_PUBLIC_SITE_URL` | **Config** | web | *Optional.* An override for the site’s origin, only needed for a custom domain that is not the project’s primary one. Unset, the origin comes from Vercel’s own `VERCEL_PROJECT_PRODUCTION_URL`. Feeds `metadataBase`, every canonical, `robots.txt` and the sitemap. See [seo.md](seo.md). |
 | `SUPABASE_URL` | Secret | api | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Secret | api | Supabase **secret key** (`sb_secret_...`), bypasses RLS. Scope it to the `api` service if the dashboard offers service-level variables. |
 | `RATE_LIMIT_STORAGE_URL` | Secret | api | Upstash Redis URL (`rediss://...`). `REDIS_URL` is read as a fallback, which is the name the Upstash integration creates. |
@@ -46,7 +46,9 @@ Both services send security headers. See [security-headers.md](security-headers.
 | `ALLOWED_ORIGINS` | Secret | api | optional, only for browser apps on other origins calling the API |
 
 - Vercel refuses a `NEXT_PUBLIC_` variable of type *Secret* ("Remove the public framework prefix..."). Those names are inlined into the browser bundle, so they must be type **Config**. Both Supabase values above are public by design (RLS protects the data). Never give a `NEXT_PUBLIC_` name to anything secret.
-- Set an Actions **repository variable** `SITE_URL` to the same value as `NEXT_PUBLIC_SITE_URL`: the IndexNow workflow reads the deployed sitemap and needs the host. See [indexnow.md](indexnow.md).
+- Keep **Automatically expose System Environment Variables** on (Settings → Environment Variables): without it `VERCEL_PROJECT_PRODUCTION_URL` is missing and the origin silently falls back to `http://localhost:3000`. Disabling it also disables Skew Protection.
+- Set an Actions **repository variable** `SITE_URL` (Settings → Secrets and variables → Actions → *Variables* → Repository variables) to the production origin: the IndexNow workflow runs outside Vercel, so it has neither variable. See [indexnow.md](indexnow.md).
+- **Deployment Protection must not cover production.** With Vercel Authentication on production every URL — `/robots.txt` and `/sitemap.xml` included — answers `302` to `vercel.com/sso-api`, so nothing is crawlable and the whole SEO baseline is inert. *Standard Protection* (previews only) is the setting to use.
 - Leave `BACKEND_URL` unset on Vercel: it only feeds the local-dev `/api` rewrite in `next.config.mjs`.
 - **Supabase's Vercel integration** creates names the app does not read (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`), plus `POSTGRES_*`, `SUPABASE_JWT_SECRET` and `SUPABASE_SECRET_KEY`. Keep only the variables in the table: the database password and the JWT signing secret must not sit in the project. If the integration keeps re-adding them, disconnect it.
 - Environment-variable changes take effect on the next deployment.
@@ -87,7 +89,7 @@ Requires `web/.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
-NEXT_PUBLIC_SITE_URL=http://localhost:3000   # optional locally; this is the default
+NEXT_PUBLIC_SITE_URL=http://localhost:3000   # optional; this is the default locally
 ```
 
 ---
@@ -113,5 +115,6 @@ The API ran on Render (free plan) until #257. The free instance slept after inac
 - [ ] Upstash Redis connected; `RATE_LIMIT_STORAGE_URL` (or `REDIS_URL`) and `TRUSTED_CLIENT_IP_HEADER=x-real-ip` set.
 - [ ] The Vercel URL is in Supabase Auth → URL Configuration → Redirect URLs.
 - [ ] `/api/docs` loads on the site's own domain.
-- [ ] `NEXT_PUBLIC_SITE_URL` is set; `/robots.txt` and `/sitemap.xml` show the real domain.
+- [ ] `curl -sI https://<domain>/robots.txt` returns `200`, not a `302` to `vercel.com/sso-api`.
+- [ ] `/robots.txt` and `/sitemap.xml` show the real domain, not `localhost`.
 - [ ] A simulation runs end-to-end, and the 11th heatmap call within a minute returns 429.

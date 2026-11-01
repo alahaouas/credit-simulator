@@ -84,27 +84,54 @@ holding a `page.tsx` it requires:
 It was verified by adding a throwaway route and confirming each case fails, not
 only by watching it pass.
 
-## `NEXT_PUBLIC_SITE_URL` (required)
+## The site URL
 
 `metadataBase`, every `alternates.canonical`, `robots.txt` and the sitemap are
-all built from it. It must be set on Vercel as a **Config** variable (not a
-Secret — Vercel refuses a `NEXT_PUBLIC_` secret, and the value is public
-anyway), to the site's own origin with no trailing slash:
+all built from one origin, resolved in `web/lib/site.ts` from the first of:
 
-```
-NEXT_PUBLIC_SITE_URL=https://<the production domain>
-```
+| # | Source | When it applies |
+|---|---|---|
+| 1 | `NEXT_PUBLIC_SITE_URL` | An explicit override. Only needed for a custom domain that is not the project's primary one. **Config**, not Secret: Vercel refuses a `NEXT_PUBLIC_` secret, and the value is public anyway. |
+| 2 | `VERCEL_PROJECT_PRODUCTION_URL` | Set by Vercel on *every* deployment, preview included, to the shortest production domain. Nothing to configure. |
+| 3 | `http://localhost:3000` | Local dev. |
+
+So **production is correct with no environment variable set at all**, and a
+preview canonicalises to production rather than to its own throwaway URL —
+the safe direction if deployment protection is ever lifted, since previews then
+consolidate to production instead of competing with it. Do not set a fixed
+`NEXT_PUBLIC_SITE_URL` for the Preview environment: one value cannot be right
+for per-deployment preview URLs.
+
+Source 2 requires **Automatically expose System Environment Variables** on the
+Vercel project. Vercel supplies it as a bare host with no scheme, which the code
+prepends.
 
 A value that is not an absolute URL — `example.com`, with no scheme, which is
-the easy mistake to make in the Vercel dashboard — fails the build with a message
-naming the variable. That is deliberate: shipping canonicals that point nowhere
-is worse than a failed deploy. An empty value is treated as unset.
+the easy mistake to make in the Vercel dashboard — fails the build with a
+message naming *which* variable was at fault. That is deliberate: shipping
+canonicals that point nowhere is worse than a failed deploy. An empty value is
+treated as unset.
 
-Unset, the app falls back to `http://localhost:3000`. That fallback is
-deliberately wrong-looking: a plausible production guess would publish
-canonicals and a sitemap pointing at a domain nobody owns, which is harder to
-notice and worse than a localhost URL that fails review at a glance. Check
-`/robots.txt` on the deployed site after setting it.
+The last resort is localhost rather than a plausible-looking domain on purpose:
+canonicals and a sitemap pointing at a domain nobody owns are much harder to
+notice than an obviously local URL that fails review at a glance.
+
+### Deployment protection must be off for production
+
+**Vercel Authentication covering production makes all of this inert.** Every
+URL, `/robots.txt` and `/sitemap.xml` included, answers `302` to
+`vercel.com/sso-api`, so no crawler reaches a single page and IndexNow's
+`--wait` can never settle. Measured on this project on 2026-11-01:
+
+```
+$ curl -sI https://<project-host>/robots.txt
+HTTP/1.1 302 Found
+Location: https://vercel.com/sso-api?url=...%2Frobots.txt&nonce=...
+```
+
+Set Vercel → Settings → **Deployment Protection** to *Standard Protection*,
+which covers previews only. Check with `curl -sI https://<domain>/robots.txt`:
+a `200` and the real domain in the body means the baseline is live.
 
 ## IndexNow
 

@@ -135,6 +135,38 @@ for (const route of routesWithPages()) {
   }
 }
 
+// lib/site.ts reads VERCEL_PROJECT_PRODUCTION_URL, which has no NEXT_PUBLIC_
+// prefix and is therefore undefined in the browser. A 'use client' file that
+// imported it would silently get the localhost fallback instead of the real
+// origin — no error, no warning, wrong links. Keep the module server-only.
+function sourceFiles(dir, found = []) {
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    if (statSync(path).isDirectory()) {
+      if (entry !== 'node_modules' && !entry.startsWith('.')) sourceFiles(path, found);
+    } else if (/\.tsx?$/.test(entry)) {
+      found.push(path);
+    }
+  }
+  return found;
+}
+
+for (const dir of ['app', 'components', 'hooks', 'lib']) {
+  for (const file of sourceFiles(join(WEB, dir))) {
+    const contents = readFileSync(file, 'utf-8');
+    const isClient = /^\s*['"]use client['"]/m.test(contents);
+    const importsSite = /from\s+['"]@\/lib\/site['"]/.test(contents);
+    if (isClient && importsSite) {
+      errors.push(
+        `${relative(WEB, file)} is a 'use client' file importing @/lib/site. That module ` +
+          `reads VERCEL_PROJECT_PRODUCTION_URL, which is undefined in the browser, so ` +
+          `SITE_URL would silently fall back to localhost there. Pass the value in from a ` +
+          `server component instead.`
+      );
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error(`check:routes failed (${errors.length}):`);
   for (const error of errors) console.error(`  - ${error}`);
