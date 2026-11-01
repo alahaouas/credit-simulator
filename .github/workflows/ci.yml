@@ -123,6 +123,12 @@ jobs:
       - name: Lint (ESLint flat config)
         run: npm run lint
 
+      # A 'use client' page cannot export metadata and Next ignores it silently, so a
+      # new route with no server layout is crawlable with the root layout's title and
+      # canonical — a failure with no build error. See docs/seo.md.
+      - name: Check route metadata (SEO baseline)
+        run: npm run check:routes
+
       # Native TypeScript 7 — fails in ~0.4 s instead of waiting for the build.
       # Does not replace the check inside `next build`, which still runs TS 6.
       - name: Type check (TypeScript 7 native)

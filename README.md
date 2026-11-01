@@ -244,7 +244,9 @@ python -m credit_simulator --locale fr
 credit-simulator/
 ├── pyproject.toml
 ├── docs/
-│   └── requirements.md     # Full product specification
+│   ├── requirements.md     # Full product specification
+│   ├── seo.md              # Indexable routes, metadata, NEXT_PUBLIC_SITE_URL
+│   └── indexnow.md         # Bing / Yandex submission
 ├── src/
 │   └── credit_simulator/
 │       ├── __main__.py     # Entry point
