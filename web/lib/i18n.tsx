@@ -766,6 +766,14 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     setLocale(detectLocale())
   }, [])
 
+  // The server renders <html lang="en">, because the locale only exists in the
+  // browser. Keep the attribute honest once it is known, so assistive tech and
+  // crawlers see the language actually on screen. Both locales still share one
+  // URL; locale-routed URLs are the real fix (see docs/seo.md).
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
+
   const t = (key: TranslationKey): string =>
     TRANSLATIONS[locale][key] ?? TRANSLATIONS['en'][key] ?? key
 
