@@ -62,6 +62,22 @@ each segment only writes its own title and description.
 If a new page needs a title, add the segment layout — do not try to export
 `metadata` from the page.
 
+### The guard
+
+`npm run check:routes` (`web/scripts/check-route-metadata.mjs`, run in CI before
+the type check) makes that failure loud. For every directory under `web/app/`
+holding a `page.tsx` it requires:
+
+- its top-level segment to be in `PUBLIC_PATHS` or `PRIVATE_PATHS`, not both;
+- a `layout.tsx` for that segment;
+- `alternates.canonical` on a public one;
+- `robots.index: false` **and** `alternates: { canonical: null }` on a private
+  one — without the second, the page inherits the root layout's canonical of
+  `/` while also asking not to be indexed.
+
+It was verified by adding a throwaway route and confirming each case fails, not
+only by watching it pass.
+
 ## `NEXT_PUBLIC_SITE_URL` (required)
 
 `metadataBase`, every `alternates.canonical`, `robots.txt` and the sitemap are
@@ -72,6 +88,11 @@ anyway), to the site's own origin with no trailing slash:
 ```
 NEXT_PUBLIC_SITE_URL=https://<the production domain>
 ```
+
+A value that is not an absolute URL — `example.com`, with no scheme, which is
+the easy mistake to make in the Vercel dashboard — fails the build with a message
+naming the variable. That is deliberate: shipping canonicals that point nowhere
+is worse than a failed deploy. An empty value is treated as unset.
 
 Unset, the app falls back to `http://localhost:3000`. That fallback is
 deliberately wrong-looking: a plausible production guess would publish

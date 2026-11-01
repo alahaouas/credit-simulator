@@ -22,7 +22,7 @@ Stack, tooling versions and lint rules are declared in `pyproject.toml` and `web
 | Localisation | EN/FR via `i18n.py`; locale auto-detected from env/system; override with `--locale` flag |
 | Dependency audit | CI runs `npm audit --audit-level=high` **dev-inclusive**, from a clean 0 baseline. Pin or override to fix a red run — never the automatic fixer. The `postcss` override is pinned exactly on purpose — see [docs/dependency-audit-gate.md](docs/dependency-audit-gate.md). |
 | Required checks | `main` requires the four CI contexts, so `ci.yml` must keep running on every PR — do **not** add `paths-ignore` back to its `pull_request` trigger; the `changes` job replaces it. See [docs/required-status-checks.md](docs/required-status-checks.md). |
-| SEO | Public routes are `/`, `/simulate`, `/rates`, `/legal`; everything else is `noindex`. A `'use client'` page cannot export `metadata` — Next ignores it silently, so each route’s metadata lives in a server `layout.tsx`. Requires `NEXT_PUBLIC_SITE_URL`. See [docs/seo.md](docs/seo.md). |
+| SEO | Public routes are `/`, `/simulate`, `/rates`, `/legal`; everything else is `noindex`. A `'use client'` page cannot export `metadata` — Next ignores it silently, so each route’s metadata lives in a server `layout.tsx`. Requires `NEXT_PUBLIC_SITE_URL`. `npm run check:routes` fails CI on a route that is in neither list. See [docs/seo.md](docs/seo.md). |
 | Dependabot PRs | Patch/minor auto-merge once checks are green; majors are left open on purpose. Never add `actions/checkout` to that workflow — see [docs/dependabot-automerge.md](docs/dependabot-automerge.md). |
 ---
 

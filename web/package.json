@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "check:routes": "node scripts/check-route-metadata.mjs",
     "typecheck": "node node_modules/typescript-native/bin/tsc --noEmit",
     "typecheck:classic": "node node_modules/typescript/bin/tsc --noEmit",
     "test:e2e": "playwright test",
