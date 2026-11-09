@@ -48,7 +48,8 @@ secret; the domain is public):
 Settings → Secrets and variables → Actions → Variables → SITE_URL
 ```
 
-to the same value as `NEXT_PUBLIC_SITE_URL` on Vercel. Locally, pass
+to the production origin — this workflow runs outside Vercel, so it has neither
+`VERCEL_PROJECT_PRODUCTION_URL` nor `NEXT_PUBLIC_SITE_URL`. Locally, pass
 `--host=https://<domain>` or export `SITE_URL`. The script rejects a non-https
 URL, which is what an unset variable looks like.
 
