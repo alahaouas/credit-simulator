@@ -245,7 +245,7 @@ credit-simulator/
 ├── pyproject.toml
 ├── docs/
 │   ├── requirements.md     # Full product specification
-│   ├── seo.md              # Indexable routes, metadata, NEXT_PUBLIC_SITE_URL
+│   ├── seo.md              # Indexable routes, metadata, the site origin
 │   └── indexnow.md         # Bing / Yandex submission
 ├── src/
 │   └── credit_simulator/

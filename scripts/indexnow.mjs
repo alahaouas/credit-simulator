@@ -54,9 +54,11 @@ function findKey() {
 }
 
 /**
- * The site's host. The sitemap is generated from NEXT_PUBLIC_SITE_URL at build
- * time, so this script needs the same value to know where to read it. In CI it
- * comes from the SITE_URL repository variable; see docs/indexnow.md.
+ * The site's host. The sitemap is generated from the deploy's own origin (see
+ * web/lib/site.ts), so this script needs the same value to know where to read
+ * it. Nothing here runs on Vercel, so neither of Vercel's variables is
+ * available: in CI it comes from the SITE_URL repository variable. See
+ * docs/indexnow.md.
  */
 function findHost() {
   const flag = process.argv.find((arg) => arg.startsWith('--host='))?.slice('--host='.length);
@@ -100,8 +102,8 @@ async function liveSitemap(host) {
   const foreign = urls.filter((url) => new URL(url).host !== host);
   if (foreign.length > 0) {
     // IndexNow answers 422 when a URL does not belong to the declared host.
-    // Here it also means NEXT_PUBLIC_SITE_URL on Vercel disagrees with SITE_URL
-    // in CI, which is worth failing on rather than guessing.
+    // Here it also means the deploy's resolved origin disagrees with SITE_URL in
+    // CI, which is worth failing on rather than guessing.
     throw new Error(`sitemap host is not ${host}: ${foreign.join(', ')}`);
   }
   return urls;
