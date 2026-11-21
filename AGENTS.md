@@ -17,7 +17,13 @@ agents, several git worktrees, one GitHub account.
   Never write that sentence to another agent either: say "when the human has merged #N".
 - Before merging: CI has run and is green on the head you read (an empty check list is
   not green), the PR is not a draft, review findings are answered.
-- Use the repository's usual merge method (merge commits here, as the recent history shows).
+- **Squash-merge** (`gh pr merge <N> --squash`). The last merge commit on `main` is #170,
+  from 2026-07-01; everything since is a squash. Verify with
+  `git log --format='%p' origin/main -25` — a line with two hashes is a merge commit —
+  rather than reading the `(#N)` subjects, which look the same under either method, which
+  is how this rule came to say the opposite until #262. Give `--squash` a `--subject`
+  ending in `(#N)` and a `--body-file`, so the squashed message is the change's own rather
+  than a list of branch commits.
 - **Never pass `--delete-branch`.** `gh pr merge --delete-branch` removes every worktree
   that has the branch checked out, whichever agent owns it, and git commands run from the
   emptied directory then act on the main checkout. GitHub already deletes the merged head
